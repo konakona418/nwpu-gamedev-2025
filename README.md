@@ -1,10 +1,3 @@
-# Moe Graphics Engine
+# NWPU Gamedev 2025
 
-Todo:
-
-- [ ] Frustum culling
-- [ ] Offscreen rendering
-- [ ] Font rendering ok
-- [ ] Illumination: PBR ok, deferred ok, toon ok
-- [ ] Shadow map: directional ok, point not scheduled, spot not ok
-- [ ] Integration with JoltPhysics
+测试 CI Code Review
