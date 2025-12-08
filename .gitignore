@@ -11,3 +11,9 @@
 /shaders/**/*.ps1
 /shaders/**/*.sh
 /shaders/**/build
+
+# gemini-cli settings
+.gemini/
+
+# GitHub App credentials
+gha-creds-*.json
