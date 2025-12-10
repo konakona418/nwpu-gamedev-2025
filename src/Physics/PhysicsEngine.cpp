@@ -38,11 +38,10 @@ void PhysicsEngine::init() {
     Logger::info("Physics system initialized with {} max bodies, {} max body pairs, {} max contact constraints",
                  MAX_BODIES, MAX_BODY_PAIRS, MAX_CONTACT_CONSTRAINTS);
     Logger::info("Launching physics thread...");
+    m_initialized = true;
     launchPhysicsThread();
 
     Logger::info("Physics engine initialized");
-
-    m_initialized = true;
 }
 
 void PhysicsEngine::destroy() {
@@ -55,6 +54,7 @@ void PhysicsEngine::destroy() {
 
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
+    JPH::Factory::sInstance = nullptr;
 
     Logger::info("Physics engine shut down");
     m_initialized = false;
@@ -69,8 +69,6 @@ void PhysicsEngine::mainLoop() {
     auto lastTime = std::chrono::high_resolution_clock::now();
     while (m_running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();
-        auto deltaTime = currentTime - lastTime;
-
         m_physicsSystem->Update(
                 PHYSICS_TIMESTEP.count(),
                 1,
@@ -89,11 +87,11 @@ void PhysicsEngine::syncPhysicsToSwapBuffer() {
     auto& writeBuffer = m_swapBuffer.getWriteBuffer();
     writeBuffer.objectSnapshots.clear();
 
-    JPH::BodyIDVector bodyIDs;
-    m_physicsSystem->GetBodies(bodyIDs);
+    m_bodyIDsCache.clear();
+    m_physicsSystem->GetBodies(m_bodyIDsCache);
 
     const auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-    for (const auto& bodyID: bodyIDs) {
+    for (const auto& bodyID: m_bodyIDsCache) {
         Physics::ObjectSnapshot snapshot{};
         snapshot.bodyID = bodyID;
         bodyInterface.GetPositionAndRotation(

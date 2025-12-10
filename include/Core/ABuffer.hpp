@@ -4,9 +4,26 @@
 
 MOE_BEGIN_NAMESPACE
 
+/**
+ * @brief Lock-free double buffer for concurrent access.
+ *
+ * ABuffer provides a lock-free double buffering mechanism suitable for scenarios
+ * where a single writer thread updates data and one or more reader threads access
+ * a consistent snapshot of the data. The writer thread should use getWriteBuffer()
+ * to modify data, then call swap() to publish the new data to readers. Reader threads
+ * should use getReadBuffer() to access the most recently published data.
+ *
+ * Thread-safety:
+ * - Single writer: Only one thread should write to the buffer and call swap().
+ * - Multiple readers: Any number of threads may concurrently call getReadBuffer().
+ * - No locks are used; synchronization is achieved via atomic operations.
+ *
+ * Usage pattern:
+ * - Writer: getWriteBuffer() -> modify data -> swap()
+ * - Reader(s): getReadBuffer()
+ */
 template<typename T>
 struct ABuffer {
-public:
     using value_type = T;
     static constexpr size_t SWAP_COUNT = 2;
 
