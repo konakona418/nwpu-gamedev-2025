@@ -61,6 +61,15 @@ public:
         m_initialized = true;
     }
 
+    void shutdown() {
+        std::lock_guard<std::mutex> lk(m_queueMutex);
+        while (!m_taskQueue.empty()) {
+            m_taskQueue.front()();
+            m_taskQueue.pop();
+        }
+        m_initialized = false;
+    }
+
     void processTasks();
 
     void schedule(Function<void()> task);
