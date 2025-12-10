@@ -10,3 +10,8 @@
 #include <Jolt/Physics/PhysicsSettings.h>
 #include <Jolt/Physics/PhysicsSystem.h>
 #include <Jolt/RegisterTypes.h>
+
+#include "Core/Common.hpp"
+
+#define MOE_BEGIN_PHYSICS_NAMESPACE namespace moe::Physics {
+#define MOE_END_PHYSICS_NAMESPACE }
