@@ -87,11 +87,11 @@ void PhysicsEngine::syncPhysicsToSwapBuffer() {
     auto& writeBuffer = m_swapBuffer.getWriteBuffer();
     writeBuffer.objectSnapshots.clear();
 
-    m_bodyIDsCache.clear();
-    m_physicsSystem->GetBodies(m_bodyIDsCache);
+    m_bodyIdCache.clear();
+    m_physicsSystem->GetBodies(m_bodyIdCache);
 
     const auto& bodyInterface = m_physicsSystem->GetBodyInterface();
-    for (const auto& bodyID: m_bodyIDsCache) {
+    for (const auto& bodyID: m_bodyIdCache) {
         Physics::ObjectSnapshot snapshot{};
         snapshot.bodyID = bodyID;
         bodyInterface.GetPositionAndRotation(

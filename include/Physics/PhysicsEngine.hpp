@@ -149,6 +149,8 @@ private:
 
     UniquePtr<JPH::PhysicsSystem> m_physicsSystem;
 
+    JPH::BodyIDVector m_bodyIdCache;
+
     void launchPhysicsThread();
 
     void mainLoop();
