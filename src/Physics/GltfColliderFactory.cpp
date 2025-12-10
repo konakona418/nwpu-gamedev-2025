@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <tiny_gltf.h>
 
-MOE_BEGIN_NAMESPACE
+MOE_BEGIN_PHYSICS_NAMESPACE
 
 namespace Details {
     static const String GLTF_POSITIONS_ACCESSOR{"POSITION"};
@@ -366,4 +366,4 @@ JPH::Ref<JPH::StaticCompoundShapeSettings> GltfColliderFactory::shapeFromGltf(St
 }
 
 
-MOE_END_NAMESPACE
+MOE_END_PHYSICS_NAMESPACE
