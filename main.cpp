@@ -2,6 +2,8 @@
 
 #include "Audio/AudioEngine.hpp"
 
+#include "Physics/PhysicsEngine.hpp"
+
 #include "Core/FileReader.hpp"
 #include "Core/Task/Scheduler.hpp"
 
@@ -9,6 +11,9 @@ int main() {
     moe::MainScheduler::getInstance().init();
     moe::ThreadPoolScheduler::getInstance().init();
     moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
+
+    auto& physicsEngine = moe::PhysicsEngine::getInstance();
+    physicsEngine.init();
 
     auto& audioEngine = moe::AudioEngine::getInstance();
     auto audioInterface = audioEngine.getInterface();
@@ -19,7 +24,8 @@ int main() {
     engine.run();
 
     engine.cleanup();
-    moe::ThreadPoolScheduler::shutdown();
+    physicsEngine.destroy();
+    moe::ThreadPoolScheduler::getInstance().shutdown();
     moe::MainScheduler::getInstance().shutdown();
     moe::FileReader::destroyReader();
 
