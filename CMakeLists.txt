@@ -34,6 +34,15 @@ add_subdirectory(vendors/openal-soft)
 add_subdirectory(vendors/ogg)
 add_subdirectory(vendors/vorbis)
 
+add_subdirectory(vendors/concurrentqueue)
+
+set(FLATBUFFERS_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(FLATBUFFERS_BUILD_FLATC OFF CACHE BOOL "" FORCE)
+add_subdirectory(vendors/flatbuffers)
+
+add_subdirectory(vendors/enet)
+set(ENET_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendors/enet/include)
+
 if(USE_MIMALLOC)
     message(STATUS "moe-graphics: Using mimalloc as the memory allocator")
     add_subdirectory(vendors/mimalloc)
@@ -68,6 +77,8 @@ file(GLOB STB_IMAGES_SOURCES
   vendors/stb/stb_image.h
 )
 
+file(GLOB_RECURSE GAME_SOURCES game/*.cpp)
+
 add_executable(moe-graphics 
   main.cpp
   ${RENDER_SOURCES}
@@ -81,6 +92,8 @@ add_executable(moe-graphics
   ${IM3D_SOURCES}
   ${STB_IMAGES_SOURCES}
 
+  ${GAME_SOURCES}
+
   ${MIMALLOC_CPP_IMPL}
 )
 
@@ -93,6 +106,8 @@ target_link_libraries(moe-graphics PRIVATE
   Jolt
   utf8cpp freetype harfbuzz
   OpenAL::OpenAL ogg vorbis vorbisfile
+  concurrentqueue flatbuffers
+  enet
   ${MIMALLOC_LIB}
 )
 
@@ -102,6 +117,12 @@ target_include_directories(moe-graphics PRIVATE
   vendors/imgui/backends
   vendors/im3d
   vendors/stb
+
+  ${ENET_INCLUDE_DIR}
+)
+
+target_include_directories(moe-graphics PRIVATE
+  game
 )
 
 #find_package(Vulkan REQUIRED)

@@ -67,3 +67,12 @@
 [submodule "vendors/mimalloc"]
 	path = vendors/mimalloc
 	url = https://github.com/microsoft/mimalloc.git
+[submodule "vendors/concurrentqueue"]
+	path = vendors/concurrentqueue
+	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "vendors/flatbuffers"]
+	path = vendors/flatbuffers
+	url = https://github.com/google/flatbuffers.git
+[submodule "vendors/enet"]
+	path = vendors/enet
+	url = https://github.com/lsalzman/enet.git
