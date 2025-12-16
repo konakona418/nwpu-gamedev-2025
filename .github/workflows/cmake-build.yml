@@ -55,16 +55,33 @@ jobs:
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
+    - name: Install MinGW
+      uses: egor-tensin/setup-mingw@v2.2.0
+      if: matrix.c_compiler == 'gcc' && runner.os == 'Windows'
+      with:
+        version: '14.2.0'
+
     - name: Install ninja-build tool
       # You may pin to the exact commit or the version.
       # uses: seanmiddleditch/gha-setup-ninja@3b1f8f94a2f8254bd26914c4ab9474d4f0015f67
       uses: seanmiddleditch/gha-setup-ninja@v6
 
-    - name: Configure X11 if on Linux
+    - name: Configure Dependencies if on Linux
       if: runner.os == 'Linux'
       run: >
         sudo apt-get update && sudo apt-get install -y \
-            libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev libgl1-mesa-dev libopenal-dev libflac-dev libvorbis-dev
+            pkg-config \
+            libx11-dev libxrandr-dev libxcursor-dev libxi-dev libudev-dev \
+            libxinerama-dev \
+            wayland-protocols \
+            libwayland-dev \
+            libwayland-client0 libwayland-server0 \
+            libgl1-mesa-dev \
+            mesa-vulkan-drivers \
+            vulkan-tools \
+            libvulkan-dev \
+            libopenal-dev libflac-dev libvorbis-dev \
+            libogg-dev
 
     - name: Configure Freetype if on Linux
       if: runner.os == 'Linux'
