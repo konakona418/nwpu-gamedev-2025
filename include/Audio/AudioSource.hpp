@@ -26,6 +26,8 @@ public:
     void pause();
     void stop();
 
+    void disableAttenuation();
+
     void update();
 
     ALuint sourceId() const {
@@ -96,6 +98,15 @@ struct SourceStopCommand : public AudioCommand {
     Ref<AudioSource> source;
 
     explicit SourceStopCommand(Ref<AudioSource> src)
+        : source(std::move(src)) {}
+
+    void execute(AudioEngine& engine) override;
+};
+
+struct SourceDisableAttenuationCommand : public AudioCommand {
+    Ref<AudioSource> source;
+
+    explicit SourceDisableAttenuationCommand(Ref<AudioSource> src)
         : source(std::move(src)) {}
 
     void execute(AudioEngine& engine) override;

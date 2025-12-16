@@ -1,4 +1,5 @@
 #include "Audio/AudioListener.hpp"
+#include "Audio/AudioEngine.hpp"
 
 MOE_BEGIN_NAMESPACE
 
@@ -32,6 +33,29 @@ void AudioListener::setOrientation(const glm::vec3& forward, const glm::vec3& up
 }
 
 void AudioListener::setGain(float gain) {
+    alListenerf(AL_GAIN, gain);
+}
+
+void SetListenerPositionCommand::execute(AudioEngine& engine) {
+    AudioListener& listener = engine.getListener();
+    alListenerfv(AL_POSITION, glm::value_ptr(position));
+}
+
+void SetListenerVelocityCommand::execute(AudioEngine& engine) {
+    AudioListener& listener = engine.getListener();
+    alListenerfv(AL_VELOCITY, glm::value_ptr(velocity));
+}
+
+void SetListenerOrientationCommand::execute(AudioEngine& engine) {
+    AudioListener& listener = engine.getListener();
+    float orient[6] = {
+            forward.x, forward.y, forward.z,
+            up.x, up.y, up.z};
+    alListenerfv(AL_ORIENTATION, orient);
+}
+
+void SetListenerGainCommand::execute(AudioEngine& engine) {
+    AudioListener& listener = engine.getListener();
     alListenerf(AL_GAIN, gain);
 }
 

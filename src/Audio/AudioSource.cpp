@@ -34,6 +34,10 @@ void AudioSource::stop() {
     alSourceStop(m_sourceId);
 }
 
+void AudioSource::disableAttenuation() {
+    alSourcef(m_sourceId, AL_ROLLOFF_FACTOR, 0.0f);
+}
+
 void AudioSource::update() {
     if (!m_provider) {
         // n/a
@@ -167,6 +171,11 @@ void SourcePauseCommand::execute(AudioEngine& engine) {
 void SourceStopCommand::execute(AudioEngine& engine) {
     Logger::debug("Stop audio source {}", source->sourceId());
     source->stop();
+}
+
+void SourceDisableAttenuationCommand::execute(AudioEngine& engine) {
+    Logger::debug("Disable attenuation for audio source {}", source->sourceId());
+    source->disableAttenuation();
 }
 
 MOE_END_NAMESPACE

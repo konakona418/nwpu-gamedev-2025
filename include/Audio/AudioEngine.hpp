@@ -84,6 +84,11 @@ public:
     void pauseAudioSource(Ref<AudioSource> source);
     void stopAudioSource(Ref<AudioSource> source);
 
+    void setListenerPosition(const glm::vec3& position);
+    void setListenerVelocity(const glm::vec3& velocity);
+    void setListenerOrientation(const glm::vec3& forward, const glm::vec3& up);
+    void setListenerGain(float gain);
+
 private:
     AudioEngine& m_engine;
 

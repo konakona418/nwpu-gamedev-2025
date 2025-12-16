@@ -176,4 +176,28 @@ void AudioEngineInterface::stopAudioSource(Ref<AudioSource> source) {
                     std::move(source)));
 }
 
+void AudioEngineInterface::setListenerPosition(const glm::vec3& position) {
+    submitCommand(
+            std::make_unique<SetListenerPositionCommand>(
+                    position));
+}
+
+void AudioEngineInterface::setListenerVelocity(const glm::vec3& velocity) {
+    submitCommand(
+            std::make_unique<SetListenerVelocityCommand>(
+                    velocity));
+}
+
+void AudioEngineInterface::setListenerOrientation(const glm::vec3& forward, const glm::vec3& up) {
+    submitCommand(
+            std::make_unique<SetListenerOrientationCommand>(
+                    forward, up));
+}
+
+void AudioEngineInterface::setListenerGain(float gain) {
+    submitCommand(
+            std::make_unique<SetListenerGainCommand>(
+                    gain));
+}
+
 MOE_END_NAMESPACE
