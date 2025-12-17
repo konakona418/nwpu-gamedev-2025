@@ -14,9 +14,8 @@ public:
         m_isSet.store(true, std::memory_order_release);
     }
 
-    T get() const {
-        MOE_ASSERT(m_isSet.load(std::memory_order_acquire), "Deferred value is not set");
-        return m_value;
+    Optional<T> get() const {
+        return {m_value};
     }
 
     bool isSet() const {

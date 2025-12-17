@@ -80,6 +80,14 @@ public:
         return Ref<T>(static_cast<T*>(this));
     }
 
+    template<typename U>
+    Ref<U> asRef() {
+        MOE_ASSERT(m_refCount.load(std::memory_order_relaxed) > 0,
+                   "intoRef called on object with zero ref count. "
+                   "It should only be called on objects that are already Ref<T> managed.");
+        return Ref<U>(static_cast<U*>(this));
+    }
+
     void setDeleter(RefCountedDeleterFn deleter) {
         m_deleter = deleter;
     }
