@@ -74,8 +74,8 @@ public:
     ~AudioEngineInterface() = default;
 
     void submitCommand(UniquePtr<AudioCommand> command) {
-        std::lock_guard<std::mutex> lock(m_engine.m_mutex);
-        m_engine.m_commandQueue.push_back(std::move(command));
+        std::lock_guard<std::mutex> lock(m_engine->m_mutex);
+        m_engine->m_commandQueue.push_back(std::move(command));
     }
 
     Ref<AudioSource> createAudioSource();
@@ -90,10 +90,10 @@ public:
     void setListenerGain(float gain);
 
 private:
-    AudioEngine& m_engine;
+    AudioEngine* m_engine;
 
     AudioEngineInterface(AudioEngine& engine)
-        : m_engine(engine) {}
+        : m_engine(&engine) {}
 };
 
 MOE_END_NAMESPACE

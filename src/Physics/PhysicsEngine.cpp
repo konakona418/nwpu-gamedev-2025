@@ -52,6 +52,9 @@ void PhysicsEngine::destroy() {
         m_physicsThread.join();
     }
 
+    m_persistOnPhysicsThreadFn.clear();
+    m_dispatchedOnPhysicsThreadFn.clear();
+
     JPH::UnregisterTypes();
     delete JPH::Factory::sInstance;
     JPH::Factory::sInstance = nullptr;
@@ -75,7 +78,15 @@ void PhysicsEngine::mainLoop() {
                 m_tempAllocator.get(),
                 m_jobSystem.get());
 
+        auto dt = currentTime - lastTime;
+        if (dt > PHYSICS_TIMESTEP) {
+            Logger::warn("Physics update took longer ({} ms) than the physics timestep ({} ms)",
+                         std::chrono::duration<float, std::milli>(dt).count(),
+                         std::chrono::duration<float, std::milli>(PHYSICS_TIMESTEP).count());
+        }
+
         syncPhysicsToSwapBuffer();
+        executeDispatchedFunctions();
 
         lastTime = currentTime;
         auto nextWakeTime = lastTime + PHYSICS_TIMESTEP;
@@ -103,6 +114,18 @@ void PhysicsEngine::syncPhysicsToSwapBuffer() {
 
     // swap buffers
     m_swapBuffer.swap();
+}
+
+void PhysicsEngine::executeDispatchedFunctions() {
+    std::lock_guard<std::mutex> lk(m_dispatchMutex);
+    for (auto& fn: m_persistOnPhysicsThreadFn) {
+        fn(*this);
+    }
+
+    for (auto& fn: m_dispatchedOnPhysicsThreadFn) {
+        fn(*this);
+    }
+    m_dispatchedOnPhysicsThreadFn.clear();
 }
 
 MOE_END_NAMESPACE

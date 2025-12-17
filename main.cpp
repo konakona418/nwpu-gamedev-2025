@@ -1,33 +1,9 @@
-#include "Render/Vulkan/VulkanEngine.hpp"
-
-#include "Audio/AudioEngine.hpp"
-
-#include "Physics/PhysicsEngine.hpp"
-
-#include "Core/FileReader.hpp"
-#include "Core/Task/Scheduler.hpp"
+#include "game/App.hpp"
 
 int main() {
-    moe::MainScheduler::getInstance().init();
-    moe::ThreadPoolScheduler::getInstance().init();
-    moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
-
-    auto& physicsEngine = moe::PhysicsEngine::getInstance();
-    physicsEngine.init();
-
-    auto& audioEngine = moe::AudioEngine::getInstance();
-    auto audioInterface = audioEngine.getInterface();
-
-    moe::VulkanEngine engine;
-    engine.init();
-
-    engine.run();
-
-    engine.cleanup();
-    physicsEngine.destroy();
-    moe::ThreadPoolScheduler::getInstance().shutdown();
-    moe::MainScheduler::getInstance().shutdown();
-    moe::FileReader::destroyReader();
-
+    game::App app;
+    app.init();
+    app.run();
+    app.shutdown();
     return 0;
 }

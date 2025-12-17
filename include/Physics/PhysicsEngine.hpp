@@ -129,6 +129,26 @@ public:
     void init();
     void destroy();
 
+    void persistOnPhysicsThread(Function<void(PhysicsEngine&)>&& fn) {
+        std::lock_guard<std::mutex> lk(m_dispatchMutex);
+        m_persistOnPhysicsThreadFn.push_back(std::move(fn));
+    }
+
+    template<typename F>
+    void persistOnPhysicsThread(F&& fn) {
+        persistOnPhysicsThread(Function<void(PhysicsEngine&)>(std::forward<F>(fn)));
+    }
+
+    void dispatchOnPhysicsThread(Function<void(PhysicsEngine&)>&& fn) {
+        std::lock_guard<std::mutex> lk(m_dispatchMutex);
+        m_dispatchedOnPhysicsThreadFn.push_back(std::move(fn));
+    }
+
+    template<typename F>
+    void dispatchOnPhysicsThread(F&& fn) {
+        dispatchOnPhysicsThread(Function<void(PhysicsEngine&)>(std::forward<F>(fn)));
+    }
+
 private:
     PhysicsEngine() = default;
     ~PhysicsEngine() = default;
@@ -139,6 +159,10 @@ private:
 
     std::atomic_bool m_running{false};
     std::thread m_physicsThread;
+
+    std::mutex m_dispatchMutex;
+    Vector<Function<void(PhysicsEngine&)>> m_persistOnPhysicsThreadFn;
+    Vector<Function<void(PhysicsEngine&)>> m_dispatchedOnPhysicsThreadFn;
 
     UniquePtr<Physics::Details::BPLayerInterfaceImpl> m_broadPhaseLayerInterface;
     UniquePtr<Physics::Details::ObjectVsBroadPhaseLayerFilterImpl> m_objectVsBroadPhaseLayerFilter;
@@ -155,6 +179,7 @@ private:
 
     void mainLoop();
     void syncPhysicsToSwapBuffer();
+    void executeDispatchedFunctions();
 };
 
 MOE_END_NAMESPACE
