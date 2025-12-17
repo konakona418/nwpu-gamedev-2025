@@ -158,6 +158,8 @@ public:
 
     JPH::PhysicsSystem& getPhysicsSystem() { return *m_physicsSystem; }
 
+    JPH::TempAllocator* getTempAllocator() { return m_tempAllocator.get(); }
+
     const SwapBuffer& getCurrentRead() const { return m_swapBuffer.getReadBuffer(); }
 
     // invoke this every frame to update the read buffer

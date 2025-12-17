@@ -70,30 +70,40 @@ void PhysicsEngine::launchPhysicsThread() {
 
 void PhysicsEngine::mainLoop() {
     Logger::setThreadName("Physics");
-
     Logger::info("Physics thread started");
-    auto lastTime = std::chrono::high_resolution_clock::now();
-    while (m_running.load()) {
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        m_physicsSystem->Update(
-                PHYSICS_TIMESTEP.count(),
-                1,
-                m_tempAllocator.get(),
-                m_jobSystem.get());
 
-        auto dt = currentTime - lastTime;
-        if (dt > PHYSICS_TIMESTEP) {
-            Logger::warn("Physics update took longer ({} ms) than the physics timestep ({} ms)",
-                         std::chrono::duration<float, std::milli>(dt).count(),
-                         std::chrono::duration<float, std::milli>(PHYSICS_TIMESTEP).count());
-        }
+    const auto step = std::chrono::duration_cast<std::chrono::nanoseconds>(PHYSICS_TIMESTEP);
+    auto nextTick = std::chrono::high_resolution_clock::now();
+
+    while (m_running.load()) {
+        m_physicsSystem->Update(PHYSICS_TIMESTEP.count(), 1, m_tempAllocator.get(), m_jobSystem.get());
 
         syncPhysicsToSwapBuffer();
         executeDispatchedFunctions();
 
-        lastTime = currentTime;
-        auto nextWakeTime = lastTime + PHYSICS_TIMESTEP;
-        std::this_thread::sleep_until(nextWakeTime);
+        nextTick += step;
+
+        while (true) {
+            auto now = std::chrono::high_resolution_clock::now();
+            auto remaining = nextTick - now;
+
+            if (remaining > std::chrono::milliseconds(2)) {
+                // pretty long time to wait, sleep for 1ms
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            } else if (remaining > std::chrono::nanoseconds(0)) {
+                // yield to other threads
+                // still busy waiting though φ(゜▽゜*)♪
+                std::this_thread::yield();
+            } else {
+                break;
+            }
+
+            // extremely large lag compensation
+            if (remaining < -step * 5) {
+                nextTick = now;
+                break;
+            }
+        }
     }
 }
 
