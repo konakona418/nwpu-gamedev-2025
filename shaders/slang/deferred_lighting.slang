@@ -1,6 +1,6 @@
 // [moe("vertex", "fragment")]
 
-import moe.pbr_lighting;
+import moe.toon_lighting;
 import moe.sampler;
 import moe.common;
 import moe.light;
@@ -182,27 +182,26 @@ float4 fragmentMain(VertexOutput input) : SV_Target {
         if (light.type != LightType.Directional) {
             l = normalize(light.position - fragPos);
         }
-        float NoL = clamp(dot(n, l), 0.0, 1.0);
 
-        // ! fixme: this is just a hack
-        const float noOcclusion = 1.0;
+        float NoL = dot(n, l);
+
+        float lightOcclusion = 1.0;
+
         if (light.type == LightType.Directional) {
-            // directional light, use CSM occlusion
-            float shadow = sampleShadow(fragPos, pcs.sceneData.shadowMapId, NoL);
-            float occlusion = 1.0 - shadow;
-
-            occlusion = clamp(occlusion, 0.1, 1.0);// clamp to avoid black
-            fragColor += calculateLight(light, fragPos, n, v, l, diffuseColor, roughness, metallic, f0, occlusion);
-        } else {
-            // other, use no occlusion
-            fragColor += calculateLight(light, fragPos, n, v, l, diffuseColor, roughness, metallic, f0, noOcclusion);
+            float shadow = sampleShadow(fragPos, pcs.sceneData.shadowMapId, clamp(NoL, 0.0, 1.0));
+            lightOcclusion = 1.0 - shadow;
+            lightOcclusion = clamp(lightOcclusion, 0.2, 1.0);
         }
+
+        fragColor += calculateToonLight(light, fragPos, n, v, l, diffuseColor, roughness, metallic, f0, lightOcclusion);
     }
 
+    float3 ambient = albedo * pcs.sceneData.ambientColor.rgb * pcs.sceneData.ambientColor.a;
+
+    fragColor = max(fragColor, ambient);
     fragColor += emissive;
 
-    // todo: ambient intensity not defined, use alpha
-    fragColor += albedo * pcs.sceneData.ambientColor.rgb * pcs.sceneData.ambientColor.a;
+    fragColor = fragColor / (fragColor + float3(0.15));
 
     return float4(fragColor, 1.0);
 }
