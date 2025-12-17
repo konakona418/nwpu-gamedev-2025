@@ -91,17 +91,6 @@ namespace game::State {
     }
 
     void LocalPlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
-        static size_t counter = 0;
-        static std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
-        counter++;
-        if (counter == 60) {
-            auto now = std::chrono::steady_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastTime).count();
-            lastTime = now;
-            counter = 0;
-            moe::Logger::debug("Physics update dt(ms) per 60 updates {}", duration);
-        }
-
         auto dir = m_movingDirection.get();
         auto velocity = dir * PLAYER_SPEED;
 
@@ -118,7 +107,8 @@ namespace game::State {
         // check collision
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
         JPH::CharacterVirtual::ExtendedUpdateSettings settings;
-        // todo: fill in this settings
+        // todo: fill in this settings, to allow character to climb up
+
         character->SetLinearVelocity(moe::Physics::toJoltType<JPH::Vec3>(velocity));
         character->ExtendedUpdate(
                 deltaTime,
@@ -130,11 +120,8 @@ namespace game::State {
                         moe::Physics::Details::Layers::MOVING),
                 {}, {},
                 *ctx.physics().getTempAllocator());
-        // ! todo: sync real position to render thread
 
         m_realPosition.publish(moe::Physics::fromJoltType<glm::vec3>(character->GetPosition()));
-
-        //character->SetPosition(moe::Physics::toJoltType<JPH::Vec3>(delta));
     }
 
 #undef PLAYER_KEY_MAPPING_XXX
