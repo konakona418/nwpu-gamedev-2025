@@ -1,5 +1,8 @@
 #include "App.hpp"
 
+#include "State/PlaygroundState.hpp"
+#include "State/WorldEnvironment.hpp"
+
 namespace game {
     void App::init() {
         moe::Logger::setThreadName("Graphics");
@@ -11,10 +14,12 @@ namespace game {
         m_physicsEngine = &moe::PhysicsEngine::getInstance();
         m_physicsEngine->init();
 
+        m_gameManager = std::make_unique<game::GameManager>(this);
+
         // persist the game manager's physics update function on the physics thread
         m_physicsEngine->persistOnPhysicsThread([this](moe::PhysicsEngine& engine) {
             auto dt = moe::PhysicsEngine::PHYSICS_TIMESTEP.count();
-            this->m_gameManager.physicsUpdate(dt);
+            this->m_gameManager->physicsUpdate(dt);
         });
 
         m_audioEngine = std::make_unique<moe::AudioEngineInterface>(moe::AudioEngine::getInstance().getInterface());
@@ -34,10 +39,19 @@ namespace game {
     void App::run() {
         bool running = true;
         auto lastTime = std::chrono::high_resolution_clock::now();
+
+        auto worldEnv = moe::Ref(new State::WorldEnvironment());
+        m_gameManager->pushState(worldEnv);
+
+        auto pgstate = moe::Ref(new State::PlaygroundState());
+        m_gameManager->pushState(pgstate);
+
+        m_graphicsEngine->getDefaultCamera().setPosition(glm::vec3(0, 2, 0));
+
         while (running) {
             m_graphicsEngine->beginFrame();
 
-            auto inputBus = m_graphicsEngine->getInputBus();
+            auto& inputBus = m_graphicsEngine->getInputBus();
             while (auto e = inputBus.pollEvent()) {
                 if (e->is<moe::WindowEvent::Close>()) {
                     running = false;
@@ -50,7 +64,9 @@ namespace game {
 
             moe::MainScheduler::getInstance().processTasks();
 
-            m_gameManager.update(deltaTime);
+            // switch read buffer
+            m_physicsEngine->updateReadBuffer();
+            m_gameManager->update(deltaTime);
 
             m_graphicsEngine->endFrame();
         }

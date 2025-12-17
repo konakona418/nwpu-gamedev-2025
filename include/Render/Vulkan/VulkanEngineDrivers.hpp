@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Meta/Feature.hpp"
 #include "Render/Common.hpp"
 #include "Render/Vulkan/VulkanLight.hpp"
 #include "Render/Vulkan/VulkanRenderable.hpp"
@@ -13,11 +14,11 @@ namespace moe {
 
     struct VulkanLoader {
     public:
-        RenderableId load(StringView path, Loader::GltfT);
+        RenderableId load(Loader::GltfT, StringView path);
 
-        ImageId load(StringView path, Loader::ImageT);
+        ImageId load(Loader::ImageT, StringView path);
 
-        FontId load(StringView path, float fontSize, StringView glyphRange, Loader::FontT);
+        FontId load(Loader::FontT, StringView path, float fontSize, StringView glyphRange);
 
         void init(VulkanEngine& engine) {
             m_engine = &engine;
@@ -31,7 +32,7 @@ namespace moe {
         VulkanEngine* m_engine{nullptr};
     };
 
-    struct VulkanIlluminationBus {
+    struct VulkanIlluminationBus : public Meta::NonCopyable<VulkanIlluminationBus> {
     public:
         enum class RegistryType {
             Static,
@@ -89,7 +90,7 @@ namespace moe {
         VulkanSwapBuffer lightBuffer;
     };
 
-    struct VulkanRenderObjectBus {
+    struct VulkanRenderObjectBus : public Meta::NonCopyable<VulkanRenderObjectBus> {
     public:
         friend class VulkanEngine;
 

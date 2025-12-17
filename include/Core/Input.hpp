@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Common.hpp"
+#include "Core/Meta/Feature.hpp"
 
 namespace moe {
     struct WindowEvent {
@@ -53,7 +54,7 @@ namespace moe {
         }
     };
 
-    struct InputBus {
+    struct InputBus : public Meta::NonCopyable<InputBus> {
         friend class VulkanEngine;
 
         void pushEvent(WindowEvent event) {

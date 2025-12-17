@@ -4,57 +4,47 @@
 
 MOE_BEGIN_NAMESPACE
 
-/**
- * @brief Lock-free double buffer for concurrent access.
- *
- * ABuffer provides a lock-free double buffering mechanism suitable for scenarios
- * where a single writer thread updates data and one or more reader threads access
- * a consistent snapshot of the data. The writer thread should use getWriteBuffer()
- * to modify data, then call swap() to publish the new data to readers. Reader threads
- * should use getReadBuffer() to access the most recently published data.
- *
- * Thread-safety:
- * - Single writer: Only one thread should write to the buffer and call swap().
- * - Multiple readers: Any number of threads may concurrently call getReadBuffer().
- * - No locks are used; synchronization is achieved via atomic operations.
- *
- * Usage pattern:
- * - Writer: getWriteBuffer() -> modify data -> swap()
- * - Reader(s): getReadBuffer()
- */
 template<typename T>
 struct ABuffer {
-    using value_type = T;
-    static constexpr size_t SWAP_COUNT = 2;
+    static constexpr size_t SWAP_COUNT = 3;
 
     ABuffer() {
-        m_currentRead.store(&m_buffers[0], std::memory_order_relaxed);
-        m_currentWrite = &m_buffers[1];
+        m_writeBuffer = &m_buffers[0];
+        m_pendingBuffer.store(&m_buffers[1], std::memory_order_relaxed);
+        m_readBuffer = &m_buffers[2];
     }
 
     T& getWriteBuffer() {
-        return *m_currentWrite;
+        return *m_writeBuffer;
     }
 
     const T& getReadBuffer() const {
-        return *m_currentRead.load(std::memory_order_acquire);
+        return *m_readBuffer;
     }
 
-    T& getWriteBufferUnsafe() {
-        return *m_currentWrite;
+    void publish() {
+        m_writeBuffer = m_pendingBuffer.exchange(m_writeBuffer, std::memory_order_acq_rel);
+        m_hasNewData.store(true, std::memory_order_release);
     }
 
-    void swap() {
-        T* newRead = m_currentWrite;
-        m_currentWrite = m_currentRead.exchange(newRead, std::memory_order_release);
+    bool updateReadBuffer() {
+        if (!m_hasNewData.load(std::memory_order_acquire)) {
+            return false;
+        }
+
+        m_readBuffer = m_pendingBuffer.exchange(m_readBuffer, std::memory_order_acq_rel);
+        m_hasNewData.store(false, std::memory_order_release);
+        return true;
     }
 
 private:
-    Array<T, SWAP_COUNT> m_buffers;
+    T m_buffers[SWAP_COUNT];
 
-    std::atomic<T*> m_currentRead{nullptr};
-    T* m_currentWrite{nullptr};
+    T* m_writeBuffer{nullptr};
+    std::atomic<T*> m_pendingBuffer{nullptr};
+    T* m_readBuffer{nullptr};
+
+    std::atomic<bool> m_hasNewData{false};
 };
-
 
 MOE_END_NAMESPACE

@@ -6,12 +6,12 @@
 namespace moe {
     constexpr uint32_t BUS_LIGHT_WARNING_LIMIT = 128;
 
-    RenderableId VulkanLoader::load(StringView path, Loader::GltfT) {
+    RenderableId VulkanLoader::load(Loader::GltfT, StringView path) {
         MOE_ASSERT(m_engine, "VulkanLoader not initialized");
         return m_engine->m_caches.objectCache.load(m_engine, path, ObjectLoader::Gltf).first;
     }
 
-    ImageId VulkanLoader::load(StringView path, Loader::ImageT) {
+    ImageId VulkanLoader::load(Loader::ImageT, StringView path) {
         MOE_ASSERT(m_engine, "VulkanLoader not initialized");
         return m_engine->m_caches.imageCache.loadImageFromFile(
                 path,
@@ -19,7 +19,7 @@ namespace moe {
                 VK_IMAGE_USAGE_SAMPLED_BIT);
     }
 
-    FontId VulkanLoader::load(StringView path, float fontSize, StringView glyphRange, Loader::FontT) {
+    FontId VulkanLoader::load(Loader::FontT, StringView path, float fontSize, StringView glyphRange) {
         MOE_ASSERT(m_engine, "VulkanLoader not initialized");
         std::fstream fontFile(path.data(), std::ios::in | std::ios::binary);
         if (!fontFile.is_open()) {

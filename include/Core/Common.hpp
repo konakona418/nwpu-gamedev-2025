@@ -127,3 +127,10 @@ namespace moe {
 
 #define MOE_BEGIN_NAMESPACE namespace moe {
 #define MOE_END_NAMESPACE }
+
+namespace moe {
+    // currently has no functionality
+    inline String asset(const StringView path) {
+        return String(path);
+    }
+}// namespace moe

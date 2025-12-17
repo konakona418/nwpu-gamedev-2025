@@ -62,10 +62,25 @@ namespace Details {
 
         size_t bufSize = 0;
         auto fileBuf = FileReader::s_instance->readFile(path.string(), bufSize);
-        bool success = loader.LoadASCIIFromString(
-                &model, &err, &warn,
-                reinterpret_cast<const char*>(fileBuf->data()),
-                bufSize, parentDir.string());
+        if (!fileBuf) {
+            Logger::error("Failed to load glTF file: {}", path.string());
+            MOE_ASSERT(false, "Failed to load glTF file");
+        }
+
+        bool isBinary = path.extension() == ".glb";
+        bool success = false;
+        if (isBinary) {
+            success = loader.LoadBinaryFromMemory(
+                    &model, &err, &warn,
+                    reinterpret_cast<const unsigned char*>(fileBuf->data()),
+                    bufSize, parentDir.string());
+        } else {
+            success = loader.LoadASCIIFromString(
+                    &model, &err, &warn,
+                    reinterpret_cast<const char*>(fileBuf->data()),
+                    bufSize, parentDir.string());
+        }
+
         if (!warn.empty()) {
             Logger::warn("GLTF loader warning: {}", warn);
         }

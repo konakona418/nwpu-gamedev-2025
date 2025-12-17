@@ -2,9 +2,17 @@
 
 #include "GameState.hpp"
 
+#include "Audio/AudioEngine.hpp"
+#include "Physics/PhysicsEngine.hpp"
+#include "Render/Vulkan/VulkanEngine.hpp"
+
 namespace game {
+    struct App;
+
     struct GameManager {
     public:
+        GameManager(App* app) : m_app(app) {}
+
         void pushState(moe::Ref<GameState> state) {
             m_gameStateStack.push_back(state);
             moe::Logger::debug("state {} pushed", state->getName());
@@ -22,15 +30,24 @@ namespace game {
 
         void update(float deltaTimeSecs) {
             if (m_gameStateStack.empty()) return;
-            m_gameStateStack.back()->_onUpdate(*this, deltaTimeSecs);
+            for (auto& state: m_gameStateStack) {
+                state->_onUpdate(*this, deltaTimeSecs);
+            }
         }
 
         void physicsUpdate(float deltaTimeSecs) {
             if (m_gameStateStack.empty()) return;
-            m_gameStateStack.back()->_onPhysicsUpdate(*this, deltaTimeSecs);
+            for (auto& state: m_gameStateStack) {
+                state->_onPhysicsUpdate(*this, deltaTimeSecs);
+            }
         }
+
+        moe::VulkanEngine& renderer();
+        moe::PhysicsEngine& physics();
+        moe::AudioEngineInterface& audio();
 
     private:
         moe::Vector<moe::Ref<game::GameState>> m_gameStateStack;
+        App* m_app = nullptr;
     };
 }// namespace game

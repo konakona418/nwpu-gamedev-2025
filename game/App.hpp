@@ -11,6 +11,8 @@
 namespace game {
     struct App {
     public:
+        friend struct game::GameManager;
+
         App() = default;
 
         void init();
@@ -22,6 +24,6 @@ namespace game {
         moe::PhysicsEngine* m_physicsEngine;
         moe::UniquePtr<moe::AudioEngineInterface> m_audioEngine;
 
-        game::GameManager m_gameManager;
+        moe::UniquePtr<game::GameManager> m_gameManager;
     };
 }// namespace game

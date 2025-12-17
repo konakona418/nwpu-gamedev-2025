@@ -124,6 +124,13 @@ public:
 
     struct SwapBuffer {
         UnorderedMap<JPH::BodyID, Physics::ObjectSnapshot> objectSnapshots;
+
+        Optional<Physics::ObjectSnapshot> getSnapshot(JPH::BodyID id) const {
+            if (auto it = objectSnapshots.find(id); it != objectSnapshots.end()) {
+                return it->second;
+            }
+            return {};
+        }
     };
 
     void init();
@@ -148,6 +155,13 @@ public:
     void dispatchOnPhysicsThread(F&& fn) {
         dispatchOnPhysicsThread(Function<void(PhysicsEngine&)>(std::forward<F>(fn)));
     }
+
+    JPH::PhysicsSystem& getPhysicsSystem() { return *m_physicsSystem; }
+
+    const SwapBuffer& getCurrentRead() const { return m_swapBuffer.getReadBuffer(); }
+
+    // invoke this every frame to update the read buffer
+    void updateReadBuffer() { m_swapBuffer.updateReadBuffer(); }
 
 private:
     PhysicsEngine() = default;

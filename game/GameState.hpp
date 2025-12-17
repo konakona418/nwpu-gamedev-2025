@@ -10,7 +10,7 @@ namespace game {
     public:
         virtual ~GameState() = default;
 
-        virtual const moe::String& getName() const = 0;
+        virtual const moe::StringView getName() const = 0;
 
         virtual void onEnter(GameManager& ctx) {};
         virtual void onUpdate(GameManager& ctx, float deltaTimeSecs) {};

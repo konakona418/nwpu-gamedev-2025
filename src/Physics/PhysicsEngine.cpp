@@ -116,7 +116,7 @@ void PhysicsEngine::syncPhysicsToSwapBuffer() {
     }
 
     // swap buffers
-    m_swapBuffer.swap();
+    m_swapBuffer.publish();
 }
 
 void PhysicsEngine::executeDispatchedFunctions() {
