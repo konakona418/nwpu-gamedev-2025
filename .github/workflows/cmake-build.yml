@@ -41,6 +41,9 @@ jobs:
           - os: ubuntu-latest
             c_compiler: clang
 
+    env:
+      SCCACHE_GHA_ENABLED: "true"
+
     steps:
     - uses: actions/checkout@v4
       with:
@@ -77,13 +80,8 @@ jobs:
             libogg-dev \
             libfreetype6-dev
 
-    - name: Cache CMake build directory
-      uses: actions/cache@v4.2.3
-      with:
-        path: build
-        key: ${{ runner.os }}-cmake-${{ matrix.c_compiler }}-${{ matrix.build_type }}-${{ hashFiles('**/CMakeLists.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-cmake-${{ matrix.c_compiler }}-${{ matrix.build_type }}-
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
@@ -94,6 +92,8 @@ jobs:
         -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_C_COMPILER_LAUNCHER=sccache
+        -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
         -S ${{ github.workspace }}
 
     - name: Build
