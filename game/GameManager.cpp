@@ -15,4 +15,8 @@ namespace game {
     moe::AudioEngineInterface& GameManager::audio() {
         return *m_app->m_audioEngine;
     }
+
+    game::Input& GameManager::input() {
+        return *m_app->m_input;
+    }
 }// namespace game

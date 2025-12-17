@@ -1,5 +1,6 @@
 #include "App.hpp"
 
+#include "State/LocalPlayerState.hpp"
 #include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
 
@@ -26,6 +27,8 @@ namespace game {
 
         m_graphicsEngine = std::make_unique<moe::VulkanEngine>();
         m_graphicsEngine->init();
+
+        m_input = std::make_unique<Input>(this);
     }
 
     void App::shutdown() {
@@ -46,14 +49,17 @@ namespace game {
         auto pgstate = moe::Ref(new State::PlaygroundState());
         m_gameManager->pushState(pgstate);
 
+        auto playerState = moe::Ref(new State::LocalPlayerState());
+        m_gameManager->pushState(playerState);
+
         m_graphicsEngine->getDefaultCamera().setPosition(glm::vec3(0, 2, 0));
 
         while (running) {
             m_graphicsEngine->beginFrame();
 
-            auto& inputBus = m_graphicsEngine->getInputBus();
-            while (auto e = inputBus.pollEvent()) {
-                if (e->is<moe::WindowEvent::Close>()) {
+            m_input->update();
+            for (auto& e: m_input->m_fallThroughEvents) {
+                if (auto closeEvent = e.getIf<moe::WindowEvent::Close>()) {
                     running = false;
                 }
             }
@@ -70,5 +76,56 @@ namespace game {
 
             m_graphicsEngine->endFrame();
         }
+    }
+
+    Input::Input(App* app) : m_app(app) {
+        m_inputBus = &app->m_graphicsEngine->getInputBus();
+    }
+
+    void Input::addKeyMapping(moe::StringView keyName, int keyCode) {
+        auto keyMap = moe::Ref(new KeyMap());
+        keyMap->pressed = false;
+
+        m_keyMap[keyCode] = keyMap;
+        m_keyNameMap[moe::String(keyName)] = keyMap;
+    }
+
+    void Input::removeKeyMapping(moe::StringView keyName) {
+        auto it = m_keyNameMap.find(moe::String(keyName));
+        if (it != m_keyNameMap.end()) {
+            m_keyMap.erase(it->second->keyCode);
+            m_keyNameMap.erase(it);
+        }
+    }
+
+    bool Input::isKeyPressed(moe::StringView keyName) const {
+        auto it = m_keyNameMap.find(moe::String(keyName));
+        if (it != m_keyNameMap.end()) {
+            return it->second->pressed;
+        }
+
+        return false;
+    }
+
+    void Input::setMouseState(bool isFree) {
+        m_inputBus->setMouseValid(isFree);
+    }
+
+    void Input::update() {
+        m_fallThroughEvents.clear();
+        m_mouseDelta = std::make_pair(0, 0);
+        while (auto e = m_inputBus->pollEvent()) {
+            if (auto mouseEvent = e->getIf<moe::WindowEvent::MouseMove>()) {
+                m_mouseDelta = std::make_pair(mouseEvent->deltaX, mouseEvent->deltaY);
+            }
+
+            m_fallThroughEvents.push_back(e.value());
+        }
+
+        for (auto& [keyCode, keyMap]: m_keyMap) {
+            keyMap->pressed = m_inputBus->isKeyPressed(keyCode);
+        }
+
+        // ! todo: handle mouse events
     }
 }// namespace game
