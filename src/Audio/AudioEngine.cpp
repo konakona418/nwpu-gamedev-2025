@@ -47,6 +47,9 @@ void AudioEngine::mainAudioLoop() {
 void AudioEngine::initAndLaunchMainAudioLoop() {
     m_running.store(true);
     m_audioThread = std::thread([this]() {
+        Logger::setThreadName("Audio");
+        Logger::info("Audio engine main loop started");
+
         static std::once_flag initFlag;
         std::call_once(initFlag, [this]() {
             MOE_ASSERT(!m_initialized, "AudioEngine already initialized");

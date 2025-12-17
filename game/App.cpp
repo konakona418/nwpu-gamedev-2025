@@ -2,6 +2,8 @@
 
 namespace game {
     void App::init() {
+        moe::Logger::setThreadName("Graphics");
+
         moe::MainScheduler::getInstance().init();
         moe::ThreadPoolScheduler::getInstance().init();
         moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());

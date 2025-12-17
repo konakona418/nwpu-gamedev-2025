@@ -42,6 +42,11 @@ namespace moe {
         if (m_logger) m_logger->flush();
     }
 
+    void Logger::setThreadName(std::string_view name) {
+        auto logger = get();
+        logger->m_threadNames[std::this_thread::get_id()] = name;
+    }
+
     std::shared_ptr<Logger> Logger::get() {
         static std::once_flag flag;
         std::call_once(flag, []() {

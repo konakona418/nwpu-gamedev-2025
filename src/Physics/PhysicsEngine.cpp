@@ -69,6 +69,9 @@ void PhysicsEngine::launchPhysicsThread() {
 }
 
 void PhysicsEngine::mainLoop() {
+    Logger::setThreadName("Physics");
+
+    Logger::info("Physics thread started");
     auto lastTime = std::chrono::high_resolution_clock::now();
     while (m_running.load()) {
         auto currentTime = std::chrono::high_resolution_clock::now();

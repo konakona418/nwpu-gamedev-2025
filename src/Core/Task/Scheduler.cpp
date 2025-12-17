@@ -52,7 +52,9 @@ void ThreadPoolScheduler::start(size_t threadCount) {
 
     m_workers.reserve(threadCount);
     for (size_t i = 0; i < threadCount; ++i) {
-        m_workers.emplace_back([this]() {
+        m_workers.emplace_back([this, i]() {
+            Logger::setThreadName(fmt::format("Worker#{}", i));
+            Logger::info("Scheduler thread Worker#{} started", i);
             workerMain();
         });
     }
