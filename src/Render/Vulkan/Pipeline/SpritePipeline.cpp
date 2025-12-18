@@ -67,9 +67,11 @@ namespace moe {
                 VulkanAllocatedImage& renderTarget) {
             MOE_ASSERT(m_initialized, "SpritePipeline not initialized");
 
+            VkClearValue clearColor{.color = {{0.0f, 0.0f, 0.0f, 0.0f}}};
+
             auto colorAttachment = VkInit::renderingAttachmentInfo(
                     renderTarget.imageView,
-                    nullptr,
+                    &clearColor,
                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             auto extent = VkExtent2D{

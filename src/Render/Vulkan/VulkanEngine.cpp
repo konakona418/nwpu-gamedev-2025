@@ -716,9 +716,14 @@ namespace moe {
                 *m_caches.renderTargetCache.get(m_defaultRenderTargetId).value();
         auto& renderView = *m_caches.renderViewCache.get(m_defaultRenderViewId).value();
 
+        auto& renderTarget2d = *m_caches.renderTargetCache.get(m_defaultSpriteRenderViewId).value();
+        auto& renderView2d = *m_caches.renderViewCache.get(m_defaultSpriteRenderViewId).value();
+
         auto drawImageId = renderView.drawImageId;
         auto depthImageId = renderView.depthImageId;
         auto resolveImageId = renderView.msaaResolveImageId;
+
+        auto drawImage2dId = renderView2d.drawImageId;
 
         auto drawImage = *m_caches.imageCache.getImage(drawImageId);
         auto depthImage = *m_caches.imageCache.getImage(depthImageId);
@@ -726,6 +731,8 @@ namespace moe {
         if (resolveImageId != NULL_IMAGE_ID) {
             resolveImage = *m_caches.imageCache.getImage(resolveImageId);
         }
+
+        auto drawImage2d = *m_caches.imageCache.getImage(drawImage2dId);
 
         // clear previous frame's render packets
         renderTarget.resetDynamicState();
@@ -969,17 +976,24 @@ namespace moe {
                 VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                 VK_IMAGE_LAYOUT_GENERAL);
 
+        VkUtils::transitionImage(
+                commandBuffer,
+                drawImage2d.image,
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_GENERAL);
+
         auto& sprites = m_renderBus.getSpriteRenderCommands();
         m_pipelines.spritePipeline.draw(
                 commandBuffer,
                 m_caches.meshCache,
                 sprites,
                 m_defaultSpriteCamera->getViewProjectionMatrix(),
-                drawImage);
+                drawImage2d);
 
         // ! post fx
 
         m_pipelines.postFxGraph.copyToInput(commandBuffer, "#input", drawImage, VK_IMAGE_LAYOUT_GENERAL);
+        m_pipelines.postFxGraph.copyToInput(commandBuffer, "#input_2d", drawImage2d, VK_IMAGE_LAYOUT_GENERAL);
         m_pipelines.postFxGraph.exec(commandBuffer);
         m_pipelines.postFxGraph.copyFromOutput(commandBuffer, drawImage, VK_IMAGE_LAYOUT_GENERAL);
 
@@ -1571,6 +1585,7 @@ namespace moe {
         m_pipelines.csmPipeline.init(*this);
         m_pipelines.gBufferPipeline.init(*this);
         m_pipelines.deferredLightingPipeline.init(*this);
+        m_pipelines.blendTwoPipeline.init(*this);
         m_pipelines.spritePipeline.init(*this);
         m_pipelines.fxaaPipeline.init(*this);
         m_pipelines.gammaCorrectionPipeline.init(*this);
@@ -1578,20 +1593,7 @@ namespace moe {
         initAndCompilePostFXGraph();
 
         // init default render target and view
-        m_defaultRenderTargetId = m_caches.renderTargetCache.load(VulkanRenderTarget{}).first;
-        auto view = VulkanRenderView{};
-        view.init(
-                this,
-                m_defaultRenderTargetId,
-                m_defaultCamera.get(),
-                Viewport{
-                        0,
-                        0,
-                        m_drawExtent.width,
-                        m_drawExtent.height,
-                });
-        m_defaultRenderViewId =
-                m_caches.renderViewCache.load(std::move(view)).first;
+        initRenderViewsAndTargets();
 
         m_pipelines.skyBoxImageId = m_caches.imageCache.loadCubeMapFromFiles(
                 {"skybox/right.jpg",
@@ -1617,6 +1619,7 @@ namespace moe {
             m_pipelines.gammaCorrectionPipeline.destroy();
             m_pipelines.fxaaPipeline.destroy();
             m_pipelines.spritePipeline.destroy();
+            m_pipelines.blendTwoPipeline.destroy();
             m_pipelines.deferredLightingPipeline.destroy();
             m_pipelines.gBufferPipeline.destroy();
             m_pipelines.csmPipeline.destroy();
@@ -1637,6 +1640,7 @@ namespace moe {
                 1};
         m_pipelines.postFxGraph.init(*this);
         m_pipelines.postFxGraph.addGlobalInputName("#input", m_drawImageFormat, drawExtent3D);
+        m_pipelines.postFxGraph.addGlobalInputName("#input_2d", m_drawImageFormat, drawExtent3D);
         m_pipelines.postFxGraph.addStage(
                 "fxaa", {"#input"}, m_drawImageFormat,
                 drawExtent3D,
@@ -1644,7 +1648,13 @@ namespace moe {
                     m_pipelines.fxaaPipeline.draw(cmdBuffer, inputs[0]);
                 });
         m_pipelines.postFxGraph.addStage(
-                "gamma_correction", {"fxaa"}, m_swapchainImageFormat,
+                "blend_two", {"fxaa", "#input_2d"}, m_drawImageFormat, drawExtent3D,
+                [&](VkCommandBuffer cmdBuffer, Vector<ImageId>& inputs) {
+                    // for ui, use full opacity
+                    m_pipelines.blendTwoPipeline.draw(cmdBuffer, inputs[0], inputs[1], 1.0f);
+                });
+        m_pipelines.postFxGraph.addStage(
+                "gamma_correction", {"blend_two"}, m_swapchainImageFormat,
                 drawExtent3D,
                 [&](VkCommandBuffer cmdBuffer, Vector<ImageId>& inputs) {
                     m_pipelines.gammaCorrectionPipeline.draw(cmdBuffer, inputs[0]);
@@ -1654,6 +1664,38 @@ namespace moe {
         m_pipelines.postFxGraph.compile();
 
         Logger::info("Post FX Graph Compilation Log:\n{}", m_pipelines.postFxGraph.getCompilationLog());
+    }
+
+    void VulkanEngine::initRenderViewsAndTargets() {
+        m_defaultRenderTargetId = m_caches.renderTargetCache.load(VulkanRenderTarget{}).first;
+        auto view = VulkanRenderView{};
+        view.init(
+                this,
+                m_defaultRenderTargetId,
+                m_defaultCamera.get(),
+                Viewport{
+                        0,
+                        0,
+                        m_drawExtent.width,
+                        m_drawExtent.height,
+                });
+        m_defaultRenderViewId =
+                m_caches.renderViewCache.load(std::move(view)).first;
+
+        m_defaultSpriteRenderTargetId = m_caches.renderTargetCache.load(VulkanRenderTarget{}).first;
+        auto spriteView = VulkanRenderView{};
+        spriteView.init(
+                this,
+                m_defaultSpriteRenderTargetId,
+                m_defaultSpriteCamera.get(),
+                Viewport{
+                        0,
+                        0,
+                        m_drawExtent.width,
+                        m_drawExtent.height,
+                });
+        m_defaultSpriteRenderViewId =
+                m_caches.renderViewCache.load(std::move(spriteView)).first;
     }
 
     void VulkanEngine::queueEvent(WindowEvent event) {

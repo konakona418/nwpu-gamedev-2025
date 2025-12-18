@@ -66,5 +66,34 @@ namespace moe {
             VkPipeline m_pipeline;
         };
 
+        struct BlendTwoPipeline {
+        public:
+            BlendTwoPipeline() = default;
+            ~BlendTwoPipeline() = default;
+
+            void init(VulkanEngine& engine);
+
+            void draw(
+                    VkCommandBuffer cmdBuffer,
+                    ImageId inputImageDownId,
+                    ImageId inputImageUpId,
+                    float alpha);
+
+            void destroy();
+
+        private:
+            struct PushConstants {
+                ImageId inputImageUpId;
+                ImageId inputImageDownId;
+                float alpha;
+            };
+
+            VulkanEngine* m_engine{nullptr};
+            bool m_initialized{false};
+
+            VkPipelineLayout m_pipelineLayout;
+            VkPipeline m_pipeline;
+        };
+
     }// namespace Pipeline
 }// namespace moe

@@ -130,6 +130,7 @@ namespace moe {
         RenderTargetId m_defaultRenderTargetId{NULL_RENDER_TARGET_ID};
         RenderViewId m_defaultRenderViewId{NULL_RENDER_VIEW_ID};
 
+        RenderTargetId m_defaultSpriteRenderTargetId{NULL_RENDER_TARGET_ID};
         RenderViewId m_defaultSpriteRenderViewId{NULL_RENDER_VIEW_ID};
 
         Pinned<VulkanCamera> m_defaultCamera = makePinned<VulkanCamera>(
@@ -167,6 +168,7 @@ namespace moe {
             Pipeline::SpritePipeline spritePipeline;
             Pipeline::DeferredLightingPipeline deferredLightingPipeline;
             Pipeline::FXAAPipeline fxaaPipeline;
+            Pipeline::BlendTwoPipeline blendTwoPipeline;
             Pipeline::GammaCorrectionPipeline gammaCorrectionPipeline;
 
             VulkanPostFXGraph postFxGraph;
@@ -301,6 +303,8 @@ namespace moe {
         void initPipelines();
 
         void initAndCompilePostFXGraph();
+
+        void initRenderViewsAndTargets();
 
         void drawImGUI(VkCommandBuffer commandBuffer, VkImageView drawTarget);
 
