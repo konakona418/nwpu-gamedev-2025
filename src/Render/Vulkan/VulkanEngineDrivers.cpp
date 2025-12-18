@@ -147,6 +147,20 @@ namespace moe {
             StringView text,
             const Transform& transform,
             const Color& color) {
+        return submitTextSpriteRender(
+                fontId,
+                fontSize,
+                utf8::utf8to32(text),
+                transform,
+                color);
+    }
+
+    VulkanRenderObjectBus& VulkanRenderObjectBus::submitTextSpriteRender(
+            FontId fontId,
+            float fontSize,
+            U32StringView u32Text,
+            const Transform& transform,
+            const Color& color) {
         MOE_ASSERT(m_initialized, "VulkanRenderObjectBus not initialized");
         if (m_spriteRenderCommands.size() >= MAX_RENDER_COMMANDS) {
             Logger::warn("Render object bus reached max sprite render commands(10240), check if dynamic state is reset properly; exceeding commands will be ignored");
@@ -175,9 +189,8 @@ namespace moe {
 
         auto advanceTransform = transform;
 
-        std::u32string text32 = utf8::utf8to32(text);
-        for (size_t i = 0; i < text32.size(); ++i) {
-            char32_t c = text32[i];
+        for (size_t i = 0; i < u32Text.size(); ++i) {
+            char32_t c = u32Text[i];
             const auto& glyphIt = fontRef->getCharacters(fontSize).find(c);
             if (glyphIt == fontRef->getCharacters(fontSize).end()) {
                 fontRef->addCharToLazyLoadQueue(c, fontSize);

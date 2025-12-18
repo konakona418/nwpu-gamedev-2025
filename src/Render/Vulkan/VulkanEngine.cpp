@@ -1099,7 +1099,8 @@ namespace moe {
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        // glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+        // disable resize for simplicity
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
         m_window = glfwCreateWindow(m_windowExtent.width, m_windowExtent.height, "Moe Graphics Engine", nullptr, nullptr);
 
