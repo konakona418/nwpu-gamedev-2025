@@ -1,6 +1,7 @@
 #include "App.hpp"
 
 #include "State/LocalPlayerState.hpp"
+#include "State/PauseUIState.hpp"
 #include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
 
@@ -52,7 +53,8 @@ namespace game {
         auto playerState = moe::Ref(new State::LocalPlayerState());
         m_gameManager->pushState(playerState);
 
-        m_graphicsEngine->getDefaultCamera().setPosition(glm::vec3(0, 2, 0));
+        auto pauseState = moe::Ref(new State::PauseUIState());
+        m_gameManager->pushState(pauseState);
 
         while (running) {
             m_graphicsEngine->beginFrame();
