@@ -80,7 +80,13 @@ public:
         return Ref<T>(static_cast<T*>(this));
     }
 
-    template<typename U>
+    template<
+            typename U,
+            typename = Meta::EnableIfT<
+                    Meta::DisjunctionV<
+                            Meta::IsBaseOfV<T, U>,
+                            Meta::IsBaseOfV<U, T>,
+                            Meta::IsSameV<T, U>>>>
     Ref<U> asRef() {
         MOE_ASSERT(m_refCount.load(std::memory_order_relaxed) > 0,
                    "intoRef called on object with zero ref count. "
