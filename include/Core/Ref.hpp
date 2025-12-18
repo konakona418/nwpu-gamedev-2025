@@ -166,4 +166,15 @@ private:
     T* m_ptr{nullptr};
 };
 
+template<
+        typename T,
+        typename... Args,
+        typename = Meta::EnableIfT<
+                Meta::ConjunctionV<
+                        Meta::IsRefCountedV<T>,
+                        Meta::IsConstructibleV<T, Args...>>>>
+Ref<T> makeRef(Args&&... args) {
+    return Ref<T>(new T(std::forward<Args>(args)...));
+}
+
 MOE_END_NAMESPACE

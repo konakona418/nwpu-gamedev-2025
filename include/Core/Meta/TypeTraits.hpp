@@ -224,7 +224,7 @@ namespace Meta {
     struct Conjunction<B> : IntegralConstant<bool, B> {};
 
     template<bool B1, bool... Bs>
-    struct Conjunction<B1, Bs...> : IntegralConstant<bool, Conditional<B1, Conjunction<Bs...>, FalseType>::value> {};
+    struct Conjunction<B1, Bs...> : IntegralConstant<bool, ConditionalT<B1, Conjunction<Bs...>, FalseType>::value> {};
 
     template<bool... Bs>
     constexpr bool ConjunctionV = Conjunction<Bs...>::value;
