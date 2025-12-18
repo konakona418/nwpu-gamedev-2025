@@ -307,4 +307,63 @@ namespace moe {
         if (it == m_faces.end()) return NULL_IMAGE_ID;
         return it->second.fontImageId;
     }
+
+    VulkanFont::MetricResult VulkanFont::measureText(std::u32string_view text, float fontSize) {
+        MetricResult result{0.0f, 0.0f};
+        uint32_t key = faceKey(fontSize);
+        auto faceIt = m_faces.find(key);
+        if (faceIt == m_faces.end()) {
+            // try to ensure size first
+            ensureSize(fontSize, "");
+            faceIt = m_faces.find(key);
+
+            // though not possible but just in case o(*￣▽￣*)ブ
+            if (faceIt == m_faces.end()) {
+                return result;
+            }
+        }
+
+        auto& characters = faceIt->second.characters;
+
+        // search for missing characters and force load them
+        Vector<char32_t> missingChars;
+        for (char32_t c: text) {
+            if (characters.find(c) == characters.end()) {
+                missingChars.push_back(c);
+            }
+        }
+        if (!missingChars.empty()) {
+            loadFontInternal(faceIt->second, std::u32string_view(missingChars.data(), missingChars.size()));
+        }
+
+        float penX = 0.0f;
+        float maxHeight = 0.0f;
+
+        for (char32_t c: text) {
+            auto glyphIt = characters.find(c);
+            if (glyphIt == characters.end()) {
+                // try fallback to '?'
+                if (characters.find(U'?') != characters.end()) {
+                    glyphIt = characters.find(U'?');
+                } else {
+                    // still not found, skip
+                    continue;
+                }
+            }
+
+            const auto& glyph = glyphIt->second;
+
+            // convert from 1/64 pixels to pixels
+            penX += static_cast<float>(glyph.advance >> 6);
+            float glyphHeight = static_cast<float>(glyph.size.y);
+            if (glyphHeight > maxHeight) {
+                maxHeight = glyphHeight;
+            }
+        }
+
+        result.width = penX;
+        result.height = maxHeight;
+        return result;
+    }
+
 }// namespace moe

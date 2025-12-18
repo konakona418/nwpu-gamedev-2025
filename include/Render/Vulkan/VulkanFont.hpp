@@ -186,6 +186,13 @@ namespace moe {
             Vector<char32_t> pendingLazyLoadGlyphs;
         };
 
+        struct MetricResult {
+            float width{0.0f};
+            float height{0.0f};
+        };
+
+        MetricResult measureText(std::u32string_view text, float fontSize);
+
     private:
         static constexpr int32_t CELL_PADDING = 1;
 
