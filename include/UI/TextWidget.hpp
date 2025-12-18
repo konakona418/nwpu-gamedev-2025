@@ -64,7 +64,7 @@ public:
         return Span<const Line>(m_lines.data(), m_lines.size());
     }
 
-private:
+protected:
     U32String m_text;
 
     float m_fontSize;

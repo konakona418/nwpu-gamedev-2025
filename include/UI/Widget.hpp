@@ -22,7 +22,7 @@ public:
 
     virtual void addChild(Ref<Widget> child) {
         m_children.push_back(child);
-        child->m_parent = this->intoRef();
+        child->m_parent = this;
     }
 
     const Vector<Ref<Widget>>& children() const {
@@ -50,7 +50,7 @@ public:
     }
 
 protected:
-    Ref<Widget> m_parent{nullptr};
+    Widget* m_parent{nullptr};
     Vector<Ref<Widget>> m_children;
 
     LayoutBorders m_margin;

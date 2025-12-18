@@ -143,6 +143,13 @@ namespace moe {
                 const Transform& transform,
                 const Color& color);
 
+        VulkanRenderObjectBus& submitTextSpriteRender(
+                FontId fontId,
+                float fontSize,
+                U32StringView u32Text,
+                const Transform& transform,
+                const Color& color);
+
         ComputeSkinHandleId submitComputeSkin(ComputeSkinCommand command) {
             MOE_ASSERT(m_initialized, "VulkanRenderObjectBus not initialized");
             if (m_computeSkinCommands.size() >= MAX_RENDER_COMMANDS) {

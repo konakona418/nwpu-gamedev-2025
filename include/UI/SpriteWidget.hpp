@@ -22,7 +22,7 @@ public:
 
     void layout(const LayoutRect& rectAssigned) override;
 
-private:
+protected:
     LayoutSize m_spriteSize;
     LayoutRect m_spriteRenderRect;
 };

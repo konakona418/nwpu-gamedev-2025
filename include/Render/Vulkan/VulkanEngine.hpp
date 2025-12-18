@@ -265,6 +265,10 @@ namespace moe {
 
         bool isMultisamplingEnabled() const { return m_msaaSamples != VK_SAMPLE_COUNT_1_BIT; }
 
+        Pair<uint32_t, uint32_t> getCanvasSize() const {
+            return {m_drawExtent.width, m_drawExtent.height};
+        }
+
     private:
         void initWindow();
 
