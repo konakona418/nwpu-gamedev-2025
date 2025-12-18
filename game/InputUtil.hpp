@@ -58,7 +58,7 @@ namespace game {
                 return glm::vec3(0.0f, 0.0f, 0.0f);
             }
 
-            return movementVector;
+            return glm::normalize(movementVector);
         }
     };
 }// namespace game

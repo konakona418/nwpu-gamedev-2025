@@ -75,6 +75,7 @@ namespace game::State {
 
         auto front = cam.getFront();
         front.y = 0;// proj to xOz
+        front = glm::normalize(front);
         auto dir = movementHelper.realMovementVec(front, cam.getRight(), cam.getUp());
 
         m_movingDirection.publish(std::move(dir));
@@ -91,9 +92,6 @@ namespace game::State {
     }
 
     void LocalPlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
-        auto dir = m_movingDirection.get();
-        auto velocity = dir * PLAYER_SPEED;
-
         auto characterOpt = m_character.get();
         if (!characterOpt) {
             return;
@@ -104,15 +102,39 @@ namespace game::State {
             return;
         }
 
-        // check collision
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
+
+        auto dir = m_movingDirection.get();
+        auto velocity = dir * PLAYER_SPEED;
+
+        auto lastVel = character->GetLinearVelocity();
+
+        auto velXoZ = moe::Physics::toJoltType<JPH::Vec3>(glm::vec3(velocity.x, 0, velocity.z));
+        auto velY = velocity.y;
+
+        auto groundState = character->GetGroundState();
+        bool onGround = groundState != JPH::CharacterVirtual::EGroundState::InAir &&     // flying
+                        groundState != JPH::CharacterVirtual::EGroundState::NotSupported;// about to fall
+
+        auto gravity = -character->GetUp() * physicsSystem.GetGravity().Length();
+        if (onGround) {
+            // on ground, use input Y velocity
+            velY = velocity.y;
+        } else {
+            // in air, preserve Y velocity
+            velY = lastVel.GetY() + gravity.GetY() * deltaTime;
+        }
+
+        JPH::Vec3 finalVel(velXoZ.GetX(), velY, velXoZ.GetZ());
+
+        // check collision
         JPH::CharacterVirtual::ExtendedUpdateSettings settings;
         // todo: fill in this settings, to allow character to climb up
 
-        character->SetLinearVelocity(moe::Physics::toJoltType<JPH::Vec3>(velocity));
+        character->SetLinearVelocity(finalVel);
         character->ExtendedUpdate(
                 deltaTime,
-                -character->GetUp() * physicsSystem.GetGravity().Length(),
+                gravity,
                 settings,
                 physicsSystem.GetDefaultBroadPhaseLayerFilter(
                         moe::Physics::Details::Layers::MOVING),
