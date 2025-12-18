@@ -2,9 +2,10 @@
 
 #include "GameState.hpp"
 
+#include "Core/DBuffer.hpp"
 #include "Core/Deferred.hpp"
-#include "Core/SBuffer.hpp"
 #include "Math/Common.hpp"
+
 
 #include "Physics/JoltIncludes.hpp"
 
@@ -30,8 +31,8 @@ namespace game::State {
         void onPhysicsUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
-        moe::SBuffer<glm::vec3> m_movingDirection;
-        moe::SBuffer<glm::vec3> m_realPosition;
+        moe::DBuffer<glm::vec3> m_movingDirection;
+        moe::DBuffer<glm::vec3> m_realPosition;
         moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
     };
 }// namespace game::State

@@ -3,8 +3,9 @@
 #include "Physics/JoltIncludes.hpp"
 #include "Physics/ObjectSnapshot.hpp"
 
-#include "Core/ABuffer.hpp"
 #include "Core/Meta/Feature.hpp"
+#include "Core/TBuffer.hpp"
+
 
 #include <stdarg.h>
 
@@ -171,7 +172,7 @@ private:
 
     bool m_initialized{false};
 
-    ABuffer<SwapBuffer> m_swapBuffer;
+    TBuffer<SwapBuffer> m_swapBuffer;
 
     std::atomic_bool m_running{false};
     std::thread m_physicsThread;

@@ -4,47 +4,21 @@
 
 MOE_BEGIN_NAMESPACE
 
+// atomic buffer for simple data synchronization between threads
+// T is required to be trivially copyable
 template<typename T>
 struct ABuffer {
-    static constexpr size_t SWAP_COUNT = 3;
-
-    ABuffer() {
-        m_writeBuffer = &m_buffers[0];
-        m_pendingBuffer.store(&m_buffers[1], std::memory_order_relaxed);
-        m_readBuffer = &m_buffers[2];
+public:
+    void publish(const T& value) {
+        m_data.store(value, std::memory_order_release);
     }
 
-    T& getWriteBuffer() {
-        return *m_writeBuffer;
-    }
-
-    const T& getReadBuffer() const {
-        return *m_readBuffer;
-    }
-
-    void publish() {
-        m_writeBuffer = m_pendingBuffer.exchange(m_writeBuffer, std::memory_order_acq_rel);
-        m_hasNewData.store(true, std::memory_order_release);
-    }
-
-    bool updateReadBuffer() {
-        if (!m_hasNewData.load(std::memory_order_acquire)) {
-            return false;
-        }
-
-        m_readBuffer = m_pendingBuffer.exchange(m_readBuffer, std::memory_order_acq_rel);
-        m_hasNewData.store(false, std::memory_order_release);
-        return true;
+    T get() const {
+        return m_data.load(std::memory_order_acquire);
     }
 
 private:
-    T m_buffers[SWAP_COUNT];
-
-    T* m_writeBuffer{nullptr};
-    std::atomic<T*> m_pendingBuffer{nullptr};
-    T* m_readBuffer{nullptr};
-
-    std::atomic<bool> m_hasNewData{false};
+    std::atomic<T> m_data;
 };
 
 MOE_END_NAMESPACE
