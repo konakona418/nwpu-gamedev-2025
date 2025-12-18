@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GameManager.hpp"
 #include "GameState.hpp"
 
 #include "UI/BoxWidget.hpp"
@@ -19,7 +20,11 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
+        InputLockToken m_inputLockToken{NO_LOCK_TOKEN};
+
+        // ! fixme: font loading will be triggered every onEnter; optimize later
         moe::FontId m_fontId{moe::NULL_FONT_ID};
+
         moe::Ref<moe::RootWidget> m_rootWidget;
         moe::Ref<moe::VkTextWidget> m_titleTextWidget;
         moe::Ref<moe::VkButtonWidget> m_resumeButtonWidget;

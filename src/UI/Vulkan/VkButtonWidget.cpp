@@ -59,22 +59,18 @@ void VkButtonWidget::render(VulkanRenderObjectBus& renderer) {
     m_textWidget->render(renderer);
 }
 
-void VkButtonWidget::checkButtonState(const glm::vec2& cursorPos, bool isPressed) {
-    const auto& bounds = this->calculatedBounds();
-    bool isHovered = cursorPos.x >= bounds.x &&
-                     cursorPos.x <= bounds.x + bounds.width &&
-                     cursorPos.y >= bounds.y &&
-                     cursorPos.y <= bounds.y + bounds.height;
+bool VkButtonWidget::checkButtonState(const glm::vec2& cursorPos, bool isPressed) {
+    const auto& b = this->calculatedBounds();
+    bool isHovered = cursorPos.x >= b.x && cursorPos.x <= b.x + b.width &&
+                     cursorPos.y >= b.y && cursorPos.y <= b.y + b.height;
 
-    if (isHovered) {
-        if (isPressed) {
-            m_buttonState = ButtonState::Pressed;
-        } else {
-            m_buttonState = ButtonState::Hovered;
-        }
-    } else {
-        m_buttonState = ButtonState::Normal;
-    }
+    m_buttonState = isHovered ? (isPressed ? ButtonState::Pressed : ButtonState::Hovered)
+                              : ButtonState::Normal;
+
+    bool clicked = m_wasPressedLastFrame && !isPressed && isHovered;
+    m_wasPressedLastFrame = isPressed && isHovered;
+
+    return clicked;
 }
 
 MOE_END_NAMESPACE

@@ -1,10 +1,14 @@
 #include "State/PauseUIState.hpp"
+
+#include "App.hpp"
 #include "GameManager.hpp"
 
 #include "Render/Vulkan/VulkanEngine.hpp"
 
 namespace game::State {
     void PauseUIState::onEnter(GameManager& ctx) {
+        moe::Logger::info("Entering PauseUIState");
+
         m_fontId = ctx.renderer().getResourceLoader().load(moe::Loader::Font, moe::asset("assets/fonts/NotoSansSC-Regular.ttf"), 48.0f, "");
         // setup UI
         auto [width, height] = ctx.renderer().getCanvasSize();
@@ -22,7 +26,7 @@ namespace game::State {
                         U"Resume",
                         m_fontId,
                         24.f,
-                        moe::Colors::Blue,
+                        moe::Color::fromNormalized(50, 50, 50, 255),
                 },
                 moe::VkButtonWidget::ButtonPref{
                         .preferredSize = {200.f, 50.f},
@@ -37,9 +41,31 @@ namespace game::State {
         m_rootWidget->addChild(container);
 
         m_rootWidget->layout();
+
+        m_inputLockToken = 100;
+        auto input = ctx.input(m_inputLockToken);// lock input for this state
+        if (!input.isValid()) {
+            moe::Logger::error("PauseUIState::onEnter: failed to lock input");
+            return;
+        }
+
+        input->setMouseState(true);// enable mouse cursor
     }
 
     void PauseUIState::onExit(GameManager& ctx) {
+        moe::Logger::info("Exiting PauseUIState");
+
+        // release input lock
+        auto input = ctx.input(m_inputLockToken);
+        if (!input.isValid()) {
+            moe::Logger::error("PauseUIState::onExit: input is locked by another state");
+            return;
+        }
+
+        input->setMouseState(false);// disable mouse cursor
+        ctx.unlockInput(m_inputLockToken);
+        m_inputLockToken = NO_LOCK_TOKEN;
+
         // cleanup UI
         m_rootWidget = moe::Ref<moe::RootWidget>(nullptr);
         m_titleTextWidget = moe::Ref<moe::VkTextWidget>(nullptr);
@@ -51,6 +77,18 @@ namespace game::State {
         m_titleTextWidget->render(renderer);
         m_resumeButtonWidget->render(renderer);
 
-        // todo: handle button clicks
+        auto input = ctx.input(m_inputLockToken);
+        if (!input.isValid()) {
+            moe::Logger::error("PauseUIState::onUpdate: input is locked by another state");
+            return;
+        }
+
+        auto mousePos = input->getMousePosition();
+        bool isLMBPressed = input->getMouseButtonState(0).pressedLMB;
+
+        bool clicked = m_resumeButtonWidget->checkButtonState(glm::vec2(mousePos.first, mousePos.second), isLMBPressed);
+        if (clicked) {
+            ctx.popState();
+        }
     }
 }// namespace game::State

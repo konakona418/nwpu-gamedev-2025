@@ -87,9 +87,15 @@ namespace moe {
             m_setMouseValidFunc(valid);
         }
 
+        void* getNativeHandle() const {
+            MOE_ASSERT(m_getNativeHandleFunc != nullptr, "getNativeHandle function not set");
+            return m_getNativeHandleFunc();
+        }
+
     private:
         Deque<WindowEvent> m_pollingEvents;
         Function<bool(int)> m_isKeyPressedFunc{nullptr};
         Function<void(bool)> m_setMouseValidFunc{nullptr};
+        Function<void*()> m_getNativeHandleFunc{nullptr};
     };
 }// namespace moe

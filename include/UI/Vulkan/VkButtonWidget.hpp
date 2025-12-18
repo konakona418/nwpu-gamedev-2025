@@ -39,7 +39,7 @@ public:
 
     void render(VulkanRenderObjectBus& renderer) override;
 
-    void checkButtonState(const glm::vec2& cursorPos, bool isPressed);
+    bool checkButtonState(const glm::vec2& cursorPos, bool isPressed);
 
     void setButtonPref(const ButtonPref& buttonPref) {
         m_buttonPref = buttonPref;
@@ -61,6 +61,8 @@ protected:
         Hovered,
         Pressed
     } m_buttonState{ButtonState::Normal};
+
+    bool m_wasPressedLastFrame{false};
 };
 
 MOE_END_NAMESPACE

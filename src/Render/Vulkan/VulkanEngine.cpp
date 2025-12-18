@@ -1140,6 +1140,10 @@ namespace moe {
             }
         };
 
+        m_inputBus.m_getNativeHandleFunc = [this]() -> void* {
+            return static_cast<void*>(m_window);
+        };
+
         glfwSetWindowUserPointer(m_window, this);
 
         glfwSetWindowCloseCallback(m_window, [](auto* window) {
