@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Core/Meta/Feature.hpp"
+#include "Core/Resource/Image.hpp"
+
 #include "Render/Common.hpp"
 #include "Render/Vulkan/VulkanLight.hpp"
 #include "Render/Vulkan/VulkanRenderable.hpp"
@@ -18,7 +20,13 @@ namespace moe {
 
         ImageId load(Loader::ImageT, StringView path);
 
+        ImageId load(Loader::ImageT, Span<uint8_t> imageData, uint32_t width, uint32_t height);
+
+        ImageId load(Loader::ImageT, const Image& image);
+
         FontId load(Loader::FontT, StringView path, float fontSize, StringView glyphRange);
+
+        FontId load(Loader::FontT, Span<const uint8_t> fontData, float fontSize, StringView glyphRange);
 
         void init(VulkanEngine& engine) {
             m_engine = &engine;

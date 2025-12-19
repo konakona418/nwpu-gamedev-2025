@@ -8,12 +8,19 @@
 
 MOE_BEGIN_NAMESPACE
 
+struct BinaryFilePath {
+    StringView path;
+
+    BinaryFilePath(StringView p)
+        : path(p) {}
+};
+
 struct BinaryLoader {
 public:
     using value_type = Ref<BinaryBuffer>;
 
-    explicit BinaryLoader(StringView filePath)
-        : m_filePath(filePath) {}
+    explicit BinaryLoader(BinaryFilePath filePath)
+        : m_filePath(filePath.path) {}
 
     Optional<value_type> generate() {
         size_t fileSize = 0;

@@ -10,7 +10,7 @@ MOE_BEGIN_NAMESPACE
 
 template<
         typename InnerGenerator,
-        typename = Meta::EnableIf<Meta::IsGeneratorV<InnerGenerator>>>
+        typename = Meta::EnableIfT<Meta::IsGeneratorV<InnerGenerator>>>
 struct Launch {
 public:
     using value_type = typename InnerGenerator::value_type;

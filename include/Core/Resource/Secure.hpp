@@ -8,7 +8,7 @@ MOE_BEGIN_NAMESPACE
 
 template<
         typename InnerGenerator,
-        typename = Meta::EnableIf<Meta::IsGeneratorV<InnerGenerator>>>
+        typename = Meta::EnableIfT<Meta::IsGeneratorV<InnerGenerator>>>
 struct Secure {
 public:
     using value_type = typename InnerGenerator::value_type;
@@ -29,17 +29,24 @@ public:
                     "Blocking...");
         }
 
-        MOE_ASSERT(m_future->isValid(),
-                   "Future in Secure is not valid");
+        // the job is created and executed directly on the main thread,
+        // no need to wait for the future
+        if (!m_executedOnMainThread) {
+            MOE_ASSERT(m_future->isValid(),
+                       "Future in Secure is not valid");
 
-        m_future->get();
+            m_future->get();
+        }
+
         return m_cachedValue;
     }
 
     void launchAsyncLoad() {
         // if the current thread is the main thread, run directly
         if (MainScheduler::getInstance().isMainThread()) {
+            Logger::debug("Secure::launchAsyncLoad running on main thread directly");
             m_cachedValue = m_derived.generate();
+            m_executedOnMainThread = true;
             return;
         }
 
@@ -62,6 +69,7 @@ private:
     InnerGenerator m_derived;
     Optional<Future<void, MainScheduler>> m_future;
     Optional<value_type> m_cachedValue;
+    bool m_executedOnMainThread{false};
 };
 
 MOE_END_NAMESPACE

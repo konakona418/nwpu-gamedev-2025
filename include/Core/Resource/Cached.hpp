@@ -13,8 +13,8 @@ MOE_BEGIN_NAMESPACE
 
 template<
         typename InnerGenerator,
-        typename = Meta::EnableIf<Meta::IsGeneratorV<InnerGenerator>>,
-        typename = Meta::EnableIf<Meta::IsBinarySerializableV<typename InnerGenerator::value_type>>>
+        typename = Meta::EnableIfT<Meta::IsGeneratorV<InnerGenerator>>,
+        typename = Meta::EnableIfT<Meta::IsBinarySerializableV<typename InnerGenerator::value_type>>>
 struct Cached {
 public:
     const String DEFAULT_CACHE_DIR = "./cache/";
@@ -27,7 +27,7 @@ public:
         makeCacheDirIfNeeded();
     }
 
-    Optional<value_type> get() {
+    Optional<value_type> generate() {
         std::call_once(m_initFlag, [this]() {
             String cachePath = makeCacheFilePath();
             if (loadIfCached(cachePath)) {

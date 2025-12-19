@@ -22,9 +22,9 @@ namespace Detail {
 
 template<
         typename InnerGenerator,
-        typename = Meta::EnableIf<
+        typename = Meta::EnableIfT<
                 Meta::IsGeneratorV<InnerGenerator>>,
-        typename = Meta::EnableIf<
+        typename = Meta::EnableIfT<
                 Meta::IsSameV<
                         typename InnerGenerator::value_type,
                         Ref<BinaryBuffer>>>>

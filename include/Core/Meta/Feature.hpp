@@ -38,7 +38,7 @@ namespace Meta {
     };
 
 #define MOE_SINGLETON(_ClassName_) \
-    friend struct Meta::Singleton<_ClassName_>;
+    friend struct ::moe::Meta::Singleton<_ClassName_>;
 }// namespace Meta
 
 MOE_END_NAMESPACE

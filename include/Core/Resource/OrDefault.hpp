@@ -7,7 +7,7 @@ MOE_BEGIN_NAMESPACE
 
 template<
         typename InnerGenerator,
-        typename = Meta::EnableIf<Meta::IsGeneratorV<InnerGenerator>>>
+        typename = Meta::EnableIfT<Meta::IsGeneratorV<InnerGenerator>>>
 
 struct OrDefault {
 public:

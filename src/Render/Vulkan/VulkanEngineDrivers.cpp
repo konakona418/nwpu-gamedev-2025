@@ -1,7 +1,7 @@
 #include "Render/Vulkan/VulkanEngineDrivers.hpp"
 #include "Render/Vulkan/VulkanEngine.hpp"
 
-#include <fstream>
+#include "Core/FileReader.hpp"
 
 namespace moe {
     constexpr uint32_t BUS_LIGHT_WARNING_LIMIT = 128;
@@ -19,23 +19,52 @@ namespace moe {
                 VK_IMAGE_USAGE_SAMPLED_BIT);
     }
 
+    ImageId VulkanLoader::load(Loader::ImageT, Span<uint8_t> imageData, uint32_t width, uint32_t height) {
+        MOE_ASSERT(m_engine, "VulkanLoader not initialized");
+        return m_engine->m_caches.imageCache.loadImageFromMemory(
+                imageData,
+                VkExtent2D{
+                        width,
+                        height,
+                },
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_USAGE_SAMPLED_BIT);
+    }
+
+    ImageId VulkanLoader::load(Loader::ImageT, const Image& image) {
+        MOE_ASSERT(m_engine, "VulkanLoader not initialized");
+        return m_engine->m_caches.imageCache.loadImageFromMemory(
+                Span<uint8_t>(
+                        const_cast<uint8_t*>(image.data()),// whatever
+                        image.width() * image.height() * image.channels()),
+                VkExtent2D{
+                        static_cast<uint32_t>(image.width()),
+                        static_cast<uint32_t>(image.height()),
+                },
+                VK_FORMAT_R8G8B8A8_SRGB,
+                VK_IMAGE_USAGE_SAMPLED_BIT);
+    }
+
     FontId VulkanLoader::load(Loader::FontT, StringView path, float fontSize, StringView glyphRange) {
         MOE_ASSERT(m_engine, "VulkanLoader not initialized");
-        std::fstream fontFile(path.data(), std::ios::in | std::ios::binary);
-        if (!fontFile.is_open()) {
-            moe::Logger::error("Failed to open font file: {}", path);
+        size_t outDataSize;
+        auto fontData = FileReader::s_instance->readFile(path, outDataSize);
+        if (!fontData) {
+            Logger::error("VulkanLoader::load Font: failed to read font file {}", path);
             return NULL_FONT_ID;
         }
-        fontFile.seekg(0, std::ios::end);
-        size_t fileSize = static_cast<size_t>(fontFile.tellg());
-
-        std::vector<uint8_t> fontData(fileSize);
-        fontFile.seekg(0, std::ios::beg);
-        fontFile.read(reinterpret_cast<char*>(fontData.data()), fileSize);
-        fontFile.close();
 
         VulkanFont font;
-        font.init(*m_engine, fontData, fontSize, glyphRange);
+        font.init(*m_engine, *fontData, fontSize, glyphRange);
+
+        return m_engine->m_caches.fontCache.load(std::move(font)).first;
+    }
+
+    FontId VulkanLoader::load(Loader::FontT, Span<const uint8_t> fontData, float fontSize, StringView glyphRange) {
+        MOE_ASSERT(m_engine, "VulkanLoader not initialized");
+
+        VulkanFont font;
+        font.init(*m_engine, {const_cast<uint8_t*>(fontData.data()), fontData.size()}, fontSize, glyphRange);
 
         return m_engine->m_caches.fontCache.load(std::move(font)).first;
     }
