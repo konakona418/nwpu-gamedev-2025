@@ -5,6 +5,9 @@
 #include "Render/Vulkan/VulkanSwapBuffer.hpp"
 #include "Render/Vulkan/VulkanTypes.hpp"
 
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
 #include <utf8.h>
 
 namespace moe {
@@ -177,6 +180,16 @@ namespace moe {
             }
         };
 
+        struct MetricResult {
+            float width{0.0f};
+            float height{0.0f};
+        };
+
+        struct PerCharMetric {
+            float advance{0.0f};
+            float height{0.0f};
+        };
+
         struct PerFace {
             float fontSize{0.0f};
             UniquePtr<FontImageBuffer> fontImageBufferCPU;
@@ -184,11 +197,7 @@ namespace moe {
             ImageId fontImageId{NULL_IMAGE_ID};
             UnorderedMap<char32_t, Character> characters;
             Vector<char32_t> pendingLazyLoadGlyphs;
-        };
-
-        struct MetricResult {
-            float width{0.0f};
-            float height{0.0f};
+            UnorderedMap<char32_t, PerCharMetric> measuredMetrics;
         };
 
         MetricResult measureText(std::u32string_view text, float fontSize);
@@ -200,6 +209,9 @@ namespace moe {
         static uint32_t faceKey(float fontSize) {
             return static_cast<uint32_t>(std::lround(fontSize));
         }
+
+        FT_Library m_ftLibrary{nullptr};
+        FT_Face m_faceFT{nullptr};
 
         StringView m_path;
         VulkanEngine* m_engine{nullptr};
