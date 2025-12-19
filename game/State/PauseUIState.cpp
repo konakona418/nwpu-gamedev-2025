@@ -9,14 +9,19 @@ namespace game::State {
     void PauseUIState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering PauseUIState");
 
-        m_fontId = ctx.renderer().getResourceLoader().load(moe::Loader::Font, moe::asset("assets/fonts/NotoSansSC-Regular.ttf"), 48.0f, "");
+        auto fontId = this->m_fontId.generate().value_or(moe::NULL_FONT_ID);
+        if (fontId == moe::NULL_FONT_ID) {
+            moe::Logger::error("PauseUIState::onEnter: failed to load font");
+            return;
+        }
+
         // setup UI
         auto [width, height] = ctx.renderer().getCanvasSize();
         m_rootWidget = moe::makeRef<moe::RootWidget>((float) width, (float) height);
 
         m_titleTextWidget = moe::makeRef<moe::VkTextWidget>(
                 U"Paused",
-                m_fontId,
+                fontId,
                 48.f,
                 moe::Colors::White);
         m_titleTextWidget->setMargin({0.f, 0.f, 50.f, 0.f});
@@ -24,7 +29,7 @@ namespace game::State {
         m_resumeButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
                         U"Resume",
-                        m_fontId,
+                        fontId,
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),
                 },

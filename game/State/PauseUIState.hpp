@@ -3,10 +3,19 @@
 #include "GameManager.hpp"
 #include "GameState.hpp"
 
+#include "AnyCache.hpp"
+#include "FontLoader.hpp"
+
 #include "UI/BoxWidget.hpp"
 #include "UI/RootWidget.hpp"
 #include "UI/Vulkan/VkButtonWidget.hpp"
 #include "UI/Vulkan/VkTextWidget.hpp"
+
+#include "Core/Resource/BinaryLoader.hpp"
+#include "Core/Resource/Launch.hpp"
+#include "Core/Resource/Preload.hpp"
+#include "Core/Resource/Secure.hpp"
+
 
 namespace game::State {
     struct PauseUIState : public GameState {
@@ -22,8 +31,11 @@ namespace game::State {
     private:
         InputLockToken m_inputLockToken{NO_LOCK_TOKEN};
 
-        // ! fixme: font loading will be triggered every onEnter; optimize later
-        moe::FontId m_fontId{moe::NULL_FONT_ID};
+        moe::Preload<game::AnyCacheLoader<moe::Secure<game::FontLoader<
+                game::AnyCacheLoader<moe::Launch<moe::BinaryLoader>>>>>>
+                m_fontId{
+                        FontLoaderParam{48.0f, ""},
+                        moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
 
         moe::Ref<moe::RootWidget> m_rootWidget;
         moe::Ref<moe::VkTextWidget> m_titleTextWidget;
