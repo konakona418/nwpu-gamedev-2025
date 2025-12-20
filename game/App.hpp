@@ -39,6 +39,7 @@ namespace game {
         MouseButtonState getMouseButtonState(int button) const;
 
         void setMouseState(bool isFree);
+        bool isMouseFree() const;
 
     private:
         struct KeyMap : moe::AtomicRefCounted<KeyMap> {

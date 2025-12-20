@@ -16,6 +16,13 @@ namespace game {
 
     using ParamValue = moe::Variant<ParamInt, ParamFloat, ParamBool, ParamString>;
 
+    enum class ParamType {
+        Int,
+        Float,
+        Bool,
+        String
+    };
+
     struct ParamItem {
     public:
         moe::String name;
@@ -25,6 +32,8 @@ namespace game {
         T get() const {
             return std::get<T>(value);
         }
+
+        ParamType getType() const;
     };
 
     struct ParamManager
@@ -39,9 +48,14 @@ namespace game {
 
         void registerParam(const moe::StringView name, ParamItem& param);
 
+        const moe::UnorderedMap<moe::String, ParamItem*>& getAllParams() const {
+            return m_params;
+        }
+
     private:
         moe::UnorderedMap<moe::String, ParamItem*> m_params;
         toml::table m_table;
+        moe::String m_filepath;
 
         static moe::Vector<moe::String> splitPath(const moe::StringView path);
 

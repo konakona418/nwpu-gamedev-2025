@@ -3,6 +3,21 @@
 #include <fstream>
 
 namespace game {
+    ParamType ParamItem::getType() const {
+        if (std::holds_alternative<ParamInt>(value)) {
+            return ParamType::Int;
+        } else if (std::holds_alternative<ParamFloat>(value)) {
+            return ParamType::Float;
+        } else if (std::holds_alternative<ParamBool>(value)) {
+            return ParamType::Bool;
+        } else if (std::holds_alternative<ParamString>(value)) {
+            return ParamType::String;
+        } else {
+            MOE_ASSERT(false, "Unknown ParamType");
+            return ParamType::Int;// make linter happy
+        }
+    }
+
     void ParamManager::loadFromFile(const moe::StringView filepath) {
         auto table_ = toml::parse_file(filepath.data());
         if (table_.failed()) {
@@ -14,6 +29,7 @@ namespace game {
         }
 
         m_table = table_.table();
+        m_filepath = filepath.data();
 
         initAllParamsFromTable();
     }

@@ -1,7 +1,7 @@
 #include "App.hpp"
 
+#include "State/DebugToolState.hpp"
 #include "State/LocalPlayerState.hpp"
-#include "State/PauseUIState.hpp"
 #include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
 
@@ -53,6 +53,9 @@ namespace game {
 
         auto worldEnv = moe::Ref(new State::WorldEnvironment());
         m_gameManager->pushState(worldEnv);
+
+        auto debugToolState = moe::Ref(new State::DebugToolState());
+        m_gameManager->pushState(debugToolState);
 
         auto pgstate = moe::Ref(new State::PlaygroundState());
         m_gameManager->pushState(pgstate);
@@ -198,7 +201,24 @@ namespace game {
     }
 
     void Input::setMouseState(bool isFree) {
-        m_inputBus->setMouseValid(isFree);
+        auto window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
+        if (!isFree) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            if (glfwRawMouseMotionSupported()) {
+                glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+            }
+        } else {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            if (glfwRawMouseMotionSupported()) {
+                glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+            }
+        }
+    }
+
+    bool Input::isMouseFree() const {
+        auto window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
+        auto mode = glfwGetInputMode(window, GLFW_CURSOR);
+        return mode == GLFW_CURSOR_NORMAL;
     }
 
     void Input::update() {
