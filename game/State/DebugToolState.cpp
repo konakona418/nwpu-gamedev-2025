@@ -8,26 +8,24 @@
 
 namespace game::State {
     void DebugToolState::onEnter(GameManager& ctx) {
-        ctx.input().get()->addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
+        ctx.input().addProxy(&m_inputProxy);
+        ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
+        m_inputProxy.setActive(false);// by default proxies are active, disable it initially
     }
 
     void DebugToolState::onExit(GameManager& ctx) {
-        ctx.input().get()->removeKeyEventMapping("toggle_debug_console");
+        ctx.input().removeKeyEventMapping("toggle_debug_console");
+        ctx.input().removeProxy(&m_inputProxy);
     }
 
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
-        auto input = ctx.input();
-        if (!input) {
-            return;
+        if (ctx.input().unmanaged().isKeyJustPressed("toggle_debug_console")) {
+            m_showDebugWindow = !m_showDebugWindow;
+            m_inputProxy.setActive(m_showDebugWindow);// activate/deactivate mouse state handling
+            moe::Logger::info("Toggling debug window {}", m_showDebugWindow ? "ON" : "OFF");
         }
 
-        if (input->isKeyJustPressed("toggle_debug_console")) {
-            m_showDebugWindow = !m_showDebugWindow;
-            moe::Logger::info("Toggling debug window {}", m_showDebugWindow ? "ON" : "OFF");
-            if (input->isMouseFree() != m_showDebugWindow) {
-                input->setMouseState(m_showDebugWindow);
-            }
-        }
+        m_inputProxy.setMouseState(m_showDebugWindow);// toggle mouse state based on debug window state
 
         if (!m_showDebugWindow) {
             return;

@@ -5,7 +5,11 @@
 #include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
 
+#include "Input.hpp"
 #include "Param.hpp"
+
+#include "Core/FileReader.hpp"
+#include "Core/Task/Scheduler.hpp"
 
 namespace game {
     void App::init() {
@@ -90,153 +94,5 @@ namespace game {
 
             m_graphicsEngine->endFrame();
         }
-    }
-
-    Input::Input(App* app) : m_app(app) {
-        m_inputBus = &app->m_graphicsEngine->getInputBus();
-    }
-
-    void Input::addKeyMapping(moe::StringView keyName, int keyCode) {
-        if (m_keyNameMap.find(moe::String(keyName)) != m_keyNameMap.end()) {
-            moe::Logger::warn("Input::addKeyMapping: key mapping for '{}' already exists", keyName);
-        }
-
-        auto keyMap = moe::Ref(new KeyMap());
-        keyMap->pressed = false;
-
-        m_keyMap[keyCode] = keyMap;
-        m_keyNameMap[moe::String(keyName)] = keyMap;
-    }
-
-    void Input::removeKeyMapping(moe::StringView keyName) {
-        auto it = m_keyNameMap.find(moe::String(keyName));
-        if (it != m_keyNameMap.end()) {
-            // ! in case of duplicate key codes, we do not erase from m_keyMap here
-            m_keyNameMap.erase(it);
-        }
-    }
-
-    void Input::addKeyEventMapping(const moe::StringView keyName, int keyCode) {
-        if (m_keyEventNameMap.find(moe::String(keyName)) != m_keyEventNameMap.end()) {
-            moe::Logger::warn("Input::addKeyEventMapping: key event mapping for '{}' already exists", keyName);
-        }
-
-        auto keyEventMap = moe::Ref(new KeyEventMap());
-        keyEventMap->justPressed = false;
-        keyEventMap->justReleased = false;
-
-        m_keyEventMap[keyCode] = keyEventMap;
-        m_keyEventNameMap[moe::String(keyName)] = keyEventMap;
-    }
-
-    void Input::removeKeyEventMapping(const moe::StringView keyName) {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
-        if (it != m_keyEventNameMap.end()) {
-            m_keyEventNameMap.erase(it);
-        }
-    }
-
-    void Input::dispatchKeyDown(int keyCode) {
-        auto it = m_keyEventMap.find(keyCode);
-        if (it != m_keyEventMap.end()) {
-            it->second->justPressed = true;
-        }
-    }
-
-    void Input::dispatchKeyUp(int keyCode) {
-        auto it = m_keyEventMap.find(keyCode);
-        if (it != m_keyEventMap.end()) {
-            it->second->justReleased = true;
-        }
-    }
-
-    void Input::resetKeyEvents() {
-        for (auto& [keyCode, keyEventMap]: m_keyEventMap) {
-            keyEventMap->justPressed = false;
-            keyEventMap->justReleased = false;
-        }
-    }
-
-    moe::Pair<float, float> Input::getMousePosition() const {
-        auto* window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
-        double x, y;
-        glfwGetCursorPos(window, &x, &y);
-        return moe::Pair<float, float>{static_cast<float>(x), static_cast<float>(y)};
-    }
-
-    Input::MouseButtonState Input::getMouseButtonState(int button) const {
-        auto* window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
-        MouseButtonState state;
-        state.pressedLMB = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-        state.pressedRMB = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-        state.pressedMMB = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
-        return state;
-    }
-
-    bool Input::isKeyPressed(moe::StringView keyName) const {
-        auto it = m_keyNameMap.find(moe::String(keyName));
-        if (it != m_keyNameMap.end()) {
-            return it->second->pressed;
-        }
-
-        return false;
-    }
-
-    bool Input::isKeyJustPressed(const moe::StringView keyName) const {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
-        if (it != m_keyEventNameMap.end()) {
-            return it->second->justPressed;
-        }
-
-        return false;
-    }
-
-    bool Input::isKeyJustReleased(const moe::StringView keyName) const {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
-        if (it != m_keyEventNameMap.end()) {
-            return it->second->justReleased;
-        }
-
-        return false;
-    }
-
-    void Input::setMouseState(bool isFree) {
-        auto window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
-        if (!isFree) {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            if (glfwRawMouseMotionSupported()) {
-                glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
-            }
-        } else {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            if (glfwRawMouseMotionSupported()) {
-                glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
-            }
-        }
-    }
-
-    bool Input::isMouseFree() const {
-        auto window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
-        auto mode = glfwGetInputMode(window, GLFW_CURSOR);
-        return mode == GLFW_CURSOR_NORMAL;
-    }
-
-    void Input::update() {
-        resetKeyEvents();
-        m_fallThroughEvents.clear();
-        m_mouseDelta = std::make_pair(0, 0);
-        while (auto e = m_inputBus->pollEvent()) {
-            if (auto mouseEvent = e->getIf<moe::WindowEvent::MouseMove>()) {
-                m_mouseDelta = std::make_pair(mouseEvent->deltaX, mouseEvent->deltaY);
-            }
-
-            m_fallThroughEvents.push_back(e.value());
-        }
-
-        for (auto& [keyCode, keyMap]: m_keyMap) {
-            keyMap->pressed = m_inputBus->isKeyPressed(keyCode);
-        }
-
-        // ! todo: handle mouse events
     }
 }// namespace game

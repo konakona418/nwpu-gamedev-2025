@@ -10,24 +10,6 @@ namespace game {
     struct App;
     struct Input;
 
-    using InputLockToken = uint32_t;
-    inline constexpr InputLockToken NO_LOCK_TOKEN = std::numeric_limits<InputLockToken>::max();
-
-    struct InputLock {
-    public:
-        explicit InputLock(Input* input) : m_input(input) {};
-
-        Input* get() const { return m_input; }
-        Input* operator->() const { return m_input; }
-        Input& operator*() const { return *m_input; }
-
-        bool isValid() const { return m_input != nullptr; }
-        operator bool() const { return isValid(); }
-
-    private:
-        Input* m_input;
-    };
-
     struct GameManager {
     public:
         GameManager(App* app) : m_app(app) {}
@@ -42,9 +24,7 @@ namespace game {
         moe::PhysicsEngine& physics();
         moe::AudioEngineInterface& audio();
 
-        game::InputLock input();
-        game::InputLock input(InputLockToken lockToken);
-        void unlockInput(InputLockToken lockToken);
+        game::Input& input();
 
     private:
         enum class ActionType {
@@ -67,6 +47,5 @@ namespace game {
         std::mutex m_gameStateStackCopyMutex;
 
         App* m_app = nullptr;
-        InputLockToken m_inputLockToken{NO_LOCK_TOKEN};
     };
 }// namespace game

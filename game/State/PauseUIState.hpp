@@ -2,6 +2,7 @@
 
 #include "GameManager.hpp"
 #include "GameState.hpp"
+#include "Input.hpp"
 
 #include "AnyCache.hpp"
 #include "FontLoader.hpp"
@@ -29,7 +30,7 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
-        InputLockToken m_inputLockToken{NO_LOCK_TOKEN};
+        InputProxy m_inputProxy{InputProxy::PRIORITY_UI_LOCK};
 
         moe::Preload<game::AnyCacheLoader<moe::Secure<game::FontLoader<
                 game::AnyCacheLoader<moe::Launch<moe::BinaryLoader>>>>>>

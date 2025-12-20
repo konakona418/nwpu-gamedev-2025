@@ -2,6 +2,7 @@
 
 #include "GameManager.hpp"
 #include "GameState.hpp"
+#include "Input.hpp"
 
 namespace game::State {
     struct DebugToolState : public GameState {
@@ -15,6 +16,7 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
+        InputProxy m_inputProxy{InputProxy::PRIORITY_SYSTEM};
         bool m_showDebugWindow{false};
     };
 }// namespace game::State

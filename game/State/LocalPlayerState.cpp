@@ -27,19 +27,15 @@ namespace game::State {
     X(down, GLFW_KEY_LEFT_SHIFT);
 
     void LocalPlayerState::onEnter(GameManager& ctx) {
-        auto input = ctx.input();
-        if (!input.isValid()) {
-            moe::Logger::error("LocalPlayerState::onEnter: input is locked by another state");
-            return;
-        }
+        auto& input = ctx.input();
+        input.addProxy(&m_inputProxy);
 
-#define X(name, key) input->addKeyMapping(#name, key);
+#define X(name, key) input.addKeyMapping(#name, key);
         PLAYER_KEY_MAPPING_XXX()
 #undef X
 
-        input->addKeyEventMapping("escape_player", GLFW_KEY_ESCAPE);
-
-        input->setMouseState(false);// disable mouse cursor
+        input.addKeyEventMapping("escape_player", GLFW_KEY_ESCAPE);
+        m_inputProxy.setMouseState(false);// disable mouse cursor
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<LocalPlayerState>()](moe::PhysicsEngine& physics) mutable {
@@ -66,17 +62,15 @@ namespace game::State {
     }
 
     void LocalPlayerState::onExit(GameManager& ctx) {
-        auto input = ctx.input();
-        if (!input.isValid()) {
-            moe::Logger::error("LocalPlayerState::onExit: input is locked by another state");
-            return;
-        }
+        auto& input = ctx.input();
 
-        input->setMouseState(true);// enable mouse cursor
+        m_inputProxy.setMouseState(true);// enable mouse cursor
 
-#define X(name, key) input->removeKeyMapping(#name);
+#define X(name, key) input.removeKeyMapping(#name);
         PLAYER_KEY_MAPPING_XXX()
 #undef X
+
+        input.removeProxy(&m_inputProxy);
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<LocalPlayerState>()](moe::PhysicsEngine& physics) mutable {
@@ -85,19 +79,17 @@ namespace game::State {
     }
 
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
-        auto input = ctx.input();
-
         auto& cam = ctx.renderer().getDefaultCamera();
 
         glm::vec3 dir{0.0f};
         float yawDelta = 0.0f;
         float pitchDelta = 0.0f;
 
-        if (input.isValid()) {
+        if (m_inputProxy.isValid()) {
             // only process input if we have the input lock
 
             MovementHelper movementHelper;
-#define X(name, key) movementHelper.name = input->isKeyPressed(#name)
+#define X(name, key) movementHelper.name = m_inputProxy.isKeyPressed(#name)
             PLAYER_KEY_MAPPING_XXX()
 #undef X
 
@@ -106,12 +98,12 @@ namespace game::State {
             front = glm::normalize(front);
             dir = movementHelper.realMovementVec(front, cam.getRight(), cam.getUp());
 
-            auto [mouseX, mouseY] = input->getMouseDelta();
+            auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
             yawDelta = mouseX * PLAYER_ROTATION_SPEED;
             pitchDelta = mouseY * PLAYER_ROTATION_SPEED;
 
             // if escape is just released, show menu
-            if (input->isKeyJustReleased("escape_player")) {
+            if (m_inputProxy.isKeyJustReleased("escape_player")) {
                 ctx.pushState(moe::Ref(new State::PauseUIState()));
             }
         }

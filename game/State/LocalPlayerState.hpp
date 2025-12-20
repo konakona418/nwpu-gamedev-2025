@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameState.hpp"
+#include "Input.hpp"
 #include "Param.hpp"
 
 #include "Core/DBuffer.hpp"
@@ -29,5 +30,7 @@ namespace game::State {
         moe::DBuffer<glm::vec3> m_movingDirection;
         moe::DBuffer<glm::vec3> m_realPosition;
         moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
+
+        InputProxy m_inputProxy{InputProxy::PRIORITY_DEFAULT};
     };
 }// namespace game::State

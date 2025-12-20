@@ -47,29 +47,19 @@ namespace game::State {
 
         m_rootWidget->layout();
 
-        m_inputLockToken = 100;
-        auto input = ctx.input(m_inputLockToken);// lock input for this state
-        if (!input.isValid()) {
-            moe::Logger::error("PauseUIState::onEnter: failed to lock input");
-            return;
-        }
+        auto& input = ctx.input();
+        input.addProxy(&m_inputProxy);
 
-        input->setMouseState(true);// enable mouse cursor
+        m_inputProxy.setMouseState(true);// enable mouse cursor
     }
 
     void PauseUIState::onExit(GameManager& ctx) {
         moe::Logger::info("Exiting PauseUIState");
 
-        // release input lock
-        auto input = ctx.input(m_inputLockToken);
-        if (!input.isValid()) {
-            moe::Logger::error("PauseUIState::onExit: input is locked by another state");
-            return;
-        }
-
-        input->setMouseState(false);// disable mouse cursor
-        ctx.unlockInput(m_inputLockToken);
-        m_inputLockToken = NO_LOCK_TOKEN;
+        auto& input = ctx.input();
+        m_inputProxy.setMouseState(false);// disable mouse cursor
+        // release input proxy
+        input.removeProxy(&m_inputProxy);
 
         // cleanup UI
         m_rootWidget = moe::Ref<moe::RootWidget>(nullptr);
@@ -82,14 +72,13 @@ namespace game::State {
         m_titleTextWidget->render(renderer);
         m_resumeButtonWidget->render(renderer);
 
-        auto input = ctx.input(m_inputLockToken);
-        if (!input.isValid()) {
-            moe::Logger::error("PauseUIState::onUpdate: input is locked by another state");
+        auto& input = ctx.input();
+        if (!m_inputProxy.isValid()) {
             return;
         }
 
-        auto mousePos = input->getMousePosition();
-        bool isLMBPressed = input->getMouseButtonState(0).pressedLMB;
+        auto mousePos = m_inputProxy.getMousePosition();
+        bool isLMBPressed = m_inputProxy.getMouseButtonState(0).pressedLMB;
 
         bool clicked = m_resumeButtonWidget->checkButtonState(glm::vec2(mousePos.first, mousePos.second), isLMBPressed);
         if (clicked) {

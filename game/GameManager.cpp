@@ -16,25 +16,8 @@ namespace game {
         return *m_app->m_audioEngine;
     }
 
-    game::InputLock GameManager::input() {
-        return input(NO_LOCK_TOKEN);
-    }
-
-    game::InputLock GameManager::input(InputLockToken lockToken) {
-        if (m_inputLockToken != NO_LOCK_TOKEN && m_inputLockToken != lockToken) {
-            return game::InputLock(nullptr);
-        }
-
-        m_inputLockToken = lockToken;
-        return game::InputLock(m_app->m_input.get());
-    }
-
-    void GameManager::unlockInput(InputLockToken lockToken) {
-        if (m_inputLockToken == lockToken) {
-            m_inputLockToken = NO_LOCK_TOKEN;
-        } else {
-            moe::Logger::error("Attempt to unlock input with invalid lock token");
-        }
+    game::Input& GameManager::input() {
+        return *m_app->m_input;
     }
 
     void GameManager::pushState(moe::Ref<GameState> state) {
