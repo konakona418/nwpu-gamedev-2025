@@ -133,4 +133,8 @@ namespace moe {
     inline String asset(const StringView path) {
         return String(path);
     }
+
+    inline String userdata(const StringView path) {
+        return String(path);
+    }
 }// namespace moe

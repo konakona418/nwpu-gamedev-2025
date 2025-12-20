@@ -136,6 +136,11 @@ target_compile_definitions(moe-graphics PRIVATE
   IMGUI_IMPL_VULKAN_USE_VOLK # for imgui volk integration
 )
 
+# disable std exceptions for tomlplusplus
+target_compile_definitions(moe-graphics PRIVATE
+  TOML_EXCEPTIONS=0
+)
+
 include(CTest)
 enable_testing()
 

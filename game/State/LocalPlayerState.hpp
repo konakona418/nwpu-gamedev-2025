@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameState.hpp"
+#include "Param.hpp"
 
 #include "Core/DBuffer.hpp"
 #include "Core/Deferred.hpp"
@@ -15,12 +16,6 @@
 namespace game::State {
     struct LocalPlayerState : public GameState {
     public:
-        static constexpr float PLAYER_SPEED = 3.0f;
-        static constexpr float PLAYER_ROTATION_SPEED = 0.1f;
-
-        static constexpr float PLAYER_HALF_HEIGHT = 0.8f;
-        static constexpr float PLAYER_RADIUS = 0.4f;
-
         const moe::StringView getName() const override {
             return "LocalPlayerState";
         }

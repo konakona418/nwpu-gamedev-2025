@@ -13,6 +13,10 @@
 
 
 namespace game::State {
+    static Param<ParamFloat> PLAYER_SPEED("player.speed", 3.0f);
+    static Param<ParamFloat> PLAYER_ROTATION_SPEED("player.rotation_speed", 0.1f);
+    static Param<ParamFloat> PLAYER_HALF_HEIGHT("player.half_height", 0.8f);
+    static Param<ParamFloat> PLAYER_RADIUS("player.radius", 0.4f);
 
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
@@ -135,7 +139,7 @@ namespace game::State {
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
 
         auto dir = m_movingDirection.get();
-        auto velocity = dir * PLAYER_SPEED;
+        auto velocity = dir * PLAYER_SPEED.get();
 
         auto lastVel = character->GetLinearVelocity();
 

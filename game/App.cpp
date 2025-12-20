@@ -5,6 +5,8 @@
 #include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
 
+#include "Param.hpp"
+
 namespace game {
     void App::init() {
         moe::Logger::setThreadName("Graphics");
@@ -12,6 +14,8 @@ namespace game {
         moe::MainScheduler::getInstance().init();
         moe::ThreadPoolScheduler::getInstance().init();
         moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
+
+        ParamManager::getInstance().loadFromFile(moe::userdata("config.toml"));
 
         m_physicsEngine = &moe::PhysicsEngine::getInstance();
         m_physicsEngine->init();
@@ -35,6 +39,9 @@ namespace game {
     void App::shutdown() {
         m_graphicsEngine->cleanup();
         m_physicsEngine->destroy();
+
+        ParamManager::getInstance().saveToFile(moe::userdata("config.toml"));
+
         moe::ThreadPoolScheduler::getInstance().shutdown();
         moe::MainScheduler::getInstance().shutdown();
         moe::FileReader::destroyReader();
