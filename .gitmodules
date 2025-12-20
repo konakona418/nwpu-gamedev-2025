@@ -76,3 +76,6 @@
 [submodule "vendors/enet"]
 	path = vendors/enet
 	url = https://github.com/lsalzman/enet.git
+[submodule "vendors/tomlplusplus"]
+	path = vendors/tomlplusplus
+	url = https://github.com/marzer/tomlplusplus.git

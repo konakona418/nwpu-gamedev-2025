@@ -43,6 +43,8 @@ add_subdirectory(vendors/flatbuffers)
 add_subdirectory(vendors/enet)
 set(ENET_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/vendors/enet/include)
 
+add_subdirectory(vendors/tomlplusplus)
+
 if(USE_MIMALLOC)
     message(STATUS "moe-graphics: Using mimalloc as the memory allocator")
     add_subdirectory(vendors/mimalloc)
@@ -108,6 +110,7 @@ target_link_libraries(moe-graphics PRIVATE
   OpenAL::OpenAL ogg vorbis vorbisfile
   concurrentqueue flatbuffers
   enet
+  tomlplusplus::tomlplusplus
   ${MIMALLOC_LIB}
 )
 
