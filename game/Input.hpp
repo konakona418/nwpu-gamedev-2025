@@ -87,6 +87,9 @@ namespace game {
 
         moe::UnorderedSet<InputProxy*> m_inputProxies;
 
+        bool m_lastMouseFreeState{true};
+        bool m_lastMouseFreeStateValid{false};
+
         void dispatchKeyDown(int keyCode);
         void dispatchKeyUp(int keyCode);
         void resetKeyEvents();

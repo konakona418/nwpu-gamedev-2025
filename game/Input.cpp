@@ -126,6 +126,13 @@ namespace game {
             }
         }
 
+        if (shouldShowMouse == m_lastMouseFreeState && m_lastMouseFreeStateValid) {
+            return;
+        }
+
+        m_lastMouseFreeState = shouldShowMouse;
+        m_lastMouseFreeStateValid = true;
+
         auto window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
         if (!shouldShowMouse) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
