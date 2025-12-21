@@ -138,4 +138,9 @@ namespace game {
         ParamItem m_param;
     };
 
+    using ParamI = Param<ParamInt>;
+    using ParamF = Param<ParamFloat>;
+    using ParamB = Param<ParamBool>;
+    using ParamS = Param<ParamString>;
+
 }// namespace game

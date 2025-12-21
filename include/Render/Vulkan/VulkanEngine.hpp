@@ -62,11 +62,17 @@ namespace moe {
 
     constexpr uint32_t FRAMES_IN_FLIGHT = Constants::FRAMES_IN_FLIGHT;
 
+    struct VulkanEngineInitializers {
+        int viewportWidth{1280};
+        int viewportHeight{720};
+
+        float fovDeg{45.0f};
+
+        glm::vec3 csmCameraScale{3.0f, 3.0f, 3.0f};
+    };
+
     class VulkanEngine {
     public:
-        static constexpr float DEFAULT_VIEWPORT_WIDTH = 1280.0f;
-        static constexpr float DEFAULT_VIEWPORT_HEIGHT = 720.0f;
-
         DeletionQueue m_mainDeletionQueue;
         VmaAllocator m_allocator;
         VulkanDescriptorAllocator m_globalDescriptorAllocator;
@@ -75,10 +81,7 @@ namespace moe {
         int32_t m_frameNumber{0};
         bool m_stopRendering{false};
         bool m_resizeRequested{false};
-        VkExtent2D m_windowExtent{
-                (uint32_t) DEFAULT_VIEWPORT_WIDTH,
-                (uint32_t) DEFAULT_VIEWPORT_HEIGHT,
-        };
+        VkExtent2D m_windowExtent;
 
         VkSampleCountFlagBits m_msaaSamples{VK_SAMPLE_COUNT_1_BIT};
         // ! msaa x4; disable this if deferred rendering is implemented; use fxaa then
@@ -133,18 +136,9 @@ namespace moe {
         RenderTargetId m_defaultSpriteRenderTargetId{NULL_RENDER_TARGET_ID};
         RenderViewId m_defaultSpriteRenderViewId{NULL_RENDER_VIEW_ID};
 
-        Pinned<VulkanCamera> m_defaultCamera = makePinned<VulkanCamera>(
-                glm::vec3(0.0f, 0.0f, 0.0f),
-                0.f,
-                0.f,
-                45.0f,
-                0.1f,
-                100.0f);
+        Pinned<VulkanCamera> m_defaultCamera{nullptr};
 
-        Pinned<Vulkan2DCamera> m_defaultSpriteCamera = makePinned<Vulkan2DCamera>(
-                glm::vec2(0.0f, 0.0f),
-                DEFAULT_VIEWPORT_WIDTH,
-                DEFAULT_VIEWPORT_HEIGHT);
+        Pinned<Vulkan2DCamera> m_defaultSpriteCamera{nullptr};
 
         struct {
             VulkanImageCache imageCache;
@@ -181,7 +175,7 @@ namespace moe {
 
         static VulkanEngine& get();
 
-        void init();
+        void init(const VulkanEngineInitializers& initializers = {});
 
         void cleanup();
 
@@ -272,6 +266,8 @@ namespace moe {
         }
 
     private:
+        void initDefaults(const VulkanEngineInitializers& initializers);
+
         void initWindow();
 
         void queueEvent(WindowEvent event);

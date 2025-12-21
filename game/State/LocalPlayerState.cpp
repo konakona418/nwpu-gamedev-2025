@@ -13,10 +13,10 @@
 
 
 namespace game::State {
-    static Param<ParamFloat> PLAYER_SPEED("player.speed", 3.0f);
-    static Param<ParamFloat> PLAYER_ROTATION_SPEED("player.rotation_speed", 0.1f);
-    static Param<ParamFloat> PLAYER_HALF_HEIGHT("player.half_height", 0.8f);
-    static Param<ParamFloat> PLAYER_RADIUS("player.radius", 0.4f);
+    static ParamF PLAYER_SPEED("player.speed", 3.0f);
+    static ParamF PLAYER_ROTATION_SPEED("player.rotation_speed", 0.1f);
+    static ParamF PLAYER_HALF_HEIGHT("player.half_height", 0.8f);
+    static ParamF PLAYER_RADIUS("player.radius", 0.4f);
 
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \

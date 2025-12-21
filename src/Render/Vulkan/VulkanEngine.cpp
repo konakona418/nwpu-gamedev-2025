@@ -39,10 +39,42 @@ namespace moe {
         return *g_engineInstance;
     }
 
-    void VulkanEngine::init() {
+    void VulkanEngine::initDefaults(const VulkanEngineInitializers& initializers) {
+        MOE_ASSERT(initializers.viewportWidth > 0 && initializers.viewportHeight > 0, "Invalid viewport size");
+        MOE_ASSERT(initializers.fovDeg > 0.0f && initializers.fovDeg < 180.0f, "Invalid FOV degree");
+        MOE_ASSERT(initializers.csmCameraScale.x > 0.0f &&
+                           initializers.csmCameraScale.y > 0.0f &&
+                           initializers.csmCameraScale.z > 0.0f,
+                   "Invalid CSM camera scale");
+
+        m_windowExtent = {
+                static_cast<uint32_t>(initializers.viewportWidth),
+                static_cast<uint32_t>(initializers.viewportHeight),
+        };
+
+        m_defaultSpriteCamera = makePinned<Vulkan2DCamera>(
+                glm::vec2(0.0f, 0.0f),
+                initializers.viewportWidth,
+                initializers.viewportHeight);
+
+        m_defaultCamera = makePinned<VulkanCamera>(
+                glm::vec3(0.0f, 0.0f, 0.0f),
+                0.f,
+                0.f,
+                initializers.fovDeg,
+                0.1f,
+                100.0f);
+
+        m_shadowMapCameraScale = initializers.csmCameraScale;
+    }
+
+    void VulkanEngine::init(const VulkanEngineInitializers& initializers) {
         MOE_ASSERT(g_engineInstance == nullptr, "engine instance already initialized");
 
         g_engineInstance = this;
+
+        // initialize default components
+        initDefaults(initializers);
 
         initWindow();
         initVulkanInstance();

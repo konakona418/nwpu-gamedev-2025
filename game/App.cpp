@@ -18,6 +18,11 @@
 #endif
 
 namespace game {
+    static ParamI WINDOW_WIDTH("window.width", 1280, ParamScope::UserConfig);
+    static ParamI WINDOW_HEIGHT("window.height", 720, ParamScope::UserConfig);
+
+    static ParamF FOV_DEGREES("graphics.fov_degrees", 45.0f, ParamScope::UserConfig);
+
     void App::init() {
         moe::Logger::setThreadName("Graphics");
 
@@ -47,7 +52,12 @@ namespace game {
         m_audioEngine = std::make_unique<moe::AudioEngineInterface>(moe::AudioEngine::getInstance().getInterface());
 
         m_graphicsEngine = std::make_unique<moe::VulkanEngine>();
-        m_graphicsEngine->init();
+        m_graphicsEngine->init({
+                .viewportWidth = static_cast<int>(WINDOW_WIDTH.get()),
+                .viewportHeight = static_cast<int>(WINDOW_HEIGHT.get()),
+                .fovDeg = FOV_DEGREES.get(),
+                .csmCameraScale = {3.0f, 3.0f, 3.0f},
+        });
 
         m_input = std::make_unique<Input>(this);
     }

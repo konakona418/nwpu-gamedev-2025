@@ -76,6 +76,8 @@ namespace moe {
         explicit Pinned(Args&&... args)
             : m_ptr(std::make_unique<T>(std::forward<Args>(args)...)) {}
 
+        explicit Pinned(std::nullptr_t) : m_ptr(nullptr) {}
+
         T* operator->() { return m_ptr.get(); }
 
         const T* operator->() const { return m_ptr.get(); }
