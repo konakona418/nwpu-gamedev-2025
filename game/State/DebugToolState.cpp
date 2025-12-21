@@ -18,6 +18,64 @@ namespace game::State {
         ctx.input().removeProxy(&m_inputProxy);
     }
 
+    void drawParameterItems(moe::UnorderedMap<moe::String, ParamItem*> params) {
+        if (params.empty()) {
+            ImGui::TextUnformatted("No parameters available.");
+            return;
+        }
+
+        if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_Resizable)) {
+            ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+            for (auto& [name_, param]: params) {
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(name_.c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(-1);
+
+                auto name = "## " + name_;
+                switch (param->getType()) {
+                    case ParamType::Int: {
+                        auto value = param->get<ParamInt>();
+                        int32_t temp = value;
+                        if (ImGui::InputInt(name.c_str(), &temp)) {
+                            param->value = temp;
+                        }
+                        break;
+                    }
+                    case ParamType::Float: {
+                        auto value = param->get<ParamFloat>();
+                        if (ImGui::InputFloat(name.c_str(), &value)) {
+                            param->value = value;
+                        }
+                        break;
+                    }
+                    case ParamType::Bool: {
+                        auto value = param->get<ParamBool>();
+                        if (ImGui::Checkbox(name.c_str(), &value)) {
+                            param->value = value;
+                        }
+                        break;
+                    }
+                    case ParamType::String: {
+                        auto value = param->get<ParamString>();
+                        char buffer[256];
+                        std::strncpy(buffer, value.c_str(), sizeof(buffer));
+                        if (ImGui::InputText(name.c_str(), buffer, sizeof(buffer))) {
+                            param->value = ParamString(buffer);
+                        }
+                        break;
+                    }
+                }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
         if (ctx.input().unmanaged().isKeyJustPressed("toggle_debug_console")) {
             m_showDebugWindow = !m_showDebugWindow;
@@ -32,59 +90,13 @@ namespace game::State {
         }
 
         ctx.renderer().addImGuiDrawCommand([]() {
-            auto params = ParamManager::getInstance().getAllParams();
             ImGui::Begin("Debug Tool - Parameters");
 
-            if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_Resizable)) {
-                ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
-                ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-                for (auto& [name_, param]: params) {
-                    ImGui::TableNextRow();
-
-                    ImGui::TableSetColumnIndex(0);
-                    ImGui::TextUnformatted(name_.c_str());
-
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::SetNextItemWidth(-1);
-
-                    auto name = "## " + name_;
-                    switch (param->getType()) {
-                        case ParamType::Int: {
-                            auto value = param->get<ParamInt>();
-                            int32_t temp = value;
-                            if (ImGui::InputInt(name.c_str(), &temp)) {
-                                param->value = temp;
-                            }
-                            break;
-                        }
-                        case ParamType::Float: {
-                            auto value = param->get<ParamFloat>();
-                            if (ImGui::InputFloat(name.c_str(), &value)) {
-                                param->value = value;
-                            }
-                            break;
-                        }
-                        case ParamType::Bool: {
-                            auto value = param->get<ParamBool>();
-                            if (ImGui::Checkbox(name.c_str(), &value)) {
-                                param->value = value;
-                            }
-                            break;
-                        }
-                        case ParamType::String: {
-                            auto value = param->get<ParamString>();
-                            char buffer[256];
-                            std::strncpy(buffer, value.c_str(), sizeof(buffer));
-                            if (ImGui::InputText(name.c_str(), buffer, sizeof(buffer))) {
-                                param->value = ParamString(buffer);
-                            }
-                            break;
-                        }
-                    }
-                }
-
-                ImGui::EndTable();
-            }
+            ImGui::TextUnformatted("System Parameters:");
+            drawParameterItems(ParamManager::getInstance().getAllParams());
+            ImGui::Separator();
+            ImGui::TextUnformatted("User Config Parameters:");
+            drawParameterItems(UserConfigParamManager::getInstance().getAllParams());
 
             ImGui::End();
         });

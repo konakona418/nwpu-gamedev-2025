@@ -18,7 +18,9 @@ namespace game {
         }
     }
 
-    void ParamManager::loadFromFile(const moe::StringView filepath) {
+    void BaseParamManager::loadFromFile(const moe::StringView filepath) {
+        m_filepath = filepath.data();
+
         auto table_ = toml::parse_file(filepath.data());
         if (table_.failed()) {
             moe::Logger::error(
@@ -29,12 +31,11 @@ namespace game {
         }
 
         m_table = table_.table();
-        m_filepath = filepath.data();
 
         initAllParamsFromTable();
     }
 
-    void ParamManager::saveToFile(const moe::StringView filepath) const {
+    void BaseParamManager::saveToFile() const {
         toml::table table;
 
         for (const auto& [name, paramPtr]: m_params) {
@@ -58,15 +59,15 @@ namespace game {
         }
 
         // ! fixme: stop using ofstream directly
-        std::ofstream ofs(filepath.data());
+        std::ofstream ofs(m_filepath.data());
         ofs << table;
     }
 
-    void ParamManager::registerParam(const moe::StringView name, ParamItem& param) {
+    void BaseParamManager::registerParam(const moe::StringView name, ParamItem& param) {
         m_params.emplace(name.data(), &param);
     }
 
-    void ParamManager::initAllParamsFromTable() {
+    void BaseParamManager::initAllParamsFromTable() {
         for (auto& [name, param]: m_params) {
             auto path = toml::path(name.data());
             if (path.empty()) {
@@ -102,7 +103,7 @@ namespace game {
         }
     }
 
-    moe::Vector<moe::String> ParamManager::splitPath(const moe::StringView path) {
+    moe::Vector<moe::String> BaseParamManager::splitPath(const moe::StringView path) {
         moe::Vector<moe::String> result;
         size_t start = 0;
         size_t end = 0;
@@ -112,5 +113,13 @@ namespace game {
         }
         result.push_back(moe::String(path.substr(start)));
         return result;
+    }
+
+    void ParamManager::saveToFile() const {
+        if (!m_isDevMode) {
+            moe::Logger::error("ParamManager::saveToFile: attempted to save params while not in dev mode; aborting");
+            return;
+        }
+        BaseParamManager::saveToFile();
     }
 }// namespace game

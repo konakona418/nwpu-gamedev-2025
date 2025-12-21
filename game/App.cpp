@@ -11,6 +11,12 @@
 #include "Core/FileReader.hpp"
 #include "Core/Task/Scheduler.hpp"
 
+#ifndef NDEBUG
+#ifndef ENABLE_DEV_MODE
+#define ENABLE_DEV_MODE
+#endif
+#endif
+
 namespace game {
     void App::init() {
         moe::Logger::setThreadName("Graphics");
@@ -19,7 +25,13 @@ namespace game {
         moe::ThreadPoolScheduler::getInstance().init();
         moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
 
-        ParamManager::getInstance().loadFromFile(moe::userdata("config.toml"));
+        ParamManager::getInstance().loadFromFile(moe::asset("config.toml"));
+#ifdef ENABLE_DEV_MODE
+        ParamManager::getInstance().setDevMode(true);
+#else
+        ParamManager::getInstance().setDevMode(false);
+#endif
+        UserConfigParamManager::getInstance().loadFromFile(moe::userdata("settings.toml"));
 
         m_physicsEngine = &moe::PhysicsEngine::getInstance();
         m_physicsEngine->init();
@@ -44,7 +56,10 @@ namespace game {
         m_graphicsEngine->cleanup();
         m_physicsEngine->destroy();
 
-        ParamManager::getInstance().saveToFile(moe::userdata("config.toml"));
+#ifdef ENABLE_DEV_MODE
+        ParamManager::getInstance().saveToFile();
+#endif
+        UserConfigParamManager::getInstance().saveToFile();
 
         moe::ThreadPoolScheduler::getInstance().shutdown();
         moe::MainScheduler::getInstance().shutdown();

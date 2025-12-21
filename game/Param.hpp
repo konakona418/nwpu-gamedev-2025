@@ -36,15 +36,13 @@ namespace game {
         ParamType getType() const;
     };
 
-    struct ParamManager
-        : moe::Meta::NonCopyable<ParamManager>,
-          moe::Meta::Singleton<ParamManager> {
+    struct BaseParamManager {
     public:
-        MOE_SINGLETON(ParamManager)
+        virtual ~BaseParamManager() = default;
 
         void loadFromFile(const moe::StringView filepath);
 
-        void saveToFile(const moe::StringView filepath) const;
+        virtual void saveToFile() const;
 
         void registerParam(const moe::StringView name, ParamItem& param);
 
@@ -52,7 +50,7 @@ namespace game {
             return m_params;
         }
 
-    private:
+    protected:
         moe::UnorderedMap<moe::String, ParamItem*> m_params;
         toml::table m_table;
         moe::String m_filepath;
@@ -60,6 +58,40 @@ namespace game {
         static moe::Vector<moe::String> splitPath(const moe::StringView path);
 
         void initAllParamsFromTable();
+    };
+
+    struct ParamManager
+        : BaseParamManager,
+          moe::Meta::NonCopyable<ParamManager>,
+          moe::Meta::Singleton<ParamManager> {
+    public:
+        MOE_SINGLETON(ParamManager)
+
+        void saveToFile() const override;
+
+        void setDevMode(bool isDevMode) {
+            m_isDevMode = isDevMode;
+        }
+
+        bool isDevMode() const {
+            return m_isDevMode;
+        }
+
+    private:
+        bool m_isDevMode{false};
+    };
+
+    struct UserConfigParamManager
+        : BaseParamManager,
+          moe::Meta::NonCopyable<UserConfigParamManager>,
+          moe::Meta::Singleton<UserConfigParamManager> {
+    public:
+        MOE_SINGLETON(UserConfigParamManager)
+    };
+
+    enum class ParamScope {
+        System,
+        UserConfig,
     };
 
     template<typename T>
@@ -72,12 +104,19 @@ namespace game {
                         moe::Meta::IsSameV<T, ParamString>,
                 "Unsupported Param type");
 
-        Param(const moe::StringView name, const T& defaultValue) {
+        Param(const moe::StringView name, const T& defaultValue, ParamScope scope = ParamScope::System) {
             m_param = ParamItem{
                     .name = moe::String(name),
                     .value = defaultValue,
             };
-            ParamManager::getInstance().registerParam(name, m_param);
+            switch (scope) {
+                case ParamScope::System:
+                    ParamManager::getInstance().registerParam(name, m_param);
+                    break;
+                case ParamScope::UserConfig:
+                    UserConfigParamManager::getInstance().registerParam(name, m_param);
+                    break;
+            }
         }
 
         T get() const {
