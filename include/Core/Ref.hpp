@@ -22,6 +22,10 @@ public:
         }
     }
 
+    static Ref<T> null() {
+        return Ref<T>(nullptr);
+    }
+
     Ref(const Ref& other)
         : m_ptr(other.m_ptr) {
         if (m_ptr) {
