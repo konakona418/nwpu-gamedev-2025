@@ -6,6 +6,7 @@
 
 #include "AnyCache.hpp"
 #include "FontLoader.hpp"
+#include "Util.hpp"
 
 #include "UI/BoxWidget.hpp"
 #include "UI/RootWidget.hpp"
@@ -35,7 +36,7 @@ namespace game::State {
         moe::Preload<game::AnyCacheLoader<moe::Secure<game::FontLoader<
                 game::AnyCacheLoader<moe::Launch<moe::BinaryLoader>>>>>>
                 m_fontId{
-                        FontLoaderParam{48.0f, ""},
+                        FontLoaderParam{48.0f, Util::glyphRangeChinese()},
                         moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
 
         moe::Ref<moe::RootWidget> m_rootWidget;
