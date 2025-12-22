@@ -6,7 +6,9 @@
 #include "State/WorldEnvironment.hpp"
 
 #include "Input.hpp"
+#include "Localization.hpp"
 #include "Param.hpp"
+
 
 #include "Core/FileReader.hpp"
 #include "Core/Task/Scheduler.hpp"
@@ -34,10 +36,13 @@ namespace game {
         moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
 
         ParamManager::getInstance().loadFromFile(moe::asset("config.toml"));
+        LocalizationParamManager::getInstance().loadFromFile(moe::asset("localization.toml"));
 #ifdef ENABLE_DEV_MODE
         ParamManager::getInstance().setDevMode(true);
+        LocalizationParamManager::getInstance().setDevMode(true);
 #else
         ParamManager::getInstance().setDevMode(false);
+        LocalizationParamManager::getInstance().setDevMode(false);
 #endif
         UserConfigParamManager::getInstance().loadFromFile(moe::userdata("settings.toml"));
 
@@ -75,6 +80,7 @@ namespace game {
 
 #ifdef ENABLE_DEV_MODE
         ParamManager::getInstance().saveToFile();
+        LocalizationParamManager::getInstance().saveToFile();
 #endif
         UserConfigParamManager::getInstance().saveToFile();
 

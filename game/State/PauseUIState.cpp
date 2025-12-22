@@ -2,10 +2,14 @@
 
 #include "App.hpp"
 #include "GameManager.hpp"
+#include "Localization.hpp"
 
 #include "Render/Vulkan/VulkanEngine.hpp"
 
 namespace game::State {
+    static I18N PAUSE_MENU_TITLE("pause_menu.title", U"Paused");
+    static I18N PAUSE_MENU_RESUME_BUTTON("pause_menu.resume_button", U"Resume");
+
     void PauseUIState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering PauseUIState");
 
@@ -20,7 +24,7 @@ namespace game::State {
         m_rootWidget = moe::makeRef<moe::RootWidget>((float) width, (float) height);
 
         m_titleTextWidget = moe::makeRef<moe::VkTextWidget>(
-                U"Paused",
+                PAUSE_MENU_TITLE.get(),
                 fontId,
                 48.f,
                 moe::Colors::White);
@@ -28,7 +32,7 @@ namespace game::State {
 
         m_resumeButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
-                        U"Resume",
+                        PAUSE_MENU_RESUME_BUTTON.get(),
                         fontId,
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),

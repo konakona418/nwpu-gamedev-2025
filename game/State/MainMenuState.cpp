@@ -1,9 +1,16 @@
 #include "MainMenuState.hpp"
 
 #include "GameManager.hpp"
+#include "Localization.hpp"
+
 #include "UI/BoxWidget.hpp"
 
 namespace game::State {
+    static I18N MAINMENU_MULTIPLAYER_BUTTON("mainmenu.multiplayer_button", U"Multiplayer");
+    static I18N MAINMENU_SETTINGS_BUTTON("mainmenu.settings_button", U"Settings");
+    static I18N MAINMENU_CREDITS_BUTTON("mainmenu.credits_button", U"Credits");
+    static I18N MAINMENU_EXIT_BUTTON("mainmenu.exit_button", U"Exit");
+
     void MainMenuState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering MainMenuState");
 
@@ -25,7 +32,7 @@ namespace game::State {
 
         m_multiPlayerButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
-                        U"Multiplayer",
+                        MAINMENU_MULTIPLAYER_BUTTON.get(),
                         m_fontId.generate().value_or(moe::NULL_FONT_ID),
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),
@@ -36,7 +43,7 @@ namespace game::State {
 
         m_settingsButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
-                        U"Settings",
+                        MAINMENU_SETTINGS_BUTTON.get(),
                         m_fontId.generate().value_or(moe::NULL_FONT_ID),
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),
@@ -47,7 +54,7 @@ namespace game::State {
 
         m_creditsButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
-                        U"Credits",
+                        MAINMENU_CREDITS_BUTTON.get(),
                         m_fontId.generate().value_or(moe::NULL_FONT_ID),
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),
@@ -58,7 +65,7 @@ namespace game::State {
 
         m_exitButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
-                        U"Exit",
+                        MAINMENU_EXIT_BUTTON.get(),
                         m_fontId.generate().value_or(moe::NULL_FONT_ID),
                         24.f,
                         moe::Color::fromNormalized(50, 50, 50, 255),

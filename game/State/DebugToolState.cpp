@@ -2,7 +2,9 @@
 #include "App.hpp"
 #include "GameManager.hpp"
 
+#include "Localization.hpp"
 #include "Param.hpp"
+
 
 #include "imgui.h"
 
@@ -77,6 +79,38 @@ namespace game::State {
         }
     }
 
+    void drawI18NItems(const moe::UnorderedMap<moe::String, LocalizationItem*>& items, const moe::Vector<moe::String>& sortedKeys) {
+        if (items.empty()) {
+            ImGui::TextUnformatted("No localization items available.");
+            return;
+        }
+
+        if (ImGui::BeginTable("I18N_Items", 2, ImGuiTableFlags_Resizable)) {
+            ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthStretch);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+            for (auto& key_: sortedKeys) {
+                auto item = items.at(key_.data());
+                ImGui::TableNextRow();
+
+                ImGui::TableSetColumnIndex(0);
+                ImGui::TextUnformatted(key_.c_str());
+
+                ImGui::TableSetColumnIndex(1);
+                ImGui::SetNextItemWidth(-1);
+
+                auto name = "## " + key_;
+                auto value = utf8::utf32to8(item->value);
+                char buffer[512];
+                std::strncpy(buffer, value.c_str(), sizeof(buffer));
+                if (ImGui::InputText(name.c_str(), buffer, sizeof(buffer))) {
+                    item->value = utf8::utf8to32(moe::StringView(buffer));
+                }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
         if (ctx.input().unmanaged().isKeyJustPressed("toggle_debug_console")) {
             m_showDebugWindow = !m_showDebugWindow;
@@ -91,8 +125,8 @@ namespace game::State {
         }
 
         ctx.renderer().addImGuiDrawCommand([]() {
+            // params
             ImGui::Begin("Debug Tool - Parameters");
-
             auto& systemParams = ParamManager::getInstance();
             auto& userParams = UserConfigParamManager::getInstance();
             ImGui::TextUnformatted("System Parameters:");
@@ -100,7 +134,12 @@ namespace game::State {
             ImGui::Separator();
             ImGui::TextUnformatted("User Config Parameters:");
             drawParameterItems(userParams.getAllParams(), userParams.getSortedParamNames());
+            ImGui::End();
 
+            // i18n
+            ImGui::Begin("Debug Tool - Localization");
+            auto& i18nManager = LocalizationParamManager::getInstance();
+            drawI18NItems(i18nManager.getAllLocalizationItems(), i18nManager.getSortedKeys());
             ImGui::End();
         });
     }
