@@ -6,6 +6,7 @@
 
 #include "GameManager.hpp"
 #include "Input.hpp"
+#include "NetworkAdaptor.hpp"
 
 namespace game {
     struct App {
@@ -27,5 +28,6 @@ namespace game {
         moe::UniquePtr<game::GameManager> m_gameManager;
 
         moe::UniquePtr<Input> m_input;
+        moe::UniquePtr<NetworkAdaptor> m_networkAdaptor;
     };
 }// namespace game

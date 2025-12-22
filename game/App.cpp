@@ -23,6 +23,9 @@ namespace game {
 
     static ParamF FOV_DEGREES("graphics.fov_degrees", 45.0f, ParamScope::UserConfig);
 
+    static ParamS SERVER_ADDRESS("network.server_address", "127.0.0.1", ParamScope::UserConfig);
+    static ParamI SERVER_PORT("network.server_port", 12345, ParamScope::UserConfig);
+
     void App::init() {
         moe::Logger::setThreadName("Graphics");
 
@@ -60,9 +63,13 @@ namespace game {
         });
 
         m_input = std::make_unique<Input>(this);
+
+        m_networkAdaptor = std::make_unique<NetworkAdaptor>();
+        m_networkAdaptor->init(SERVER_ADDRESS.get(), static_cast<uint16_t>(SERVER_PORT.get()));
     }
 
     void App::shutdown() {
+        m_networkAdaptor->shutdown();
         m_graphicsEngine->cleanup();
         m_physicsEngine->destroy();
 
