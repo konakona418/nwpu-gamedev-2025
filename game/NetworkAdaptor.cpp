@@ -118,8 +118,7 @@ namespace game {
 
         while (m_running) {
             ENetEvent event;
-            // ! fixme: this will slightly delay the shutdown process
-            while (enet_host_service(m_client, &event, 1000) > 0) {
+            while (enet_host_service(m_client, &event, NETWORK_LOOP_TIME_WAIT_MS) > 0) {
                 handleEnetEvent(event);
                 // todo: handle send requests
             }

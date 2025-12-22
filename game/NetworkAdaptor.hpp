@@ -27,6 +27,9 @@ namespace game {
         }
 
     private:
+        // wait for 1ms
+        static constexpr uint32_t NETWORK_LOOP_TIME_WAIT_MS = 1;
+
         ENetPeer* m_serverPeer{nullptr};
         ENetHost* m_client{nullptr};
 
