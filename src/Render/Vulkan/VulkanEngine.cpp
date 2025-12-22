@@ -11,6 +11,8 @@
 #include "Render/Vulkan/VmaImpl.hpp"
 #include "Render/Vulkan/VolkImpl.hpp"
 
+#include "Core/FileReader.hpp"
+
 #include <chrono>
 #include <thread>
 
@@ -66,6 +68,7 @@ namespace moe {
                 100.0f);
 
         m_shadowMapCameraScale = initializers.csmCameraScale;
+        m_imGuiFontPath = initializers.imGuiFontPath;
     }
 
     void VulkanEngine::init(const VulkanEngineInitializers& initializers) {
@@ -1423,6 +1426,38 @@ namespace moe {
         initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
 
         ImGui_ImplVulkan_Init(&initInfo);
+
+        if (!m_imGuiFontPath.empty()) {
+            size_t outFileSize;
+            auto fontData_ =
+                    FileReader::s_instance->readFile(
+                            m_imGuiFontPath,
+                            outFileSize);
+            if (!fontData_) {
+                Logger::error("Failed to load font file for ImGui");
+            } else {
+                auto fontData = fontData_.value();
+
+                ImFontConfig fontConfig;
+                fontConfig.FontDataOwnedByAtlas = true;// let ImGui manage the memory
+
+                auto fontMemory = ImGui::MemAlloc(outFileSize);
+                std::memcpy(fontMemory, fontData.data(), outFileSize);
+
+                auto* font = imGuiIo.Fonts->AddFontFromMemoryTTF(
+                        fontMemory,
+                        static_cast<int>(fontData.size()),
+                        16.0f,
+                        nullptr,
+                        imGuiIo.Fonts->GetGlyphRangesChineseFull());
+
+                if (!font) {
+                    Logger::error("Failed to load font for ImGui from memory");
+                }
+            }
+        } else {
+            Logger::info("Using default font for ImGui");
+        }
 
         m_mainDeletionQueue.pushFunction([=]() {
             ImGui_ImplVulkan_Shutdown();

@@ -28,6 +28,8 @@ namespace game {
     static ParamS SERVER_ADDRESS("network.server_address", "127.0.0.1", ParamScope::UserConfig);
     static ParamI SERVER_PORT("network.server_port", 12345, ParamScope::UserConfig);
 
+    static ParamS IMGUI_FONT_PATH("graphics.imgui_font_path", "assets/fonts/NotoSansSC-Regular.ttf", ParamScope::System);
+
     void App::init() {
         moe::Logger::setThreadName("Graphics");
 
@@ -65,6 +67,7 @@ namespace game {
                 .viewportHeight = static_cast<int>(WINDOW_HEIGHT.get()),
                 .fovDeg = FOV_DEGREES.get(),
                 .csmCameraScale = {3.0f, 3.0f, 3.0f},
+                .imGuiFontPath = moe::asset(IMGUI_FONT_PATH.get()),
         });
 
         m_input = std::make_unique<Input>(this);

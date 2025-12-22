@@ -69,6 +69,8 @@ namespace moe {
         float fovDeg{45.0f};
 
         glm::vec3 csmCameraScale{3.0f, 3.0f, 3.0f};
+
+        moe::String imGuiFontPath{""};
     };
 
     class VulkanEngine {
@@ -139,6 +141,8 @@ namespace moe {
         Pinned<VulkanCamera> m_defaultCamera{nullptr};
 
         Pinned<Vulkan2DCamera> m_defaultSpriteCamera{nullptr};
+
+        moe::String m_imGuiFontPath{""};
 
         struct {
             VulkanImageCache imageCache;
