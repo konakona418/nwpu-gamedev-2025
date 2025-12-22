@@ -1,6 +1,8 @@
 #include "Localization.hpp"
 
-#include <fstream>
+#include "Core/FileWriter.hpp"
+
+#include <sstream>
 #include <utf8.h>
 
 namespace game {
@@ -51,9 +53,10 @@ namespace game {
             currentTable->insert(lastPart.data(), utf8::utf32to8(value));
         }
 
-        // ! fixme: stop using ofstream directly
-        std::ofstream ofs(m_filepath.data());
-        ofs << table;
+        std::stringstream ss;
+        ss << table;
+
+        moe::FileWriter::writeToFile(m_filepath.data(), ss.str());
     }
 
     void LocalizationParamManager::initAllParamsFromTable() {

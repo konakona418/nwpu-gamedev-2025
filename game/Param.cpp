@@ -1,6 +1,8 @@
 #include "Param.hpp"
 
-#include <fstream>
+#include "Core/FileWriter.hpp"
+
+#include <sstream>
 
 namespace game {
     ParamType ParamItem::getType() const {
@@ -58,9 +60,9 @@ namespace game {
                     param.value);
         }
 
-        // ! fixme: stop using ofstream directly
-        std::ofstream ofs(m_filepath.data());
-        ofs << table;
+        std::stringstream ss;
+        ss << table;
+        moe::FileWriter::writeToFile(m_filepath.data(), ss.str());
     }
 
     void BaseParamManager::registerParam(const moe::StringView name, ParamItem& param) {
