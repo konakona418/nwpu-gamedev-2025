@@ -18,7 +18,7 @@ namespace game::State {
         ctx.input().removeProxy(&m_inputProxy);
     }
 
-    void drawParameterItems(moe::UnorderedMap<moe::String, ParamItem*> params) {
+    void drawParameterItems(const moe::UnorderedMap<moe::String, ParamItem*>& params, const moe::Vector<moe::String>& sortedNames) {
         if (params.empty()) {
             ImGui::TextUnformatted("No parameters available.");
             return;
@@ -27,7 +27,8 @@ namespace game::State {
         if (ImGui::BeginTable("Params", 2, ImGuiTableFlags_Resizable)) {
             ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_WidthStretch);
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-            for (auto& [name_, param]: params) {
+            for (auto& name_: sortedNames) {
+                auto param = params.at(name_.data());
                 ImGui::TableNextRow();
 
                 ImGui::TableSetColumnIndex(0);
@@ -92,11 +93,13 @@ namespace game::State {
         ctx.renderer().addImGuiDrawCommand([]() {
             ImGui::Begin("Debug Tool - Parameters");
 
+            auto& systemParams = ParamManager::getInstance();
+            auto& userParams = UserConfigParamManager::getInstance();
             ImGui::TextUnformatted("System Parameters:");
-            drawParameterItems(ParamManager::getInstance().getAllParams());
+            drawParameterItems(systemParams.getAllParams(), systemParams.getSortedParamNames());
             ImGui::Separator();
             ImGui::TextUnformatted("User Config Parameters:");
-            drawParameterItems(UserConfigParamManager::getInstance().getAllParams());
+            drawParameterItems(userParams.getAllParams(), userParams.getSortedParamNames());
 
             ImGui::End();
         });

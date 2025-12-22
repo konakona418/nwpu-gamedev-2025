@@ -65,6 +65,7 @@ namespace game {
 
     void BaseParamManager::registerParam(const moe::StringView name, ParamItem& param) {
         m_params.emplace(name.data(), &param);
+        m_sortedParams.push_back(name.data());
     }
 
     void BaseParamManager::initAllParamsFromTable() {

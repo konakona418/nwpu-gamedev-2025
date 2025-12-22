@@ -50,8 +50,13 @@ namespace game {
             return m_params;
         }
 
+        const moe::Vector<moe::String>& getSortedParamNames() const {
+            return m_sortedParams;
+        }
+
     protected:
         moe::UnorderedMap<moe::String, ParamItem*> m_params;
+        moe::Vector<moe::String> m_sortedParams;
         toml::table m_table;
         moe::String m_filepath;
 
