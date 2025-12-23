@@ -24,6 +24,12 @@ namespace game::State {
     // offset from mass center (half height) to camera position (eye level)
     static ParamF PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
 
+    static ParamF PLAYER_SUPPORTING_VOLUME_CONSTANT("player.supporting_volume_constant", -0.5f);
+    static ParamF PLAYER_MAX_SLOPE_ANGLE_DEGREES("player.max_slope_angle_degrees", 45.0f);
+
+    static ParamF PLAYER_STICK_TO_FLOOR_STEP_DOWN("player.stick_to_floor_step_down", -0.4f);
+    static ParamF PLAYER_WALK_STAIRS_STEP_UP("player.walk_stairs_step_up", 0.4f);
+
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
     X(backward, GLFW_KEY_S);     \
@@ -55,6 +61,13 @@ namespace game::State {
                                     .Get();
                     auto characterSettings = JPH::CharacterVirtualSettings();
                     characterSettings.mShape = capsuleShape;
+                    // to prevent wall climbing
+                    characterSettings.mSupportingVolume =
+                            JPH::Plane(
+                                    JPH::Vec3::sAxisY(),
+                                    PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
+                    characterSettings.mMaxSlopeAngle =
+                            JPH::DegreesToRadians(PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
 
                     auto character =
                             new JPH::CharacterVirtual(
@@ -140,6 +153,8 @@ namespace game::State {
 
         auto dir = m_movingDirection.get();
         auto velocity = dir * PLAYER_SPEED.get();
+        // jump
+        velocity.y = dir.y * PLAYER_JUMP_VELOCITY.get();
 
         auto lastVel = character->GetLinearVelocity();
 
@@ -147,13 +162,28 @@ namespace game::State {
         auto velY = velocity.y;
 
         auto groundState = character->GetGroundState();
-        bool onGround = groundState != JPH::CharacterVirtual::EGroundState::InAir &&     // flying
-                        groundState != JPH::CharacterVirtual::EGroundState::NotSupported;// about to fall
+
+        bool onGround = groundState == JPH::CharacterVirtual::EGroundState::OnGround;
+        bool onSteepGround = groundState == JPH::CharacterVirtual::EGroundState::OnSteepGround;// steep slope
 
         auto gravity = -character->GetUp() * physicsSystem.GetGravity().Length();
         if (onGround) {
             // on ground, use input Y velocity
             velY = velocity.y;
+        } else if (onSteepGround) {
+            // on steep ground, slide down
+            JPH::Vec3 groundNormal = character->GetGroundNormal();
+            auto velocity = velXoZ;
+
+            float dot = velocity.Dot(groundNormal);
+            if (dot < 0.0f) {
+                // remove component against ground normal
+                velocity -= groundNormal * dot;
+            }
+
+            velXoZ = velocity;
+
+            velY = lastVel.GetY() + gravity.GetY() * deltaTime;
         } else {
             // in air, preserve Y velocity
             velY = lastVel.GetY() + gravity.GetY() * deltaTime;
@@ -163,7 +193,25 @@ namespace game::State {
 
         // check collision
         JPH::CharacterVirtual::ExtendedUpdateSettings settings;
-        // todo: fill in this settings, to allow character to climb up
+        // todo: fill in this settings, to allow character to climb
+        if (!onGround) {
+            settings.mStickToFloorStepDown = JPH::Vec3::sZero();// disable stick to floor when in air
+            settings.mWalkStairsStepUp = JPH::Vec3::sZero();    // disable walk stairs when in air
+        } else {
+            // if on ground, enable stick to floor and walk stairs
+            // ! fixme: this still needs tuning
+            settings.mStickToFloorStepDown =
+                    JPH::Vec3(
+                            0,
+                            PLAYER_STICK_TO_FLOOR_STEP_DOWN.get(),
+                            0);
+
+            settings.mWalkStairsStepUp =
+                    JPH::Vec3(
+                            0,
+                            PLAYER_WALK_STAIRS_STEP_UP.get(),
+                            0);
+        }
 
         character->SetLinearVelocity(finalVel);
         character->ExtendedUpdate(
