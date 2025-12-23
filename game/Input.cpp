@@ -147,18 +147,18 @@ namespace game {
         }
     }
 
-    moe::Pair<float, float> Input::getMousePosition() const {
+    glm::vec2 Input::getMousePosition() const {
         auto* window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
         double x, y;
         glfwGetCursorPos(window, &x, &y);
-        return moe::Pair<float, float>{static_cast<float>(x), static_cast<float>(y)};
+        return glm::vec2{static_cast<float>(x), static_cast<float>(y)};
     }
 
     moe::Pair<float, float> Input::getMouseDelta() const {
         return m_mouseDelta;
     }
 
-    MouseButtonState Input::getMouseButtonState(int button) const {
+    MouseButtonState Input::getMouseButtonState() const {
         auto* window = static_cast<GLFWwindow*>(m_inputBus->getNativeHandle());
         MouseButtonState state;
         state.pressedLMB = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -213,10 +213,10 @@ namespace game {
     void Input::update() {
         resetKeyEvents();
         m_fallThroughEvents.clear();
-        m_mouseDelta = std::make_pair(0, 0);
+        m_mouseDelta = moe::Pair<float, float>(0.f, 0.f);
         while (auto e = m_inputBus->pollEvent()) {
             if (auto mouseEvent = e->getIf<moe::WindowEvent::MouseMove>()) {
-                m_mouseDelta = std::make_pair(mouseEvent->deltaX, mouseEvent->deltaY);
+                m_mouseDelta = moe::Pair<float, float>(mouseEvent->deltaX, mouseEvent->deltaY);
             }
 
             m_fallThroughEvents.push_back(e.value());
@@ -260,18 +260,18 @@ namespace game {
         return m_input->getMouseDelta();
     }
 
-    moe::Pair<float, float> InputProxy::getMousePosition() const {
+    glm::vec2 InputProxy::getMousePosition() const {
         if (!m_isValid || !m_input) {
-            return moe::Pair<float, float>{0.f, 0.f};
+            return glm::vec2{0.f, 0.f};
         }
         return m_input->getMousePosition();
     }
 
-    MouseButtonState InputProxy::getMouseButtonState(int button) const {
+    MouseButtonState InputProxy::getMouseButtonState() const {
         if (!m_isValid || !m_input) {
             return MouseButtonState{false, false, false};
         }
-        return m_input->getMouseButtonState(button);
+        return m_input->getMouseButtonState();
     }
 
     void InputProxy::setMouseState(bool isFree) {
@@ -302,11 +302,11 @@ namespace game {
         return m_input->getMouseDelta();
     }
 
-    moe::Pair<float, float> UnmanagedInputProxy::getMousePosition() const {
+    glm::vec2 UnmanagedInputProxy::getMousePosition() const {
         return m_input->getMousePosition();
     }
 
-    MouseButtonState UnmanagedInputProxy::getMouseButtonState(int button) const {
-        return m_input->getMouseButtonState(button);
+    MouseButtonState UnmanagedInputProxy::getMouseButtonState() const {
+        return m_input->getMouseButtonState();
     }
 }// namespace game

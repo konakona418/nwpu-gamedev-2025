@@ -85,11 +85,11 @@ namespace game::State {
     void MainMenuState::onExit(GameManager& ctx) {
         moe::Logger::info("Exiting MainMenuState");
 
-        m_rootWidget = moe::Ref<moe::RootWidget>::null();
-        m_multiPlayerButtonWidget = moe::Ref<moe::VkButtonWidget>::null();
-        m_settingsButtonWidget = moe::Ref<moe::VkButtonWidget>::null();
-        m_creditsButtonWidget = moe::Ref<moe::VkButtonWidget>::null();
-        m_exitButtonWidget = moe::Ref<moe::VkButtonWidget>::null();
+        m_rootWidget.reset();
+        m_multiPlayerButtonWidget.reset();
+        m_settingsButtonWidget.reset();
+        m_creditsButtonWidget.reset();
+        m_exitButtonWidget.reset();
 
         m_inputProxy.setMouseState(false);
 
@@ -100,9 +100,8 @@ namespace game::State {
     void MainMenuState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
 
-        auto mousePos_ = m_inputProxy.getMousePosition();
-        auto mousePos = glm::vec2(mousePos_.first, mousePos_.second);
-        bool isLMBPressed = m_inputProxy.getMouseButtonState(0).pressedLMB;
+        auto mousePos = m_inputProxy.getMousePosition();
+        bool isLMBPressed = m_inputProxy.getMouseButtonState().pressedLMB;
 
         m_multiPlayerButtonWidget->render(renderctx);
         if (m_multiPlayerButtonWidget->checkButtonState(mousePos, isLMBPressed)) {

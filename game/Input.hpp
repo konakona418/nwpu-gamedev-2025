@@ -4,6 +4,8 @@
 #include "Core/Meta/Feature.hpp"
 #include "Core/RefCounted.hpp"
 
+#include "Math/Common.hpp"
+
 namespace game {
     struct App;
     struct Input;
@@ -20,8 +22,8 @@ namespace game {
     bool isKeyJustPressed(const moe::StringView keyName) const;  \
     bool isKeyJustReleased(const moe::StringView keyName) const; \
     moe::Pair<float, float> getMouseDelta() const;               \
-    moe::Pair<float, float> getMousePosition() const;            \
-    MouseButtonState getMouseButtonState(int button) const;      \
+    glm::vec2 getMousePosition() const;                          \
+    MouseButtonState getMouseButtonState() const;                \
                                                                  \
     void setMouseState(bool isFree);                             \
     bool isMouseFree() const;

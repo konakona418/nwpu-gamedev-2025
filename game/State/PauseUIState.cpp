@@ -66,9 +66,9 @@ namespace game::State {
         input.removeProxy(&m_inputProxy);
 
         // cleanup UI
-        m_rootWidget = moe::Ref<moe::RootWidget>(nullptr);
-        m_titleTextWidget = moe::Ref<moe::VkTextWidget>(nullptr);
-        m_resumeButtonWidget = moe::Ref<moe::VkButtonWidget>(nullptr);
+        m_rootWidget.reset();
+        m_titleTextWidget.reset();
+        m_resumeButtonWidget.reset();
     }
 
     void PauseUIState::onUpdate(GameManager& ctx, float deltaTime) {
@@ -82,9 +82,9 @@ namespace game::State {
         }
 
         auto mousePos = m_inputProxy.getMousePosition();
-        bool isLMBPressed = m_inputProxy.getMouseButtonState(0).pressedLMB;
+        bool isLMBPressed = m_inputProxy.getMouseButtonState().pressedLMB;
 
-        bool clicked = m_resumeButtonWidget->checkButtonState(glm::vec2(mousePos.first, mousePos.second), isLMBPressed);
+        bool clicked = m_resumeButtonWidget->checkButtonState(mousePos, isLMBPressed);
         if (clicked) {
             ctx.popState();
         }
