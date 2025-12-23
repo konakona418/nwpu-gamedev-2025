@@ -115,6 +115,7 @@ public:
     MOE_SINGLETON(PhysicsEngine)
 
     using Duration = std::chrono::duration<float, std::chrono::seconds::period>;
+    using TimeStampRemote = uint64_t;
 
     static constexpr JPH::uint MAX_BODIES = 1024;
     static constexpr JPH::uint NUM_BODY_MUTEXES = 0;
@@ -166,6 +167,12 @@ public:
     // invoke this every frame to update the read buffer
     void updateReadBuffer() { m_swapBuffer.updateReadBuffer(); }
 
+    // synchronize tick index from remote
+    // atomic operation
+    void syncTickIndex(size_t remoteTickIndex, TimeStampRemote remoteTimestampMs);
+
+    size_t getCurrentTickIndex() const { return m_currentTickIndex.load(); }
+
 private:
     PhysicsEngine() = default;
     ~PhysicsEngine() = default;
@@ -191,6 +198,8 @@ private:
     UniquePtr<JPH::PhysicsSystem> m_physicsSystem;
 
     JPH::BodyIDVector m_bodyIdCache;
+
+    std::atomic_size_t m_currentTickIndex{0};
 
     void launchPhysicsThread();
 

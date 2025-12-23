@@ -104,6 +104,9 @@ void PhysicsEngine::mainLoop() {
                 break;
             }
         }
+
+        // advance tick index
+        m_currentTickIndex.fetch_add(1);
     }
 }
 
@@ -139,6 +142,29 @@ void PhysicsEngine::executeDispatchedFunctions() {
         fn(*this);
     }
     m_dispatchedOnPhysicsThreadFn.clear();
+}
+
+void PhysicsEngine::syncTickIndex(size_t remoteTickIndex, TimeStampRemote remoteTimestampMs) {
+    auto currentTime =
+            std::chrono::duration_cast<std::chrono::milliseconds>(
+                    std::chrono::high_resolution_clock::now().time_since_epoch())
+                    .count();
+    auto latency = currentTime - remoteTimestampMs;
+
+    size_t estimatedCurrentTickIndex =
+            remoteTickIndex +
+            static_cast<size_t>(
+                    (latency / 1000.0f) / PHYSICS_TIMESTEP.count());
+
+    m_currentTickIndex.store(estimatedCurrentTickIndex);
+
+    moe::Logger::info(
+            "Syncing physics tick index: remoteTickIndex={}, remoteTimestampMs={}, currentTime={}, latency={}ms, estimatedCurrentTickIndex={}",
+            remoteTickIndex,
+            remoteTimestampMs,
+            currentTime,
+            latency,
+            estimatedCurrentTickIndex);
 }
 
 MOE_END_NAMESPACE
