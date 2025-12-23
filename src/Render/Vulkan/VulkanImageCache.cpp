@@ -3,6 +3,11 @@
 #include "Render/Vulkan/VulkanLoaders.hpp"
 #include "Render/Vulkan/VulkanUtils.hpp"
 
+#include "Core/Expected.hpp"
+#include "Core/Task/Utils.hpp"
+
+#include <algorithm>
+
 
 namespace moe {
     void VulkanImageCache::init(VulkanEngine& engine) {
@@ -62,37 +67,67 @@ namespace moe {
     ImageId VulkanImageCache::loadCubeMapFromFiles(Array<StringView, 6> filenames, VkFormat format, VkImageUsageFlags usage, bool mipmap) {
         MOE_ASSERT(m_initialized, "VulkanImageCache not initialized");
 
-        Array<void*, 6> rawImages;
-        Array<VkLoaders::UniqueRawImage, 6> _rawImageRefs;
-        int width, height, channels;
-
-        std::pair<Array<int, 6>, Array<int, 6>> imageDimensions;
-
         int desiredChannels = VkUtils::getChannelsFromFormat(format);
         Logger::debug("Loading cubemap with desired channels: {}", desiredChannels);
 
+        struct LoadResult {
+            SharedPtr<VkLoaders::UniqueRawImage> image;// hack
+            int width, height, channels;
+            int idx;
+        };
+
+        Vector<Future<Expected<LoadResult, int>, ThreadPoolScheduler>> loadFutures;
         for (int i = 0; i < 6; ++i) {
-            auto rawImage = VkLoaders::loadImage(filenames[i], &width, &height, &channels, desiredChannels);
-            if (!rawImage) {
-                Logger::error("Failed to load cubemap image from file: {}", filenames[i]);
-                return NULL_IMAGE_ID;
-            }
-            _rawImageRefs[i] = std::move(rawImage);// lifetime
-            rawImages[i] = _rawImageRefs[i].get();
+            loadFutures.push_back(moe::async([&filenames, i, desiredChannels]() {
+                int width, height, channels;
+                auto rawImage = VkLoaders::loadImage(filenames[i], &width, &height, &channels, desiredChannels);
+                if (!rawImage) {
+                    Logger::error("Failed to load cubemap image from file: {}", filenames[i]);
+                    return Expected<LoadResult, int>(Err<int>(1));
+                }
 
-            imageDimensions.first[i] = width;
-            imageDimensions.second[i] = height;
+                Logger::debug("Loaded cubemap image {} with dimensions: {}x{}, channels: {}", filenames[i], width, height, channels);
+
+                return Ok<LoadResult, int>(
+                        {std::make_shared<VkLoaders::UniqueRawImage>(std::move(rawImage)),
+                         width, height, channels, i});
+            }));
         }
 
-        if (channels != VkUtils::getChannelsFromFormat(format)) {
-            Logger::warn("Image channels does not match format channels");
+        auto results_ = moe::collectExpected(moe::whenAll(std::move(loadFutures)).get());
+        if (results_.isErr()) {
+            Logger::error("Failed to load cubemap images");
+            return NULL_IMAGE_ID;
         }
 
-        for (int i = 1; i < 6; ++i) {
-            if (imageDimensions.first[i] != imageDimensions.first[0] || imageDimensions.second[i] != imageDimensions.second[0]) {
+        auto images = results_.unwrap();
+
+        // ! sort the images by their original index
+        // ! as the images are loaded asynchronously, their order may be changed
+        std::sort(images.begin(), images.end(),
+                  [](const LoadResult& a, const LoadResult& b) {
+                      return a.idx < b.idx;
+                  });
+
+
+        int width, height;
+        width = images[0].width;
+        height = images[0].height;
+        for (int i = 0; i < 6; ++i) {
+            auto& img = images[i];
+            if (img.width != width || img.height != height) {
                 Logger::error("Cubemap images have different dimensions");
                 return NULL_IMAGE_ID;
             }
+
+            if (img.channels != desiredChannels) {
+                Logger::warn("Cubemap image index {} channels({}) does not match desired channels({})", i, img.channels, desiredChannels);
+            }
+        }
+
+        Array<void*, 6> rawImages;
+        for (int i = 0; i < 6; ++i) {
+            rawImages[i] = images[i].image->get();
         }
 
         return addImage(m_engine->allocateCubeMapImage(
