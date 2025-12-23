@@ -14,9 +14,15 @@
 
 namespace game::State {
     static ParamF PLAYER_SPEED("player.speed", 3.0f);
-    static ParamF PLAYER_ROTATION_SPEED("player.rotation_speed", 0.1f);
+    static ParamF PLAYER_JUMP_VELOCITY("player.jump_velocity", 5.0f);
+
+    static ParamF PLAYER_MOUSE_SENSITIVITY("player.rotation_speed", 0.1f, ParamScope::UserConfig);
+
     static ParamF PLAYER_HALF_HEIGHT("player.half_height", 0.8f);
     static ParamF PLAYER_RADIUS("player.radius", 0.4f);
+
+    // offset from mass center (half height) to camera position (eye level)
+    static ParamF PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
 
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
@@ -99,8 +105,8 @@ namespace game::State {
             dir = movementHelper.realMovementVec(front, cam.getRight(), cam.getUp());
 
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
-            yawDelta = mouseX * PLAYER_ROTATION_SPEED;
-            pitchDelta = mouseY * PLAYER_ROTATION_SPEED;
+            yawDelta = mouseX * PLAYER_MOUSE_SENSITIVITY;
+            pitchDelta = mouseY * PLAYER_MOUSE_SENSITIVITY;
 
             // if escape is just released, show menu
             if (m_inputProxy.isKeyJustReleased("escape_player")) {
@@ -109,6 +115,8 @@ namespace game::State {
         }
 
         auto pos = m_realPosition.get();
+        // offset camera position from mass center to eye level
+        pos.y += PLAYER_CAMERA_OFFSET_Y;
         cam.setPosition(pos);
 
         cam.setYaw(cam.getYaw() + yawDelta);
