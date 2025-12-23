@@ -48,6 +48,15 @@ namespace game {
 #endif
         UserConfigParamManager::getInstance().loadFromFile(moe::userdata("settings.toml"));
 
+        m_graphicsEngine = std::make_unique<moe::VulkanEngine>();
+        m_graphicsEngine->init({
+                .viewportWidth = static_cast<int>(WINDOW_WIDTH.get()),
+                .viewportHeight = static_cast<int>(WINDOW_HEIGHT.get()),
+                .fovDeg = FOV_DEGREES.get(),
+                .csmCameraScale = {3.0f, 3.0f, 3.0f},
+                .imGuiFontPath = moe::asset(IMGUI_FONT_PATH.get()),
+        });
+
         m_physicsEngine = &moe::PhysicsEngine::getInstance();
         m_physicsEngine->init();
 
@@ -60,15 +69,6 @@ namespace game {
         });
 
         m_audioEngine = std::make_unique<moe::AudioEngineInterface>(moe::AudioEngine::getInstance().getInterface());
-
-        m_graphicsEngine = std::make_unique<moe::VulkanEngine>();
-        m_graphicsEngine->init({
-                .viewportWidth = static_cast<int>(WINDOW_WIDTH.get()),
-                .viewportHeight = static_cast<int>(WINDOW_HEIGHT.get()),
-                .fovDeg = FOV_DEGREES.get(),
-                .csmCameraScale = {3.0f, 3.0f, 3.0f},
-                .imGuiFontPath = moe::asset(IMGUI_FONT_PATH.get()),
-        });
 
         m_input = std::make_unique<Input>(this);
 

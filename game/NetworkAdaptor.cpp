@@ -116,16 +116,6 @@ namespace game {
         MOE_ASSERT(m_serverPeer != nullptr, "Server is null");
         MOE_ASSERT(m_client != nullptr, "Client is null");
 
-        const char* message = "Hello from client to server!";
-
-        ENetPacket* packet = enet_packet_create(
-                message,
-                strlen(message) + 1,
-                ENET_PACKET_FLAG_RELIABLE);
-
-        enet_peer_send(m_serverPeer, 0, packet);
-        enet_host_flush(m_client);
-
         while (m_running) {
             ENetEvent event;
             while (enet_host_service(m_client, &event, NETWORK_LOOP_TIME_WAIT_MS) > 0) {
