@@ -86,4 +86,24 @@ namespace game {
             state->_onPhysicsUpdate(*this, deltaTimeSecs);
         }
     }
+
+    void GameManager::addDebugDrawFunction(
+            const moe::StringView name,
+            moe::Function<void()> drawFunction) {
+        m_debugDrawFunctions[name.data()] = DebugDrawFunction{drawFunction, false};
+    }
+
+    void GameManager::setDebugDrawFunctionActive(const moe::StringView name, bool isActive) {
+        auto it = m_debugDrawFunctions.find(name.data());
+        if (it != m_debugDrawFunctions.end()) {
+            it->second.isActive = isActive;
+        }
+    }
+
+    void GameManager::removeDebugDrawFunction(const moe::StringView name) {
+        auto it = m_debugDrawFunctions.find(name.data());
+        if (it != m_debugDrawFunctions.end()) {
+            m_debugDrawFunctions.erase(it);
+        }
+    }
 }// namespace game

@@ -10,8 +10,14 @@ namespace game {
     struct App;
     struct Input;
 
+    namespace State {
+        struct DebugToolState;
+    }
+
     struct GameManager {
     public:
+        friend State::DebugToolState;
+
         GameManager(App* app) : m_app(app) {}
 
         void pushState(moe::Ref<GameState> state);
@@ -25,6 +31,23 @@ namespace game {
         moe::AudioEngineInterface& audio();
 
         game::Input& input();
+
+        void addDebugDrawFunction(
+                const moe::StringView name,
+                moe::Function<void()> drawFunction);
+
+        void setDebugDrawFunctionActive(const moe::StringView name, bool isActive);
+
+        void removeDebugDrawFunction(const moe::StringView name);
+
+        template<typename F>
+        void addDebugDrawFunction(
+                const moe::StringView name,
+                F&& drawFunction) {
+            addDebugDrawFunction(
+                    name,
+                    moe::Function<void()>(std::forward<F>(drawFunction)));
+        }
 
     private:
         enum class ActionType {
@@ -47,5 +70,12 @@ namespace game {
         std::mutex m_gameStateStackCopyMutex;
 
         App* m_app = nullptr;
+
+        struct DebugDrawFunction {
+            moe::Function<void()> drawFunction;
+            bool isActive{false};
+        };
+
+        moe::UnorderedMap<moe::String, DebugDrawFunction> m_debugDrawFunctions;
     };
 }// namespace game

@@ -9,18 +9,7 @@
 #include "imgui.h"
 
 namespace game::State {
-    void DebugToolState::onEnter(GameManager& ctx) {
-        ctx.input().addProxy(&m_inputProxy);
-        ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
-        m_inputProxy.setActive(false);// by default proxies are active, disable it initially
-    }
-
-    void DebugToolState::onExit(GameManager& ctx) {
-        ctx.input().removeKeyEventMapping("toggle_debug_console");
-        ctx.input().removeProxy(&m_inputProxy);
-    }
-
-    void drawParameterItems(const moe::UnorderedMap<moe::String, ParamItem*>& params, const moe::Vector<moe::String>& sortedNames) {
+    static void drawParameterItems(const moe::UnorderedMap<moe::String, ParamItem*>& params, const moe::Vector<moe::String>& sortedNames) {
         if (params.empty()) {
             ImGui::TextUnformatted("No parameters available.");
             return;
@@ -79,7 +68,7 @@ namespace game::State {
         }
     }
 
-    void drawI18NItems(const moe::UnorderedMap<moe::String, LocalizationItem*>& items, const moe::Vector<moe::String>& sortedKeys) {
+    static void drawI18NItems(const moe::UnorderedMap<moe::String, LocalizationItem*>& items, const moe::Vector<moe::String>& sortedKeys) {
         if (items.empty()) {
             ImGui::TextUnformatted("No localization items available.");
             return;
@@ -111,6 +100,43 @@ namespace game::State {
         }
     }
 
+    void DebugToolState::onEnter(GameManager& ctx) {
+        ctx.input().addProxy(&m_inputProxy);
+        ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
+        m_inputProxy.setActive(false);// by default proxies are active, disable it initially
+
+        ctx.addDebugDrawFunction(
+                "Parameters",
+                [this, &ctx]() {
+                    ImGui::Begin("Debug Tool - Parameters");
+                    auto& systemParams = ParamManager::getInstance();
+                    auto& userParams = UserConfigParamManager::getInstance();
+                    ImGui::TextUnformatted("System Parameters:");
+                    drawParameterItems(systemParams.getAllParams(), systemParams.getSortedParamNames());
+                    ImGui::Separator();
+                    ImGui::TextUnformatted("User Config Parameters:");
+                    drawParameterItems(userParams.getAllParams(), userParams.getSortedParamNames());
+                    ImGui::End();
+                });
+
+        ctx.addDebugDrawFunction(
+                "Localization",
+                [this, &ctx]() {
+                    ImGui::Begin("Debug Tool - Localization");
+                    auto& i18nManager = LocalizationParamManager::getInstance();
+                    drawI18NItems(i18nManager.getAllLocalizationItems(), i18nManager.getSortedKeys());
+                    ImGui::End();
+                });
+    }
+
+    void DebugToolState::onExit(GameManager& ctx) {
+        ctx.input().removeKeyEventMapping("toggle_debug_console");
+        ctx.input().removeProxy(&m_inputProxy);
+
+        ctx.removeDebugDrawFunction("Parameters");
+        ctx.removeDebugDrawFunction("Localization");
+    }
+
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
         if (ctx.input().unmanaged().isKeyJustPressed("toggle_debug_console")) {
             m_showDebugWindow = !m_showDebugWindow;
@@ -124,23 +150,25 @@ namespace game::State {
             return;
         }
 
-        ctx.renderer().addImGuiDrawCommand([]() {
-            // params
-            ImGui::Begin("Debug Tool - Parameters");
-            auto& systemParams = ParamManager::getInstance();
-            auto& userParams = UserConfigParamManager::getInstance();
-            ImGui::TextUnformatted("System Parameters:");
-            drawParameterItems(systemParams.getAllParams(), systemParams.getSortedParamNames());
-            ImGui::Separator();
-            ImGui::TextUnformatted("User Config Parameters:");
-            drawParameterItems(userParams.getAllParams(), userParams.getSortedParamNames());
-            ImGui::End();
+        ctx.renderer()
+                .addImGuiDrawCommand([this, &ctx]() {
+                    ImGui::Begin("Debug Tool");
+                    ImGui::TextUnformatted("Debug Draw Functions:");
+                    for (auto& [name, debugDrawFunction]: ctx.m_debugDrawFunctions) {
+                        if (ImGui::Checkbox(name.c_str(), &debugDrawFunction.isActive)) {
+                            moe::Logger::debug(
+                                    "DebugToolState: set debug draw function '{}' active state to {}",
+                                    name,
+                                    debugDrawFunction.isActive ? "true" : "false");
+                        }
+                    }
+                    ImGui::End();
 
-            // i18n
-            ImGui::Begin("Debug Tool - Localization");
-            auto& i18nManager = LocalizationParamManager::getInstance();
-            drawI18NItems(i18nManager.getAllLocalizationItems(), i18nManager.getSortedKeys());
-            ImGui::End();
-        });
+                    for (auto& [name, debugDrawFunction]: ctx.m_debugDrawFunctions) {
+                        if (debugDrawFunction.isActive) {
+                            debugDrawFunction.drawFunction();
+                        }
+                    }
+                });
     }
 }// namespace game::State
