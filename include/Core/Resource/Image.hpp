@@ -5,7 +5,7 @@
 
 MOE_BEGIN_NAMESPACE
 
-struct Image : public RefCounted<Image> {
+struct Image : public AtomicRefCounted<Image> {
 public:
     Image(Vector<uint8_t>&& data, int width, int height, int channels)
         : m_data(std::move(data)), m_width(width), m_height(height), m_channels(channels) {}
