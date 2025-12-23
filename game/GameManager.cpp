@@ -21,13 +21,15 @@ namespace game {
     }
 
     void GameManager::pushState(moe::Ref<GameState> state) {
+        MOE_ASSERT(state, "Cannot push a null state");
         std::lock_guard<std::mutex> lock(m_actionMutex);
         m_pendingActions.push_back({ActionType::Push, state});
     }
 
-    void GameManager::popState() {
+    void GameManager::popState(moe::Ref<GameState> state) {
+        MOE_ASSERT(state, "Cannot pop a null state");
         std::lock_guard<std::mutex> lock(m_actionMutex);
-        m_pendingActions.push_back({ActionType::Pop, moe::Ref<GameState>(nullptr)});
+        m_pendingActions.push_back({ActionType::Pop, state});
     }
 
     bool GameManager::processPendingActions() {
@@ -42,16 +44,21 @@ namespace game {
 
         for (auto& action: actionsCopy) {
             switch (action.type) {
-                case ActionType::Push:
+                case ActionType::Push: {
                     m_gameStateStack.push_back(action.state);
                     action.state->_onEnter(*this);
                     break;
-                case ActionType::Pop:
-                    if (!m_gameStateStack.empty()) {
-                        m_gameStateStack.back()->_onExit(*this);
-                        m_gameStateStack.pop_back();
-                    }
+                }
+                case ActionType::Pop: {
+                    action.state->_onExit(*this);// call onExit before removing
+                    m_gameStateStack.erase(
+                            std::remove(
+                                    m_gameStateStack.begin(),
+                                    m_gameStateStack.end(),
+                                    action.state),
+                            m_gameStateStack.end());
                     break;
+                }
             }
         }
         m_pendingActions.clear();

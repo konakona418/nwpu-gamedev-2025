@@ -21,7 +21,7 @@ namespace game {
         GameManager(App* app) : m_app(app) {}
 
         void pushState(moe::Ref<GameState> state);
-        void popState();
+        void popState(moe::Ref<GameState> state);
         bool processPendingActions();
         void update(float deltaTimeSecs);
         void physicsUpdate(float deltaTimeSecs);

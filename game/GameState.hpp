@@ -29,6 +29,7 @@ namespace game {
             for (auto& child: m_childStates) {
                 child->_onUpdate(ctx, deltaTimeSecs);
             }
+            processPendingChildStateChanges(ctx);
         }
 
         void _onPhysicsUpdate(GameManager& ctx, float deltaTimeSecs) {
@@ -45,27 +46,62 @@ namespace game {
             onExit(ctx);
         }
 
-        void addChildState(moe::Ref<GameState> childState) {
-            if (childState->m_parentState) {
-                childState->m_parentState->removeChildState(childState);
-            }
-
-            childState->m_parentState = moe::Ref<GameState>(this);
-            m_childStates.push_back(childState);
+        void addChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+            MOE_ASSERT(childState, "Cannot add a null child state");
+            m_pendingAddChildStates.push_back(childState);
         }
 
-        void removeChildState(moe::Ref<GameState> childState) {
+        void removeChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+            MOE_ASSERT(childState, "Cannot remove a null child state");
+            m_pendingRemoveChildStates.push_back(childState);
+        }
+
+    protected:
+        GameState* m_parentState{nullptr};
+        moe::Vector<moe::Ref<GameState>> m_childStates;
+
+        moe::Vector<moe::Ref<GameState>> m_pendingAddChildStates;
+        moe::Vector<moe::Ref<GameState>> m_pendingRemoveChildStates;
+
+        void _addChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+            if (childState->m_parentState) {
+                childState->m_parentState->_removeChildState(ctx, childState);
+            }
+
+            childState->m_parentState = this;
+            m_childStates.push_back(childState);
+
+            childState->_onEnter(ctx);
+        }
+
+        void _removeChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+            childState->_onExit(ctx);
+
             m_childStates.erase(
                     std::remove(
                             m_childStates.begin(),
                             m_childStates.end(),
                             childState),
                     m_childStates.end());
-            childState->m_parentState = moe::Ref<GameState>(nullptr);
+            childState->m_parentState = nullptr;
         }
 
-    protected:
-        moe::Ref<GameState> m_parentState{nullptr};
-        moe::Vector<moe::Ref<GameState>> m_childStates;
+        void processPendingChildStateChanges(GameManager& ctx) {
+            if (m_pendingAddChildStates.empty() && m_pendingRemoveChildStates.empty()) {
+                return;
+            }
+
+            auto pendingAdd = std::move(m_pendingAddChildStates);
+            for (auto& child: pendingAdd) {
+                _addChildState(ctx, child);
+            }
+            MOE_ASSERT(m_pendingAddChildStates.empty(), "Child states should have been moved");
+
+            auto pendingRemove = std::move(m_pendingRemoveChildStates);
+            for (auto& child: pendingRemove) {
+                _removeChildState(ctx, child);
+            }
+            MOE_ASSERT(m_pendingRemoveChildStates.empty(), "Child states should have been moved");
+        }
     };
 }// namespace game
