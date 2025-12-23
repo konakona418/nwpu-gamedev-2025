@@ -1,0 +1,7 @@
+namespace myu.net;
+
+table PlayerInfo {
+  player_uuid: string;
+}
+
+root_type PlayerInfo;

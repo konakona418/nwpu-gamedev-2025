@@ -12,6 +12,9 @@
 /shaders/**/*.sh
 /shaders/**/build
 
+/game/FlatBuffers/Generated
+/game/FlatBuffers/.fbs_cache.json
+
 # gemini-cli settings
 .gemini/
 

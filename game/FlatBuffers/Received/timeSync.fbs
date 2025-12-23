@@ -1,0 +1,8 @@
+namespace moe.net;
+
+table TimeSync {
+    // server physics thread tick
+    server_tick: uint64;
+    // server timestamp in milliseconds
+    server_ts_ms: uint64;
+}

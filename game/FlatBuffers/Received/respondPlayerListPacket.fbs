@@ -1,0 +1,8 @@
+namespace myu.net;
+
+// 返回在线玩家列表
+table PlayerList {
+  uuids: [string];  // 在线玩家的 UUID 列表
+}
+
+root_type PlayerList;
