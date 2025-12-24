@@ -4,8 +4,10 @@
 #include "Input.hpp"
 #include "Param.hpp"
 
+#include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
 #include "Core/Deferred.hpp"
+
 #include "Math/Common.hpp"
 
 
@@ -28,6 +30,7 @@ namespace game::State {
 
     private:
         moe::DBuffer<glm::vec3> m_movingDirection;
+        moe::AFlag m_jumpRequested;
         moe::DBuffer<glm::vec3> m_realPosition;
         moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
 

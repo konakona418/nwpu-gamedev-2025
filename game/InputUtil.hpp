@@ -44,21 +44,29 @@ namespace game {
             return glm::normalize(movementVector);
         }
 
-        glm::vec3 realMovementVec(const glm::vec3& front, const glm::vec3& right, const glm::vec3& up) {
-            glm::vec3 movementVector(0.0f, 0.0f, 0.0f);
+        // this function assumes that the `up` vector is always (0, 1, 0)
+        // this function returns:
+        //   - on xOz plane, a normalized vector representing the horizontal movement direction
+        //   - on y axis, either 1, -1 or 0 representing vertical
+        // this is designed for FPS style movement controls
+        glm::vec3 realMovementVecFPS(const glm::vec3& front, const glm::vec3& right, const glm::vec3& up) {
+            glm::vec3 move(0.0f);
+            if (this->forward) move += front;
+            if (this->backward) move -= front;
+            if (this->left) move -= right;
+            if (this->right) move += right;
 
-            if (this->forward) movementVector += front;
-            if (this->backward) movementVector -= front;
-            if (this->left) movementVector -= right;
-            if (this->right) movementVector += right;
-            if (this->up) movementVector += up;
-            if (this->down) movementVector -= up;
-
-            if (movementVector == glm::vec3(0.0f, 0.0f, 0.0f)) {
-                return glm::vec3(0.0f, 0.0f, 0.0f);
+            glm::vec3 xoz = {move.x, 0.0f, move.z};
+            float len2 = glm::length2(xoz);
+            if (len2 > 0.0001f) {
+                xoz = glm::normalize(xoz);
             }
 
-            return glm::normalize(movementVector);
+            float vertical = 0.0f;
+            if (this->up) vertical += 1.0f;
+            if (this->down) vertical -= 1.0f;
+
+            return {xoz.x, vertical, xoz.z};
         }
     };
 }// namespace game

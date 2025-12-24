@@ -112,10 +112,13 @@ namespace game::State {
             PLAYER_KEY_MAPPING_XXX()
 #undef X
 
+            // ! this still needs further check,
+            // ! if the logic is incorrect, it may cause some weird movement issues
+            // ! after synchronization from server is implemented
             auto front = cam.getFront();
             front.y = 0;// proj to xOz
             front = glm::normalize(front);
-            dir = movementHelper.realMovementVec(front, cam.getRight(), cam.getUp());
+            dir = movementHelper.realMovementVecFPS(front, cam.getRight(), cam.getUp());
 
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
             yawDelta = mouseX * PLAYER_MOUSE_SENSITIVITY;
@@ -135,6 +138,11 @@ namespace game::State {
         cam.setYaw(cam.getYaw() + yawDelta);
         cam.setPitch(cam.getPitch() - pitchDelta);
 
+        if (dir.y > 0.001f) {
+            m_jumpRequested.set();
+        }
+        // todo: implement crouch later
+
         m_movingDirection.publish(std::move(dir));
     }
 
@@ -153,13 +161,17 @@ namespace game::State {
 
         auto dir = m_movingDirection.get();
         auto velocity = dir * PLAYER_SPEED.get();
-        // jump
-        velocity.y = dir.y * PLAYER_JUMP_VELOCITY.get();
 
         auto lastVel = character->GetLinearVelocity();
 
-        auto velXoZ = moe::Physics::toJoltType<JPH::Vec3>(glm::vec3(velocity.x, 0, velocity.z));
-        auto velY = velocity.y;
+        auto velXoZ = moe::Physics::toJoltType<JPH::Vec3>(
+                glm::vec3(velocity.x, 0, velocity.z));
+        float velY = 0.0f;
+
+        // no matter what, the state of m_jumpRequested is consumed here
+        // otherwise, if in some cases the jump request is never processed,
+        // the state will remain true and cause unwanted jumps later
+        bool jumpRequested = m_jumpRequested.consume();
 
         auto groundState = character->GetGroundState();
 
@@ -168,8 +180,15 @@ namespace game::State {
 
         auto gravity = -character->GetUp() * physicsSystem.GetGravity().Length();
         if (onGround) {
-            // on ground, use input Y velocity
-            velY = velocity.y;
+            if (jumpRequested) {
+                // apply jump impulse
+                moe::Logger::debug("LocalPlayerState: Jump requested");
+                velY = PLAYER_JUMP_VELOCITY.get();
+            } else {
+                // on ground, preserve horizontal velocity, reset vertical velocity
+                velY = 0.0f;
+            }
+            // todo: apply ground friction later
         } else if (onSteepGround) {
             // on steep ground, slide down
             JPH::Vec3 groundNormal = character->GetGroundNormal();
@@ -186,6 +205,7 @@ namespace game::State {
             velY = lastVel.GetY() + gravity.GetY() * deltaTime;
         } else {
             // in air, preserve Y velocity
+            // ! fixme: players can still move freely in air, need to limit air control later
             velY = lastVel.GetY() + gravity.GetY() * deltaTime;
         }
 
