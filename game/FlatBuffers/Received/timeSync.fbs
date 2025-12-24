@@ -6,3 +6,5 @@ table TimeSync {
     // server timestamp in milliseconds
     server_ts_ms: uint64;
 }
+
+root_type TimeSync;

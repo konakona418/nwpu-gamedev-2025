@@ -1,0 +1,24 @@
+namespace moe.net;
+
+table PlayerUpdate {
+    player_temp_id: uint16;
+
+    pos_x: float;
+    pos_y: float;
+    pos_z: float;
+
+    vel_x: float;
+    vel_y: float;
+    vel_z: float;
+
+    head_x: float;
+    head_y: float; // actually this has no use but just in case
+    head_z: float;
+}
+
+table AllPlayerUpdate {
+    updates: [PlayerUpdate];
+    my_update: PlayerUpdate;
+}
+
+root_type AllPlayerUpdate;

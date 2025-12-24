@@ -1,0 +1,25 @@
+namespace moe.net;
+
+enum PlayerTeam : byte {
+    TEAM_NONE = 0,
+    TEAM_T = 1,
+    TEAM_CT = 2,
+}
+
+table PlayerInfo {
+    player_uuid: string;
+    player_name: string;
+    player_temp_id: uint16;
+    player_team: PlayerTeam;
+}
+
+table PlayerInfoList {
+    players: [PlayerInfo];
+}
+
+table AllPlayerInfo {
+    players: PlayerInfoList;
+    whoami: PlayerInfo;
+}
+
+root_type AllPlayerInfo;
