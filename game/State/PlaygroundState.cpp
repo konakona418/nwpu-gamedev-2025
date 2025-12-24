@@ -10,14 +10,18 @@
 
 namespace game::State {
     void PlaygroundState::onEnter(GameManager& ctx) {
-        auto playgroundAsset = moe::asset("assets/models/playground.glb");
+        auto path = moe::asset("assets/models/playground.glb");
+        m_playgroundRenderable = m_playgroundModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_playgroundRenderable == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("PlaygroundState::onEnter: failed to load playground model");
+            return;
+        }
 
-        m_playgroundRenderable = ctx.renderer().getResourceLoader().load(moe::Loader::Gltf, playgroundAsset);
         ctx.physics().dispatchOnPhysicsThread(
-                [state = this->asRef<PlaygroundState>(), playgroundAsset](moe::PhysicsEngine& physics) mutable {
+                [state = this->asRef<PlaygroundState>(), path](moe::PhysicsEngine& physics) mutable {
                     moe::Logger::debug("Creating playground collider");
 
-                    auto collider = moe::Physics::GltfColliderFactory::shapeFromGltf(playgroundAsset);
+                    auto collider = moe::Physics::GltfColliderFactory::shapeFromGltf(path);
                     JPH::BodyCreationSettings settings = JPH::BodyCreationSettings(
                             collider,
                             JPH::RVec3(0.0f, 0.0f, 0.0f),

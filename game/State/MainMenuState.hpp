@@ -26,12 +26,11 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
-        moe::Preload<game::AnyCacheLoader<moe::Secure<game::FontLoader<
-                game::AnyCacheLoader<moe::Launch<moe::BinaryLoader>>>>>>
+        moe::Secure<game::AnyCacheLoader<game::FontLoader<
+                moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>
                 m_fontId{
                         FontLoaderParam{48.0f, Util::glyphRangeChinese()},
-                        moe::BinaryFilePath(
-                                moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
+                        moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
 
         InputProxy m_inputProxy{InputProxy::PRIORITY_UI_LOCK};
 
