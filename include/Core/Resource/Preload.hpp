@@ -47,8 +47,7 @@ public:
     using value_type = typename AsyncInnerGenerator::value_type;
 
     template<typename... Args>
-    Preload(Args&&... args) {
-        m_asyncLoad = Launch<AsyncInnerGenerator>(std::forward<Args>(args)...);
+    Preload(Args&&... args) : m_asyncLoad(std::forward<Args>(args)...) {
         m_asyncLoad.launchAsyncLoad();
     }
 
@@ -74,8 +73,7 @@ public:
     using value_type = typename SecureInnerGenerator::value_type;
 
     template<typename... Args>
-    Preload(Args&&... args) {
-        m_secureLoad = Secure<SecureInnerGenerator>(std::forward<Args>(args)...);
+    Preload(Args&&... args) : m_secureLoad(std::forward<Args>(args)...) {
         m_secureLoad.launchAsyncLoad();
     }
 
