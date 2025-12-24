@@ -28,12 +28,12 @@ namespace game {
 
         void shutdown();
 
-        moe::SharedPtr<TransmitQueueSend> getSendQueue() {
-            return m_sendQueue;
+        TransmitQueueSend& getSendQueue() {
+            return *m_sendQueue;
         }
 
-        moe::SharedPtr<TransmitQueueRecv> getReceiveQueue() {
-            return m_receiveQueue;
+        TransmitQueueRecv& getReceiveQueue() {
+            return *m_receiveQueue;
         }
 
     private:
@@ -55,8 +55,8 @@ namespace game {
         std::atomic_bool m_running{false};
         moe::UniquePtr<std::thread> m_networkThread;
 
-        moe::SharedPtr<TransmitQueueSend> m_sendQueue = std::make_shared<TransmitQueueSend>();
-        moe::SharedPtr<TransmitQueueRecv> m_receiveQueue = std::make_shared<TransmitQueueRecv>();
+        moe::UniquePtr<TransmitQueueSend> m_sendQueue = std::make_unique<TransmitQueueSend>();
+        moe::UniquePtr<TransmitQueueRecv> m_receiveQueue = std::make_unique<TransmitQueueRecv>();
 
         void launchNetworkThread();
         void networkMain();
