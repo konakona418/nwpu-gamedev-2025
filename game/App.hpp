@@ -14,11 +14,19 @@ namespace game {
         friend struct game::GameManager;
         friend struct game::Input;
 
+        struct Stats {
+        public:
+            float fps{0.0f};
+            float frameTimeMs{0.0f};
+        };
+
         App() {};
 
         void init();
         void shutdown();
         void run();
+
+        const Stats& getStats() const { return m_stats; }
 
     private:
         moe::UniquePtr<moe::VulkanEngine> m_graphicsEngine;
@@ -29,5 +37,7 @@ namespace game {
 
         moe::UniquePtr<Input> m_input;
         moe::UniquePtr<NetworkAdaptor> m_networkAdaptor;
+
+        Stats m_stats;
     };
 }// namespace game

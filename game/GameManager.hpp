@@ -35,6 +35,8 @@ namespace game {
 
         game::Input& input();
 
+        App& app() { return *m_app; }
+
         void addDebugDrawFunction(
                 const moe::StringView name,
                 moe::Function<void()> drawFunction);

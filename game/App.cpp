@@ -134,6 +134,13 @@ namespace game {
             m_gameManager->update(deltaTime);
 
             m_graphicsEngine->endFrame();
+
+            // update stats
+            {
+                float frameTimeMs = deltaTime * 1000.0f;
+                m_stats.frameTimeMs = frameTimeMs;
+                m_stats.fps = 1.0f / deltaTime;
+            }
         }
     }
 }// namespace game

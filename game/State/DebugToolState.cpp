@@ -181,6 +181,54 @@ namespace game::State {
         cam.setPitch(cameraPitch);
     }
 
+    static void drawStats(GameManager& ctx) {
+        static moe::Deque<App::Stats> historyStats;
+        auto appStats = ctx.app().getStats();
+
+        historyStats.push_back(appStats);
+        if (historyStats.size() > 100) {
+            historyStats.pop_front();
+        }
+
+        float avgFrameTime = 0.0f;
+        for (auto& stats: historyStats) {
+            avgFrameTime += stats.frameTimeMs;
+        }
+        avgFrameTime /= static_cast<float>(historyStats.size());
+
+        float avgFps = 0.0f;
+        for (auto& stats: historyStats) {
+            avgFps += stats.fps;
+        }
+        avgFps /= static_cast<float>(historyStats.size());
+
+        ImGui::Begin("Debug Tool - Stats");
+        ImGui::TextUnformatted("Graphic Stats:");
+        ImGui::PlotLines(
+                "Frame Time (ms)",
+                [](void* data, int idx) -> float {
+                    auto& stats = *static_cast<moe::Deque<App::Stats>*>(data);
+                    return stats[idx].frameTimeMs;
+                },
+                &historyStats,
+                static_cast<int>(historyStats.size()));
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+                           "Avg Frame Time: %.2f ms", avgFrameTime);
+
+        ImGui::PlotLines(
+                "FPS",
+                [](void* data, int idx) -> float {
+                    auto& stats = *static_cast<moe::Deque<App::Stats>*>(data);
+                    return stats[idx].fps;
+                },
+                &historyStats,
+                static_cast<int>(historyStats.size()));
+        ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
+                           "Avg FPS: %.2f", avgFps);
+
+        ImGui::End();
+    }
+
     void DebugToolState::onEnter(GameManager& ctx) {
         ctx.input().addProxy(&m_inputProxy);
         ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
@@ -215,7 +263,7 @@ namespace game::State {
                 "Game State Tree",
                 [this, &ctx]() {
                     ImGui::Begin("Debug Tool - Game State Tree");
-                    ImGui::TextUnformatted("From top to bottom");
+                    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "From top to bottom");
                     ImGui::TextUnformatted("Current State Stack:");
                     auto currentStack = ctx.getCurrentStateStack();
                     for (auto it = currentStack.rbegin(); it != currentStack.rend(); ++it) {
@@ -275,6 +323,12 @@ namespace game::State {
                     drawIm3dGizmo(ctx, gizmoHeight, gizmoSize, m_gizmoTranslation);
                     im3dMovementController(ctx);
                 });
+
+        ctx.addDebugDrawFunction(
+                "Stats",
+                [this, &ctx]() {
+                    drawStats(ctx);
+                });
     }
 
     void DebugToolState::onExit(GameManager& ctx) {
@@ -285,6 +339,8 @@ namespace game::State {
         ctx.removeDebugDrawFunction("Parameters");
         ctx.removeDebugDrawFunction("Localization");
         ctx.removeDebugDrawFunction("Game State Tree");
+        ctx.removeDebugDrawFunction("Im3d Gizmo");
+        ctx.removeDebugDrawFunction("Stats");
     }
 
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
