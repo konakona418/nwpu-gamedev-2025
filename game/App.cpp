@@ -34,7 +34,7 @@ namespace game {
         moe::Logger::setThreadName("Graphics");
 
         moe::MainScheduler::getInstance().init();
-        moe::ThreadPoolScheduler::getInstance().init();
+        moe::ThreadPoolScheduler::init();
         moe::FileReader::initReader(new moe::DebugFileReader<moe::DefaultFileReader>());
 
         ParamManager::getInstance().loadFromFile(moe::asset("config.toml"));

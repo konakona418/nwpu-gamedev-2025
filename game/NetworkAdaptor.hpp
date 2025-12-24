@@ -7,7 +7,17 @@
 #include <enet/enet.h>
 
 namespace game {
-    using TransmitQueue = moodycamel::ConcurrentQueue<moe::Vector<uint8_t>>;
+    struct TransmitSend {
+        moe::Vector<uint8_t> payload;
+        bool reliable;
+    };
+
+    struct TransmitRecv {
+        moe::Vector<uint8_t> payload;
+    };
+
+    using TransmitQueueRecv = moodycamel::ConcurrentQueue<TransmitRecv>;
+    using TransmitQueueSend = moodycamel::ConcurrentQueue<TransmitSend>;
 
     struct NetworkAdaptor : public moe::Meta::NonCopyable<NetworkAdaptor> {
     public:
@@ -18,17 +28,23 @@ namespace game {
 
         void shutdown();
 
-        moe::SharedPtr<TransmitQueue> getSendQueue() {
+        moe::SharedPtr<TransmitQueueSend> getSendQueue() {
             return m_sendQueue;
         }
 
-        moe::SharedPtr<TransmitQueue> getReceiveQueue() {
+        moe::SharedPtr<TransmitQueueRecv> getReceiveQueue() {
             return m_receiveQueue;
         }
 
     private:
         // wait for 1ms
         static constexpr uint32_t NETWORK_LOOP_TIME_WAIT_MS = 1;
+        static constexpr size_t MAX_SEND_REQUEST_PER_CYCLE = 32;
+
+        struct Channels {
+            static constexpr uint8_t RELIABLE = 0;
+            static constexpr uint8_t UNRELIABLE = 1;
+        };
 
         ENetPeer* m_serverPeer{nullptr};
         ENetHost* m_client{nullptr};
@@ -39,8 +55,8 @@ namespace game {
         std::atomic_bool m_running{false};
         moe::UniquePtr<std::thread> m_networkThread;
 
-        moe::SharedPtr<TransmitQueue> m_sendQueue = std::make_shared<TransmitQueue>();
-        moe::SharedPtr<TransmitQueue> m_receiveQueue = std::make_shared<TransmitQueue>();
+        moe::SharedPtr<TransmitQueueSend> m_sendQueue = std::make_shared<TransmitQueueSend>();
+        moe::SharedPtr<TransmitQueueRecv> m_receiveQueue = std::make_shared<TransmitQueueRecv>();
 
         void launchNetworkThread();
         void networkMain();
@@ -48,5 +64,6 @@ namespace game {
         bool tryConnectToServer();
 
         void handleEnetEvent(const ENetEvent& event);
+        void handleEnetSendRequest();
     };
 }// namespace game

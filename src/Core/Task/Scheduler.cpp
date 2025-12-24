@@ -4,15 +4,6 @@ MOE_BEGIN_NAMESPACE
 
 ThreadPoolScheduler& ThreadPoolScheduler::getInstance() {
     static ThreadPoolScheduler instance;
-    if (!instance.m_running.load()) {
-        Logger::warn("Scheduler instance requested but not initialized. Forcing initialization");
-        std::call_once(
-                instance.m_initFlag,
-                [instance = std::ref(instance)]() {
-                    instance.get().start(std::thread::hardware_concurrency());
-                });
-    }
-
     return instance;
 }
 
@@ -35,6 +26,7 @@ void ThreadPoolScheduler::shutdown() {
 }
 
 void ThreadPoolScheduler::schedule(Function<void()> task) {
+    MOE_ASSERT(m_running, "Scheduler not running");
     {
         std::lock_guard<std::mutex> lk(m_mutex);
         if (!m_running) return;

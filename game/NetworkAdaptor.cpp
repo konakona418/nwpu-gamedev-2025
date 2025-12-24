@@ -83,9 +83,9 @@ namespace game {
                         event.channelID);
                 {
                     m_receiveQueue->enqueue(
-                            moe::Vector<uint8_t>(
+                            {moe::Vector<uint8_t>(
                                     event.packet->data,
-                                    event.packet->data + event.packet->dataLength));
+                                    event.packet->data + event.packet->dataLength)});
                 }
                 enet_packet_destroy(event.packet);
                 break;
@@ -96,6 +96,45 @@ namespace game {
             default:
                 break;
         }
+    }
+
+    void NetworkAdaptor::handleEnetSendRequest() {
+        auto& sendQueue = *m_sendQueue;
+
+        // ! fixme: currently the enet_packet_create copies the data,
+        // ! for better performance add flag ENET_PACKET_FLAG_NO_ALLOCATE and manage memory manually
+        // ! but just leave it for now
+        TransmitSend data;
+        size_t sendCount = 0;
+        while (sendQueue.try_dequeue(data)) {
+            auto flags = data.reliable
+                                 ? ENET_PACKET_FLAG_RELIABLE
+                                 : 0;
+            ENetPacket* packet = enet_packet_create(
+                    data.payload.data(),
+                    data.payload.size(),
+                    flags);
+
+            // to avoid channel conflict
+            if (data.reliable) {
+                enet_peer_send(m_serverPeer, Channels::RELIABLE, packet);
+            } else {
+                enet_peer_send(m_serverPeer, Channels::UNRELIABLE, packet);
+            }
+
+            // prevent flooding the network in one cycle
+            sendCount++;
+            if (sendCount >= MAX_SEND_REQUEST_PER_CYCLE) {
+                moe::Logger::warn(
+                        "NetworkAdaptor::handleEnetSendRequest: reached max send request "
+                        "per cycle limit ({})",
+                        MAX_SEND_REQUEST_PER_CYCLE);
+                break;
+            }
+        }
+
+        // flush
+        enet_host_flush(m_client);
     }
 
     void NetworkAdaptor::networkMain() {
@@ -120,7 +159,7 @@ namespace game {
             ENetEvent event;
             while (enet_host_service(m_client, &event, NETWORK_LOOP_TIME_WAIT_MS) > 0) {
                 handleEnetEvent(event);
-                // todo: handle send requests
+                handleEnetSendRequest();
             }
         }
 
