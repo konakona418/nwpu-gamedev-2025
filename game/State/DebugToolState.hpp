@@ -18,5 +18,10 @@ namespace game::State {
     private:
         InputProxy m_inputProxy{InputProxy::PRIORITY_SYSTEM};
         bool m_showDebugWindow{false};
+
+        bool m_im3dMovementLocked{false};
+        void im3dMovementController(GameManager& ctx);
+
+        glm::vec3 m_gizmoTranslation{0.0f, 0.0f, 0.0f};
     };
 }// namespace game::State

@@ -2,13 +2,17 @@
 #include "App.hpp"
 #include "GameManager.hpp"
 
+#include "InputUtil.hpp"
 #include "Localization.hpp"
+#include "Math/Util.hpp"
 #include "Param.hpp"
 
 
 #include "imgui.h"
 
 namespace game::State {
+    static ParamF IM3D_CAMERA_MOVE_SPEED("debug_tool.im3d_camera_move_speed", 0.1f, ParamScope::UserConfig);
+
     static void drawParameterItems(const moe::UnorderedMap<moe::String, ParamItem*>& params, const moe::Vector<moe::String>& sortedNames) {
         if (params.empty()) {
             ImGui::TextUnformatted("No parameters available.");
@@ -100,7 +104,7 @@ namespace game::State {
         }
     }
 
-    void drawStateTree(const GameState* state) {
+    static void drawStateTree(const GameState* state) {
         ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
         const auto& children = state->getChildStates();
@@ -117,9 +121,71 @@ namespace game::State {
         }
     }
 
+    static void drawIm3dGizmo(GameManager& ctx, int gizmoHeight, int gizmoSize, glm::vec3& gizmoTranslation) {
+        auto& renderer = ctx.renderer();
+
+        renderer.addIm3dDrawCommand([gizmoHeight, gizmoSize, &gizmoTranslation]() {
+            Im3d::PushDrawState();
+            Im3d::GetContext().m_gizmoHeightPixels = gizmoHeight;
+            Im3d::GetContext().m_gizmoSizePixels = gizmoSize;
+            if (Im3d::Gizmo("gizmo",
+                            const_cast<float*>(glm::value_ptr(gizmoTranslation)),
+                            nullptr, nullptr)) {
+            }
+            Im3d::PopDrawState();
+        });
+    }
+
+    void DebugToolState::im3dMovementController(GameManager& ctx) {
+        static glm::vec3 debugCameraPos = glm::vec3{0.0f, 0.0f, 0.0f};
+        static float cameraYaw = 0.0f;
+        static float cameraPitch = 0.0f;
+
+        auto& cam = ctx.renderer().getDefaultCamera();
+
+        bool lmbPressed = m_inputProxy.getMouseButtonState().pressedLMB;
+        bool lShiftPressed = m_inputProxy.isKeyPressed("debug_console_im3d_lcontrol");
+
+        if (!m_im3dMovementLocked) {
+            if (lmbPressed && lShiftPressed) {
+                auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
+
+                float baseMoveSpeed = IM3D_CAMERA_MOVE_SPEED.get();
+                float distFromCamToGizmo = glm::length(debugCameraPos - m_gizmoTranslation);
+
+                distFromCamToGizmo = moe::Math::clamp(distFromCamToGizmo, 0.1f, 1.0f);
+
+                float moveSpeed = baseMoveSpeed * distFromCamToGizmo;
+                glm::vec3 right = cam.getRight();
+                glm::vec3 realUp = glm::cross(right, cam.getFront());
+
+                glm::vec3 translationDelta = -right * mouseX * moveSpeed + realUp * mouseY * moveSpeed;
+
+                debugCameraPos = debugCameraPos + translationDelta;
+            } else if (lmbPressed) {
+                auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
+
+                constexpr float rotateSpeed = 0.3f;
+
+                cameraYaw += mouseX * rotateSpeed;
+                cameraPitch += -mouseY * rotateSpeed;
+
+                // prevent gimbal lock
+                cameraPitch = moe::Math::clamp(cameraPitch, -89.0f, 89.0f);
+            }
+        }
+
+        // no matter what, always update camera position
+        cam.setPosition(debugCameraPos);
+        cam.setYaw(cameraYaw);
+        cam.setPitch(cameraPitch);
+    }
+
     void DebugToolState::onEnter(GameManager& ctx) {
         ctx.input().addProxy(&m_inputProxy);
         ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
+        ctx.input().addKeyMapping("debug_console_im3d_lcontrol", GLFW_KEY_LEFT_CONTROL);
+
         m_inputProxy.setActive(false);// by default proxies are active, disable it initially
 
         ctx.addDebugDrawFunction(
@@ -163,10 +229,57 @@ namespace game::State {
                     }
                     ImGui::End();
                 });
+
+        ctx.addDebugDrawFunction(
+                "Im3d Gizmo",
+                [this, &ctx]() {
+                    static int gizmoHeight = 50;
+                    static int gizmoSize = 5;
+
+                    ImGui::Begin("Debug Tool - Im3d Gizmo");
+                    if (ImGui::BeginTable("GizmoSettings", 2)) {
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted("Im3d Gizmo Height");
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(-1.0f);
+                        ImGui::InputInt("##gizmo_height", &gizmoHeight);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted("Im3d Gizmo Size");
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(-1.0f);
+                        ImGui::InputInt("##gizmo_size", &gizmoSize);
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted("Lock Im3d Cam");
+                        ImGui::TableNextColumn();
+                        ImGui::Checkbox("##lock_im3d_cam", &m_im3dMovementLocked);
+
+                        ImGui::EndTable();
+                    }
+
+                    ImGui::Button("Reset Gizmo Pos");
+                    if (ImGui::IsItemClicked()) {
+                        m_gizmoTranslation = glm::vec3{0.0f, 0.0f, 0.0f};
+                    }
+
+                    ImGui::Text("Gizmo position: (%f, %f, %f)",
+                                m_gizmoTranslation.x, m_gizmoTranslation.y, m_gizmoTranslation.z);
+
+                    ImGui::End();
+
+                    drawIm3dGizmo(ctx, gizmoHeight, gizmoSize, m_gizmoTranslation);
+                    im3dMovementController(ctx);
+                });
     }
 
     void DebugToolState::onExit(GameManager& ctx) {
         ctx.input().removeKeyEventMapping("toggle_debug_console");
+        ctx.input().removeKeyMapping("debug_console_im3d_lcontrol");
         ctx.input().removeProxy(&m_inputProxy);
 
         ctx.removeDebugDrawFunction("Parameters");

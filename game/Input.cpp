@@ -7,7 +7,7 @@ namespace game {
     }
 
     void Input::addKeyMapping(moe::StringView keyName, int keyCode) {
-        if (m_keyNameMap.find(moe::String(keyName)) != m_keyNameMap.end()) {
+        if (m_keyNameMap.find(keyName.data()) != m_keyNameMap.end()) {
             moe::Logger::warn("Input::addKeyMapping: key mapping for '{}' already exists", keyName);
         }
 
@@ -15,11 +15,11 @@ namespace game {
         keyMap->pressed = false;
 
         m_keyMap[keyCode] = keyMap;
-        m_keyNameMap[moe::String(keyName)] = keyMap;
+        m_keyNameMap[keyName.data()] = keyMap;
     }
 
     void Input::removeKeyMapping(moe::StringView keyName) {
-        auto it = m_keyNameMap.find(moe::String(keyName));
+        auto it = m_keyNameMap.find(keyName.data());
         if (it != m_keyNameMap.end()) {
             // ! in case of duplicate key codes, we do not erase from m_keyMap here
             m_keyNameMap.erase(it);
@@ -27,7 +27,7 @@ namespace game {
     }
 
     void Input::addKeyEventMapping(const moe::StringView keyName, int keyCode) {
-        if (m_keyEventNameMap.find(moe::String(keyName)) != m_keyEventNameMap.end()) {
+        if (m_keyEventNameMap.find(keyName.data()) != m_keyEventNameMap.end()) {
             moe::Logger::warn("Input::addKeyEventMapping: key event mapping for '{}' already exists", keyName);
         }
 
@@ -36,11 +36,11 @@ namespace game {
         keyEventMap->justReleased = false;
 
         m_keyEventMap[keyCode] = keyEventMap;
-        m_keyEventNameMap[moe::String(keyName)] = keyEventMap;
+        m_keyEventNameMap[keyName.data()] = keyEventMap;
     }
 
     void Input::removeKeyEventMapping(const moe::StringView keyName) {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
+        auto it = m_keyEventNameMap.find(keyName.data());
         if (it != m_keyEventNameMap.end()) {
             m_keyEventNameMap.erase(it);
         }
@@ -168,7 +168,7 @@ namespace game {
     }
 
     bool Input::isKeyPressed(moe::StringView keyName) const {
-        auto it = m_keyNameMap.find(moe::String(keyName));
+        auto it = m_keyNameMap.find(keyName.data());
         if (it != m_keyNameMap.end()) {
             return it->second->pressed;
         }
@@ -177,7 +177,7 @@ namespace game {
     }
 
     bool Input::isKeyJustPressed(const moe::StringView keyName) const {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
+        auto it = m_keyEventNameMap.find(keyName.data());
         if (it != m_keyEventNameMap.end()) {
             return it->second->justPressed;
         }
@@ -186,7 +186,7 @@ namespace game {
     }
 
     bool Input::isKeyJustReleased(const moe::StringView keyName) const {
-        auto it = m_keyEventNameMap.find(moe::String(keyName));
+        auto it = m_keyEventNameMap.find(keyName.data());
         if (it != m_keyEventNameMap.end()) {
             return it->second->justReleased;
         }
