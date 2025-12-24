@@ -97,16 +97,16 @@ namespace game {
         auto lastTime = std::chrono::high_resolution_clock::now();
 
         auto worldEnv = moe::Ref(new State::WorldEnvironment());
-        m_gameManager->pushState(worldEnv);
+        m_gameManager->addPersistGameState(worldEnv);
 
         auto debugToolState = moe::Ref(new State::DebugToolState());
-        m_gameManager->pushState(debugToolState);
+        m_gameManager->addPersistGameState(debugToolState);
 
         auto pgstate = moe::Ref(new State::PlaygroundState());
         m_gameManager->pushState(pgstate);
 
         auto playerState = moe::Ref(new State::LocalPlayerState());
-        m_gameManager->pushState(playerState);
+        pgstate->addChildState(playerState);
 
         while (running) {
             m_graphicsEngine->beginFrame();

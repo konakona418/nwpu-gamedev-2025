@@ -123,7 +123,7 @@ namespace game::State {
 
             // if escape is just released, show menu
             if (m_inputProxy.isKeyJustReleased("escape_player")) {
-                ctx.pushState(moe::Ref(new State::PauseUIState()));
+                this->addChildState(moe::Ref(new State::PauseUIState()));
             }
         }
 

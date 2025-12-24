@@ -26,10 +26,31 @@ namespace game {
         m_pendingActions.push_back({ActionType::Push, state});
     }
 
-    void GameManager::popState(moe::Ref<GameState> state) {
-        MOE_ASSERT(state, "Cannot pop a null state");
+    void GameManager::popState() {
         std::lock_guard<std::mutex> lock(m_actionMutex);
-        m_pendingActions.push_back({ActionType::Pop, state});
+        m_pendingActions.push_back({ActionType::Pop, moe::Ref<GameState>::null()});
+    }
+
+    void GameManager::queueFree(moe::Ref<GameState> state) {
+        if (!state) {
+            return;
+        }
+
+        if (!state->m_parentState) {
+            if (m_gameStateStack.empty() || m_gameStateStack.back() != state) {
+                moe::Logger::warn(
+                        "GameManager::queueFree: Attempted to free a root state that is not on the stack top: {}",
+                        state->getName());
+                return;
+            }
+            // is top-level state, just pop it
+            popState();
+        } else {
+            // remove from parent state, thus will leave the scene tree and get freed
+            state->m_parentState->removeChildState(state);
+        }
+
+        moe::Logger::debug("GameManager::queueFree: Queued state '{}' for freeing", state->getName());
     }
 
     bool GameManager::processPendingActions() {
@@ -50,13 +71,9 @@ namespace game {
                     break;
                 }
                 case ActionType::Pop: {
-                    action.state->_onExit(*this);// call onExit before removing
-                    m_gameStateStack.erase(
-                            std::remove(
-                                    m_gameStateStack.begin(),
-                                    m_gameStateStack.end(),
-                                    action.state),
-                            m_gameStateStack.end());
+                    auto& stateToPop = m_gameStateStack.back();
+                    stateToPop->_onExit(*this);// call onExit before removing
+                    m_gameStateStack.pop_back();
                     break;
                 }
             }
@@ -71,7 +88,14 @@ namespace game {
 
         if (m_gameStateStack.empty()) return;
 
-        for (auto& state: m_gameStateStack) {
+        // non-persistent
+        if (!m_gameStateStack.empty()) {
+            // only update the top state
+            m_gameStateStack.back()->_onUpdate(*this, deltaTimeSecs);
+        }
+
+        // persistent
+        for (auto& state: m_persistentGameStateStack) {
             state->_onUpdate(*this, deltaTimeSecs);
         }
 
@@ -89,7 +113,15 @@ namespace game {
             stackCopy = m_gameStateStackCopy;
         }
 
-        for (auto& state: stackCopy) {
+        if (!stackCopy.empty()) {
+            // non-persistent
+            stackCopy.back()->_onPhysicsUpdate(*this, deltaTimeSecs);
+        }
+
+        // persistent
+        // as persistent states are not supposed to be changed during game loop,
+        // we can directly use m_persistentGameStateStack here
+        for (auto& state: m_persistentGameStateStack) {
             state->_onPhysicsUpdate(*this, deltaTimeSecs);
         }
     }
@@ -112,5 +144,10 @@ namespace game {
         if (it != m_debugDrawFunctions.end()) {
             m_debugDrawFunctions.erase(it);
         }
+    }
+
+    void GameManager::addPersistGameState(moe::Ref<GameState> state) {
+        m_persistentGameStateStack.push_back(state);
+        state->_onEnter(*this);// call onEnter when adding persistent state
     }
 }// namespace game

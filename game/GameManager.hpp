@@ -21,7 +21,10 @@ namespace game {
         GameManager(App* app) : m_app(app) {}
 
         void pushState(moe::Ref<GameState> state);
-        void popState(moe::Ref<GameState> state);
+        void popState();
+
+        void queueFree(moe::Ref<GameState> state);
+
         bool processPendingActions();
         void update(float deltaTimeSecs);
         void physicsUpdate(float deltaTimeSecs);
@@ -49,6 +52,8 @@ namespace game {
                     moe::Function<void()>(std::forward<F>(drawFunction)));
         }
 
+        void addPersistGameState(moe::Ref<GameState> state);
+
     private:
         enum class ActionType {
             Push,
@@ -63,11 +68,16 @@ namespace game {
         moe::Vector<PendingAction> m_pendingActions;
         std::mutex m_actionMutex;
 
-        // ! fixme: this is not thread safe, when reallocating the vector, the reference will be invalid
         moe::Vector<moe::Ref<game::GameState>> m_gameStateStack;
 
         moe::Vector<moe::Ref<game::GameState>> m_gameStateStackCopy;
         std::mutex m_gameStateStackCopyMutex;
+
+        // this is for states that should survive the whole lifecycle of the program
+        // e.g. debug tools, world environments, etc.
+        // ! this should not be modified in game loop
+        // currently the onExit of persistent states is not called
+        moe::Vector<moe::Ref<game::GameState>> m_persistentGameStateStack;
 
         App* m_app = nullptr;
 
@@ -77,5 +87,13 @@ namespace game {
         };
 
         moe::UnorderedMap<moe::String, DebugDrawFunction> m_debugDrawFunctions;
+
+        moe::Vector<moe::Ref<GameState>> getCurrentStateStack() const {
+            return m_gameStateStack;
+        }
+
+        moe::Vector<moe::Ref<GameState>> getPersistentStateStack() const {
+            return m_persistentGameStateStack;
+        }
     };
 }// namespace game

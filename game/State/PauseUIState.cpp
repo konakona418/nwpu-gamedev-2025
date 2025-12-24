@@ -86,7 +86,7 @@ namespace game::State {
 
         bool clicked = m_resumeButtonWidget->checkButtonState(mousePos, isLMBPressed);
         if (clicked) {
-            ctx.popState(this->intoRef());
+            ctx.queueFree(this->intoRef());
         }
     }
 }// namespace game::State

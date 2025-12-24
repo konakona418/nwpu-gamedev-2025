@@ -8,6 +8,8 @@ namespace game {
 
     struct GameState : public moe::AtomicRefCounted<GameState> {
     public:
+        friend GameManager;
+
         virtual ~GameState() = default;
 
         virtual const moe::StringView getName() const = 0;
@@ -46,14 +48,18 @@ namespace game {
             onExit(ctx);
         }
 
-        void addChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+        void addChildState(moe::Ref<GameState> childState) {
             MOE_ASSERT(childState, "Cannot add a null child state");
             m_pendingAddChildStates.push_back(childState);
         }
 
-        void removeChildState(GameManager& ctx, moe::Ref<GameState> childState) {
+        void removeChildState(moe::Ref<GameState> childState) {
             MOE_ASSERT(childState, "Cannot remove a null child state");
             m_pendingRemoveChildStates.push_back(childState);
+        }
+
+        const moe::Vector<moe::Ref<GameState>>& getChildStates() const {
+            return m_childStates;
         }
 
     protected:

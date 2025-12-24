@@ -100,6 +100,23 @@ namespace game::State {
         }
     }
 
+    void drawStateTree(const GameState* state) {
+        ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+
+        const auto& children = state->getChildStates();
+        if (children.empty()) {
+            flags |= ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen;
+        }
+
+        bool isOpen = ImGui::TreeNodeEx((void*) state, flags, "%s", state->getName().data());
+        if (isOpen && !children.empty()) {
+            for (auto& child: children) {
+                drawStateTree(child.get());
+            }
+            ImGui::TreePop();
+        }
+    }
+
     void DebugToolState::onEnter(GameManager& ctx) {
         ctx.input().addProxy(&m_inputProxy);
         ctx.input().addKeyEventMapping("toggle_debug_console", GLFW_KEY_GRAVE_ACCENT);
@@ -127,6 +144,25 @@ namespace game::State {
                     drawI18NItems(i18nManager.getAllLocalizationItems(), i18nManager.getSortedKeys());
                     ImGui::End();
                 });
+
+        ctx.addDebugDrawFunction(
+                "Game State Tree",
+                [this, &ctx]() {
+                    ImGui::Begin("Debug Tool - Game State Tree");
+                    ImGui::TextUnformatted("From top to bottom");
+                    ImGui::TextUnformatted("Current State Stack:");
+                    auto currentStack = ctx.getCurrentStateStack();
+                    for (auto it = currentStack.rbegin(); it != currentStack.rend(); ++it) {
+                        drawStateTree(it->get());
+                    }
+                    ImGui::Separator();
+                    ImGui::TextUnformatted("Persistent State Stack:");
+                    auto persistentStack = ctx.getPersistentStateStack();
+                    for (auto it = persistentStack.rbegin(); it != persistentStack.rend(); ++it) {
+                        drawStateTree(it->get());
+                    }
+                    ImGui::End();
+                });
     }
 
     void DebugToolState::onExit(GameManager& ctx) {
@@ -135,6 +171,7 @@ namespace game::State {
 
         ctx.removeDebugDrawFunction("Parameters");
         ctx.removeDebugDrawFunction("Localization");
+        ctx.removeDebugDrawFunction("Game State Tree");
     }
 
     void DebugToolState::onUpdate(GameManager& ctx, float deltaTime) {
