@@ -161,8 +161,10 @@ namespace game {
             ENetEvent event;
             while (enet_host_service(m_client, &event, NETWORK_LOOP_TIME_WAIT_MS) > 0) {
                 handleEnetEvent(event);
-                handleEnetSendRequest();
             }
+
+            // process send requests
+            handleEnetSendRequest();
         }
 
         enet_deinitialize();
@@ -183,7 +185,11 @@ namespace game {
             moe::Logger::warn("NetworkAdaptor::sendData: trying to send empty data");
             return;
         }
-        m_sendQueue->enqueue({moe::Vector<uint8_t>(data.begin(), data.end()), reliable});
+
+        bool sendResult = m_sendQueue->enqueue({moe::Vector<uint8_t>(data.begin(), data.end()), reliable});
+        if (!sendResult) {
+            moe::Logger::error("NetworkAdaptor::sendData: failed to enqueue send data");
+        }
     }
 
     moe::Optional<TransmitRecv> NetworkAdaptor::tryReceiveData() {
