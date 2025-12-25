@@ -16,6 +16,10 @@ namespace game {
         return *m_app->m_audioEngine;
     }
 
+    game::NetworkAdaptor& GameManager::network() {
+        return *m_app->m_networkAdaptor;
+    }
+
     game::Input& GameManager::input() {
         return *m_app->m_input;
     }

@@ -9,6 +9,7 @@
 namespace game {
     struct App;
     struct Input;
+    struct NetworkAdaptor;
 
     namespace State {
         struct DebugToolState;
@@ -32,6 +33,8 @@ namespace game {
         moe::VulkanEngine& renderer();
         moe::PhysicsEngine& physics();
         moe::AudioEngineInterface& audio();
+
+        game::NetworkAdaptor& network();
 
         game::Input& input();
 

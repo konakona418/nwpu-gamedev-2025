@@ -30,6 +30,8 @@ namespace game {
 
         void dispatchReceiveData();
 
+        Queues& getQueues() { return *m_queues; }
+
     private:
         NetworkAdaptor* m_networkAdaptor;
         moe::UniquePtr<Queues> m_queues = std::make_unique<Queues>();

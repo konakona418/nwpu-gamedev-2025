@@ -1,5 +1,7 @@
 #include "Util.hpp"
 
+#include "Physics/PhysicsEngine.hpp"
+
 namespace game::Util {
     moe::StringView glyphRangeChinese() {
         static moe::String s_glyphRange;
@@ -30,5 +32,19 @@ namespace game::Util {
         });
 
         return s_glyphRange;
+    }
+
+    TimePack getTimePack() {
+        TimePack pack;
+
+        auto physicsTick = moe::PhysicsEngine::getInstance().getCurrentTickIndex();
+
+        auto now = std::chrono::steady_clock::now();
+        auto epoch = now.time_since_epoch();
+
+        pack.currentTimeMillis = std::chrono::duration_cast<std::chrono::milliseconds>(epoch).count();
+        pack.physicsTick = physicsTick;
+
+        return pack;
     }
 }// namespace game::Util
