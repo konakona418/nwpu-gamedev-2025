@@ -75,6 +75,8 @@ void PhysicsEngine::mainLoop() {
     const auto step = std::chrono::duration_cast<std::chrono::nanoseconds>(PHYSICS_TIMESTEP);
     auto nextTick = std::chrono::high_resolution_clock::now();
 
+    auto _lastTime = std::chrono::high_resolution_clock::now();
+
     while (m_running.load()) {
         m_physicsSystem->Update(PHYSICS_TIMESTEP.count(), 1, m_tempAllocator.get(), m_jobSystem.get());
 
@@ -87,10 +89,11 @@ void PhysicsEngine::mainLoop() {
             auto now = std::chrono::high_resolution_clock::now();
             auto remaining = nextTick - now;
 
-            if (remaining > std::chrono::milliseconds(2)) {
-                // pretty long time to wait, sleep for 1ms
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            } else if (remaining > std::chrono::nanoseconds(0)) {
+            // sleeping is not precise enough for small durations
+            // i have no idea why
+            // so just busy wait
+            // ! fixme: find out the reason and fix it
+            if (remaining > std::chrono::nanoseconds(0)) {
                 // yield to other threads
                 // still busy waiting though φ(゜▽゜*)♪
                 std::this_thread::yield();
@@ -107,6 +110,16 @@ void PhysicsEngine::mainLoop() {
 
         // advance tick index
         m_currentTickIndex.fetch_add(1);
+
+        {
+            // stats
+            auto _now = std::chrono::high_resolution_clock::now();
+            auto _dt = _now - _lastTime;
+            _lastTime = _now;
+
+            m_stats.physicsFrameTime = std::chrono::duration_cast<Duration>(_dt).count() * 1000.0f;
+            m_stats.physicsTicksPerSecond = 1.0f / std::chrono::duration_cast<Duration>(_dt).count();
+        }
     }
 }
 

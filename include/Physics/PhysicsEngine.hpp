@@ -135,8 +135,15 @@ public:
         }
     };
 
+    struct Stats {
+        float physicsFrameTime;
+        float physicsTicksPerSecond;
+    };
+
     void init();
     void destroy();
+
+    Stats getStats() const { return m_stats; }
 
     void persistOnPhysicsThread(Function<void(PhysicsEngine&)>&& fn) {
         std::lock_guard<std::mutex> lk(m_dispatchMutex);
@@ -200,6 +207,8 @@ private:
     JPH::BodyIDVector m_bodyIdCache;
 
     std::atomic_size_t m_currentTickIndex{0};
+
+    Stats m_stats;
 
     void launchPhysicsThread();
 
