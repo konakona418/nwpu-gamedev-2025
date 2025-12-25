@@ -165,4 +165,16 @@ namespace game {
 
         enet_deinitialize();
     }
+
+    void NetworkAdaptor::sendData(moe::Span<const uint8_t> data, bool reliable) {
+        m_sendQueue->enqueue({moe::Vector<uint8_t>(data.begin(), data.end()), reliable});
+    }
+
+    moe::Optional<TransmitRecv> NetworkAdaptor::tryReceiveData() {
+        TransmitRecv recvData;
+        if (m_receiveQueue->try_dequeue(recvData)) {
+            return recvData;
+        }
+        return std::nullopt;
+    }
 }// namespace game

@@ -1,9 +1,9 @@
 #include "App.hpp"
 
 #include "State/DebugToolState.hpp"
-#include "State/LocalPlayerState.hpp"
-#include "State/PlaygroundState.hpp"
 #include "State/WorldEnvironment.hpp"
+
+#include "State/GamePlayState.hpp"
 
 #include "Input.hpp"
 #include "Localization.hpp"
@@ -102,11 +102,8 @@ namespace game {
         auto debugToolState = moe::Ref(new State::DebugToolState());
         m_gameManager->addPersistGameState(debugToolState);
 
-        auto pgstate = moe::Ref(new State::PlaygroundState());
-        m_gameManager->pushState(pgstate);
-
-        auto playerState = moe::Ref(new State::LocalPlayerState());
-        pgstate->addChildState(playerState);
+        auto gamePlayState = moe::Ref(new State::GamePlayState());
+        m_gameManager->pushState(gamePlayState);
 
         while (running) {
             m_graphicsEngine->beginFrame();

@@ -28,13 +28,9 @@ namespace game {
 
         void shutdown();
 
-        TransmitQueueSend& getSendQueue() {
-            return *m_sendQueue;
-        }
+        void sendData(moe::Span<const uint8_t> data, bool reliable);
 
-        TransmitQueueRecv& getReceiveQueue() {
-            return *m_receiveQueue;
-        }
+        moe::Optional<TransmitRecv> tryReceiveData();
 
     private:
         // wait for 1ms

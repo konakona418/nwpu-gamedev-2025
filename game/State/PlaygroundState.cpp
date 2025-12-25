@@ -7,6 +7,8 @@
 #include "Physics/TypeUtils.hpp"
 #include "Render/Vulkan/VulkanEngine.hpp"
 
+#include "State/LocalPlayerState.hpp"
+
 
 namespace game::State {
     void PlaygroundState::onEnter(GameManager& ctx) {
