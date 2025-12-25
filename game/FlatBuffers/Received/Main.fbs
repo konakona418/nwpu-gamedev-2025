@@ -3,7 +3,7 @@ include "Events.fbs";
 
 namespace moe.net;
 
-union ReceivedPacketUnion { AllPlayerUpdate, Event }
+union ReceivedPacketUnion { AllPlayerUpdate, GameEvent }
 
 table ReceivedHeader {
     server_tick: uint64;

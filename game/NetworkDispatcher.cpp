@@ -3,7 +3,7 @@
 namespace game {
     void NetworkDispatcher::dispatchReceivedEvent(const moe::net::ReceivedNetMessage* deserializedPacket) {
         auto* eventPayload =
-                static_cast<const moe::net::Event*>(deserializedPacket->packet());
+                static_cast<const moe::net::GameEvent*>(deserializedPacket->packet());
 
         switch (eventPayload->payload_type()) {
 #define X(fbs_type, queue_name)                                          \
@@ -45,7 +45,7 @@ namespace game {
             auto payloadType = deserializedPacket->packet_type();
 
             switch (payloadType) {
-                case moe::net::ReceivedPacketUnion::Event: {
+                case moe::net::ReceivedPacketUnion::GameEvent: {
                     dispatchReceivedEvent(deserializedPacket);
                     break;
                 }

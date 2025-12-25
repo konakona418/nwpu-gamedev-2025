@@ -74,6 +74,8 @@ union EventData {
     ChatMessageEvent,
 }
 
-table Event {
+// avoid name conflict with CreateEvent macro
+// fxxk you microsoft
+table GameEvent {
     payload: EventData;
 }
