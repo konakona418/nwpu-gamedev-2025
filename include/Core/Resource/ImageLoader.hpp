@@ -20,6 +20,10 @@ namespace Detail {
             int desiredChannels);
 }// namespace Detail
 
+struct ImageLoaderParams {
+    int desiredChannels{4};
+};
+
 template<
         typename InnerGenerator,
         typename = Meta::EnableIfT<
@@ -30,10 +34,6 @@ template<
                         Ref<BinaryBuffer>>>>
 struct ImageLoader {
 public:
-    struct Pref {
-        int desiredChannels{4};
-    };
-
     using value_type = Ref<Image>;
 
     template<typename... Args>
@@ -41,7 +41,7 @@ public:
         : m_derived(std::forward<Args>(args)...) {}
 
     template<typename... Args>
-    ImageLoader(Pref pref, Args&&... args)
+    ImageLoader(ImageLoaderParams pref, Args&&... args)
         : m_derived(std::forward<Args>(args)...), m_pref(pref) {}
 
     Optional<value_type> generate() {
@@ -67,9 +67,17 @@ public:
         return Ref(new Image(std::move(imageData), width, height, channels));
     }
 
+    uint64_t hashCode() const {
+        return m_derived.hashCode();
+    }
+
+    moe::String paramString() const {
+        return m_derived.paramString();
+    }
+
 private:
     InnerGenerator m_derived;
-    Pref m_pref;
+    ImageLoaderParams m_pref;
 };
 
 MOE_END_NAMESPACE

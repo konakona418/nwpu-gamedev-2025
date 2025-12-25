@@ -69,7 +69,7 @@ namespace game {
 
         // ! assume the inner generator's hashCode is good enough
         moe::String paramString() const {
-            return m_derived.paramString();
+            return fmt::format("font_loader_{}", m_derived.paramString());
         }
 
         uint64_t hashCode() const {
