@@ -6,7 +6,7 @@
 #include "Param.hpp"
 #include "Util.hpp"
 
-#include "Flatbuffers/Generated/Sent/receiveGamingPacket_generated.h"
+#include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
 
 
 namespace game::State {
