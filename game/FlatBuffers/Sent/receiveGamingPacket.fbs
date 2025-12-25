@@ -1,19 +1,11 @@
 namespace myu.net;
 
-enum PacketType : byte {
-  PLAYER_STATE = 0,
-  FIRE = 1,
-  MOVE = 2
-}
-
 table PacketHeader {
-  type: PacketType;
   client_tick: uint32;
   client_time: uint64;
 }
 
 table FirePacket {
-  header: PacketHeader;
   physics_id: uint32;
   fire_tick: uint32;
   fire_time: uint64;
@@ -28,7 +20,6 @@ table FirePacket {
 }
 
 table MovePacket {
-  header: PacketHeader;
   physics_id: uint32;
   input_tick: uint32;
   move_x: float;
@@ -40,7 +31,6 @@ table MovePacket {
 }
 
 table PlayerStatePacket {
-  header: PacketHeader;
   physics_id: uint32;
   pos_x: float;
   pos_y: float;
@@ -52,7 +42,12 @@ table PlayerStatePacket {
   is_alive: bool;
 }
 
-union PacketUnion { FirePacket, MovePacket, PlayerStatePacket }
+table PlayerInfo {
+  name: string;
+  ready: bool;
+}
+
+union PacketUnion { FirePacket, MovePacket, PlayerStatePacket, PlayerInfo }
 
 table NetMessage {
   header: PacketHeader;
