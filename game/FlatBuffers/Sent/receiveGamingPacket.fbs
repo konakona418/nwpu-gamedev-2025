@@ -1,9 +1,9 @@
 namespace myu.net;
 
 enum PacketType : byte {
+  PLAYER_STATE = 0,
   FIRE = 1,
-  MOVE = 2,
-  PLAYER_STATE = 0
+  MOVE = 2
 }
 
 table PacketHeader {

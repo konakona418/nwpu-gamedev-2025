@@ -108,9 +108,14 @@ def build(is_rebuild=False, field_style="original"):
             os.makedirs(target_out_dir)
 
         cmd = [
-            FLATC_PATH, "--cpp", "--cpp-std", "c++17",
-            "--cpp-static-reflection", "--cpp-str-flex-ctor",
-            "--scoped-enums", "--cpp-field-case-style", field_style,
+            FLATC_PATH, 
+            "--cpp", 
+            "--cpp-std", "c++17",
+            "--cpp-static-reflection", 
+            "--cpp-str-flex-ctor",
+            "--scoped-enums", 
+            "--cpp-field-case-style", field_style,
+            "--gen-object-api",
             "-o", target_out_dir, "-I", FBS_SOURCE_DIR, full_path
         ]
         

@@ -3,30 +3,7 @@ include "PlayerTeam.fbs";
 
 namespace moe.net;
 
-enum EventType : byte {
-    // waiting room
-    PLAYER_JOINED,
-    PLAYER_LEFT,
-
-    // here the game starts
-    // server should allocate temp IDs, assign teams, etc.
-    GAME_STARTED,
-
-    // per-round events
-    ROUND_PURCHASE_STARTED,
-    ROUND_STARTED,
-    ROUND_ENDED,
-
-    GAME_ENDED, // reserved
-
-    // in-game events
-    PLAYER_KILLED,
-    BOMB_PLANTED,
-    BOMB_DEFUSED,
-
-    CHAT_MESSAGE, // reserved
-}
-
+// waiting room
 table PlayerJoinedEvent {
     uuid: string;
     name: string;
@@ -41,11 +18,15 @@ table PlayerLeftEvent {
     player_count: uint16;
 }
 
+
+// here the game starts
+// server should allocate temp IDs, assign teams, etc.
 table GameStartedEvent {
     // contains all players' info at game start
     players: AllPlayerInfo;
 }
 
+// per-round events
 table RoundPurchaseStartedEvent {
     round_number: uint16;
 }
@@ -59,6 +40,7 @@ table RoundEndedEvent {
     winning_team: PlayerTeam;
 }
 
+// in-game events
 table PlayerKilledEvent {
     victim_temp_id: uint16;
     killer_temp_id: uint16;
@@ -93,6 +75,5 @@ union EventData {
 }
 
 table Event {
-    type: EventType;
     payload: EventData;
 }

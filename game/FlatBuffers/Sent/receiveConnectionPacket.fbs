@@ -2,7 +2,7 @@ namespace myu.net;
 
 table PlayerInfo {
   name: string;
-  ready: bool; // reserved
+  ready: bool;
 }
 
 root_type PlayerInfo;
