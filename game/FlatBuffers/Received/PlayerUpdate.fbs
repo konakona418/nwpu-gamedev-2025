@@ -1,19 +1,26 @@
 namespace moe.net;
 
+enum PlayerMotionState : byte {
+    NORMAL = 0,
+    JUMPING = 1,
+    CROUCHING = 2,
+}
+
+struct Vec3 {
+    x: float;
+    y: float;
+    z: float;
+}
+
 table PlayerUpdate {
-    player_temp_id: uint16;
+    temp_id: uint16;
 
-    pos_x: float;
-    pos_y: float;
-    pos_z: float;
+    pos: Vec3;
+    vel: Vec3;
+    head: Vec3;
 
-    vel_x: float;
-    vel_y: float;
-    vel_z: float;
-
-    head_x: float;
-    head_y: float; // actually this has no use but just in case
-    head_z: float;
+    motion_state: PlayerMotionState;
+    weapon_id: uint16;
 }
 
 table AllPlayerUpdate {

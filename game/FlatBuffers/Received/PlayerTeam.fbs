@@ -1,0 +1,7 @@
+namespace moe.net;
+
+enum PlayerTeam : byte {
+    TEAM_NONE = 0,
+    TEAM_T = 1,
+    TEAM_CT = 2,
+}

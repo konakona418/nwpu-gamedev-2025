@@ -1,7 +1,8 @@
 namespace myu.net;
 
 table PlayerInfo {
-  player_uuid: string;
+  name: string;
+  ready: bool; // reserved
 }
 
 root_type PlayerInfo;

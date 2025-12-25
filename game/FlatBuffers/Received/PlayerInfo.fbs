@@ -1,0 +1,17 @@
+include "PlayerTeam.fbs";
+
+namespace moe.net;
+
+table PlayerInfo {
+    uuid: string;
+    name: string;
+    temp_id: uint16;
+    team: PlayerTeam;
+}
+
+table AllPlayerInfo {
+    players: [PlayerInfo];
+    whoami: PlayerInfo;
+}
+
+root_type AllPlayerInfo;

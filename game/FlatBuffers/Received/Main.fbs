@@ -1,0 +1,18 @@
+include "PlayerUpdate.fbs";
+include "Events.fbs";
+
+namespace moe.net;
+
+union ReceivedPacketUnion { AllPlayerUpdate, Event }
+
+table ReceivedHeader {
+    server_tick: uint64;
+    server_ts_ms: uint64;
+}
+
+table ReceivedNetMessage {
+    header: ReceivedHeader;
+    packet: ReceivedPacketUnion;
+}
+
+root_type ReceivedNetMessage;
