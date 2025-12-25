@@ -143,12 +143,14 @@ namespace game {
 
         if (enet_initialize() != 0) {
             moe::Logger::critical("An error occurred while initializing ENet");
+            m_running = false;
             return;
         }
 
         if (!tryConnectToServer()) {
             moe::Logger::error("Failed to connect to server, exiting network thread");
             enet_deinitialize();
+            m_running = false;
             return;
         }
 
@@ -167,10 +169,28 @@ namespace game {
     }
 
     void NetworkAdaptor::sendData(moe::Span<const uint8_t> data, bool reliable) {
+        auto sizeApprox = m_sendQueue->size_approx();
+        if (sizeApprox > MAX_PENDING_SEND_REQUESTS) {
+            moe::Logger::warn(
+                    "NetworkAdaptor::sendData: "
+                    "send queue size(~{}) reaching limit({}), dropping packet",
+                    sizeApprox,
+                    MAX_PENDING_SEND_REQUESTS);
+            return;
+        }
+
+        if (data.empty()) {
+            moe::Logger::warn("NetworkAdaptor::sendData: trying to send empty data");
+            return;
+        }
         m_sendQueue->enqueue({moe::Vector<uint8_t>(data.begin(), data.end()), reliable});
     }
 
     moe::Optional<TransmitRecv> NetworkAdaptor::tryReceiveData() {
+        if (!m_running) {
+            return std::nullopt;
+        }
+
         TransmitRecv recvData;
         if (m_receiveQueue->try_dequeue(recvData)) {
             return recvData;

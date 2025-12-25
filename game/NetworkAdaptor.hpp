@@ -37,6 +37,8 @@ namespace game {
         static constexpr uint32_t NETWORK_LOOP_TIME_WAIT_MS = 1;
         static constexpr size_t MAX_SEND_REQUEST_PER_CYCLE = 32;
 
+        static constexpr size_t MAX_PENDING_SEND_REQUESTS = 512;
+
         struct Channels {
             static constexpr uint8_t RELIABLE = 0;
             static constexpr uint8_t UNRELIABLE = 1;
