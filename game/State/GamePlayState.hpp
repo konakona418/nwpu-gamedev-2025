@@ -37,7 +37,10 @@ namespace game::State {
         void updateFSM(GameManager& ctx, float deltaTime);
 
         void sendReadySignalToServer(GameManager& ctx);
+
         bool tryWaitForAllPlayersReady(GameManager& ctx);
+        void handlePlayerJoinQuit(GameManager& ctx);
+
         bool tryWaitForPurchasePhaseStart(GameManager& ctx);
         bool tryWaitForRoundStart(GameManager& ctx);
     };

@@ -59,10 +59,28 @@ namespace game::State {
         // all players ready
         const auto& event = gameStartQueue.front();
         // todo: process event data if needed
+        // todo: sync time with server
 
         gameStartQueue.pop_front();
 
         return true;
+    }
+
+    void GamePlayState::handlePlayerJoinQuit(GameManager& ctx) {
+        auto& joinQueue = m_networkDispatcher->getQueues().queuePlayerJoinedEvent;
+        auto& quitQueue = m_networkDispatcher->getQueues().queuePlayerLeftEvent;
+
+        while (!joinQueue.empty()) {
+            const auto& event = joinQueue.front();
+            moe::Logger::info("Player joined: {}, current player count: {}", event.name, event.playerCount);
+            joinQueue.pop_front();
+        }
+
+        while (!quitQueue.empty()) {
+            const auto& event = quitQueue.front();
+            moe::Logger::info("Player left: {}, current player count: {}", event.name, event.playerCount);
+            quitQueue.pop_front();
+        }
     }
 
     bool GamePlayState::tryWaitForPurchasePhaseStart(GameManager& ctx) {
@@ -108,6 +126,7 @@ namespace game::State {
             }
             case FSMState::InWaitingRoom: {
                 // wait for players to join
+                handlePlayerJoinQuit(ctx);
                 if (tryWaitForAllPlayersReady(ctx)) {
                     moe::Logger::info("All players are ready, starting the game");
                     m_fsmState = FSMState::GameStarting;
