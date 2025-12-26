@@ -26,6 +26,10 @@ public:
         m_font = getFontPtr(fontId);
     }
 
+    const moe::U32StringView getText() const {
+        return TextWidget::text();
+    }
+
 protected:
     FontId m_fontId{NULL_FONT_ID};
 

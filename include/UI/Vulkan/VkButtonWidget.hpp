@@ -52,6 +52,10 @@ public:
         m_textWidget->setFontId(textPref.fontId);
     }
 
+    const moe::U32StringView text() const {
+        return m_textWidget->text();
+    }
+
 protected:
     Ref<VkTextWidget> m_textWidget;
     ButtonPref m_buttonPref;
