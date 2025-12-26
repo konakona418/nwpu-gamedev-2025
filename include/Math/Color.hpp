@@ -29,6 +29,9 @@ namespace moe {
         static const Color Red = Color(1.f, 0.f, 0.f, 1.f);
         static const Color Green = Color(0.f, 1.f, 0.f, 1.f);
         static const Color Blue = Color(0.f, 0.f, 1.f, 1.f);
+        static const Color Yellow = Color(1.f, 1.f, 0.f, 1.f);
+        static const Color Cyan = Color(0.f, 1.f, 1.f, 1.f);
+        static const Color Magenta = Color(1.f, 0.f, 1.f, 1.f);
         static const Color Transparent = Color(0.f, 0.f, 0.f, 0.f);
     }// namespace Colors
 }// namespace moe
