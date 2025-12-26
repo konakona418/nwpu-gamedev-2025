@@ -5,6 +5,8 @@
 
 #include "UI/BoxWidget.hpp"
 
+#include "State/GamePlayState.hpp"
+
 namespace game::State {
     static I18N MAINMENU_MULTIPLAYER_BUTTON("mainmenu.multiplayer_button", U"Multiplayer");
     static I18N MAINMENU_SETTINGS_BUTTON("mainmenu.settings_button", U"Settings");
@@ -106,6 +108,10 @@ namespace game::State {
         m_multiPlayerButtonWidget->render(renderctx);
         if (m_multiPlayerButtonWidget->checkButtonState(mousePos, isLMBPressed)) {
             moe::Logger::info("Multiplayer button clicked");
+
+            // enter gameplay state
+            auto gamePlayState = moe::Ref(new GamePlayState());
+            ctx.pushState(gamePlayState);
         }
 
         m_settingsButtonWidget->render(renderctx);

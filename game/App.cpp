@@ -3,7 +3,7 @@
 #include "State/DebugToolState.hpp"
 #include "State/WorldEnvironment.hpp"
 
-#include "State/GamePlayState.hpp"
+#include "State/MainMenuState.hpp"
 
 #include "Input.hpp"
 #include "Localization.hpp"
@@ -102,8 +102,8 @@ namespace game {
         auto debugToolState = moe::Ref(new State::DebugToolState());
         m_gameManager->addPersistGameState(debugToolState);
 
-        auto gamePlayState = moe::Ref(new State::GamePlayState());
-        m_gameManager->pushState(gamePlayState);
+        auto mainMenuState = moe::Ref(new State::MainMenuState());
+        m_gameManager->pushState(mainMenuState);
 
         while (running) {
             m_graphicsEngine->beginFrame();

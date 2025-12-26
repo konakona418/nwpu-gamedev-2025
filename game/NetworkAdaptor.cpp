@@ -147,8 +147,8 @@ namespace game {
     }
 
     void NetworkAdaptor::networkMain() {
-        moe::Logger::info("Network thread started");
         moe::Logger::setThreadName("Network");
+        moe::Logger::info("Network thread started");
 
         if (enet_initialize() != 0) {
             moe::Logger::critical("An error occurred while initializing ENet");
