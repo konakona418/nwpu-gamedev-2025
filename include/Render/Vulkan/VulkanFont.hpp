@@ -91,7 +91,10 @@ namespace moe {
                     Logger::warn("Glyph size exceeds cell size: glyph ({}, {}), cell ({}, {})",
                                  glyphWidth, glyphHeight,
                                  glyphCellSize, glyphCellSize);
-                    return false;
+
+                    // clamp glyph size
+                    glyphWidth = glm::min(glyphWidth, glyphCellSize - CELL_PADDING * 2);
+                    glyphHeight = glm::min(glyphHeight, glyphCellSize - CELL_PADDING * 2);
                 }
 
                 int row = currentGlyphCount / glyphPerRow;
