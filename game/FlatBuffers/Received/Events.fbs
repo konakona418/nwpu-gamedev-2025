@@ -63,6 +63,7 @@ table ChatMessageEvent {
 
 table GameEndedEvent {
     reason: string;
+    winner: PlayerTeam;
 }
 
 union EventData {
