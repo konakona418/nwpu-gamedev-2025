@@ -5,6 +5,8 @@
 #include "Core/Common.hpp"
 #include "Core/RefCounted.hpp"
 
+#include <algorithm>
+
 MOE_BEGIN_NAMESPACE
 
 struct Widget : public AtomicRefCounted<Widget> {
@@ -23,6 +25,14 @@ public:
     virtual void addChild(Ref<Widget> child) {
         m_children.push_back(child);
         child->m_parent = this;
+    }
+
+    virtual void removeChild(Ref<Widget> child) {
+        auto it = std::find(m_children.begin(), m_children.end(), child);
+        if (it != m_children.end()) {
+            (*it)->m_parent = nullptr;
+            m_children.erase(it);
+        }
     }
 
     const Vector<Ref<Widget>>& children() const {
