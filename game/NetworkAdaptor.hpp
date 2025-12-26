@@ -24,7 +24,11 @@ namespace game {
         static constexpr uint32_t MAGIC = 0x00769394;
         static constexpr uint32_t MAX_CHANNELS = 2;
 
+        // this does not connect immediately
         void init(moe::StringView serverAddress, uint16_t port);
+
+        // call this to connect
+        void connect();
 
         void shutdown();
 

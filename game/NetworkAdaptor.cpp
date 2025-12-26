@@ -6,6 +6,13 @@ namespace game {
     void NetworkAdaptor::init(moe::StringView serverAddress, uint16_t port) {
         m_serverAddress = serverAddress;
         m_serverPort = port;
+    }
+
+    void NetworkAdaptor::connect() {
+        if (m_running) {
+            moe::Logger::info("NetworkAdaptor::connect: network thread already running, forcing shutdown first");
+            shutdown();
+        }
 
         launchNetworkThread();
     }
