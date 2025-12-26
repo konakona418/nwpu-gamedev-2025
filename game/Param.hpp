@@ -14,13 +14,21 @@ namespace game {
     using ParamBool = bool;
     using ParamString = moe::String;
 
-    using ParamValue = moe::Variant<ParamInt, ParamFloat, ParamBool, ParamString>;
+    struct ParamFloat4 {
+        float x;
+        float y;
+        float z;
+        float w;
+    };
+
+    using ParamValue = moe::Variant<ParamInt, ParamFloat, ParamBool, ParamString, ParamFloat4>;
 
     enum class ParamType {
         Int,
         Float,
         Bool,
-        String
+        String,
+        Float4
     };
 
     struct ParamItem {
@@ -106,7 +114,8 @@ namespace game {
                 moe::Meta::IsSameV<T, ParamInt> ||
                         moe::Meta::IsSameV<T, ParamFloat> ||
                         moe::Meta::IsSameV<T, ParamBool> ||
-                        moe::Meta::IsSameV<T, ParamString>,
+                        moe::Meta::IsSameV<T, ParamString> ||
+                        moe::Meta::IsSameV<T, ParamFloat4>,
                 "Unsupported Param type");
 
         Param(const moe::StringView name, const T& defaultValue, ParamScope scope = ParamScope::System) {
@@ -147,5 +156,6 @@ namespace game {
     using ParamF = Param<ParamFloat>;
     using ParamB = Param<ParamBool>;
     using ParamS = Param<ParamString>;
+    using ParamF4 = Param<ParamFloat4>;
 
 }// namespace game

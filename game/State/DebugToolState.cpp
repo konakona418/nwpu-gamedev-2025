@@ -65,6 +65,17 @@ namespace game::State {
                         }
                         break;
                     }
+                    case ParamType::Float4: {
+                        auto value = param->get<ParamFloat4>();
+                        float vec[4] = {value.x, value.y, value.z, value.w};
+                        if (ImGui::InputFloat4(name.c_str(), vec)) {
+                            ParamFloat4 newValue;
+                            newValue = {vec[0], vec[1], vec[2], vec[3]};
+                            param->value = newValue;
+                        }
+
+                        break;
+                    }
                 }
             }
 

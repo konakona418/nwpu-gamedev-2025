@@ -14,6 +14,22 @@ public:
 
     void render(VulkanRenderObjectBus& renderer) override;
 
+    void setImageId(ImageId imageId) {
+        m_imageId = imageId;
+    }
+
+    ImageId getImageId() const {
+        return m_imageId;
+    }
+
+    void setTintColor(Color tintColor) {
+        m_tintColor = tintColor;
+    }
+
+    Color getTintColor() const {
+        return m_tintColor;
+    }
+
 private:
     ImageId m_imageId{NULL_IMAGE_ID};
     Color m_tintColor{Colors::White};

@@ -14,6 +14,8 @@ namespace game {
             return ParamType::Bool;
         } else if (std::holds_alternative<ParamString>(value)) {
             return ParamType::String;
+        } else if (std::holds_alternative<ParamFloat4>(value)) {
+            return ParamType::Float4;
         } else {
             MOE_ASSERT(false, "Unknown ParamType");
             return ParamType::Int;// make linter happy
@@ -55,7 +57,16 @@ namespace game {
                             currentTable = (*currentTable)[part.data()].as_table();
                         }
                         const auto& lastPart = splitNames.back();
-                        currentTable->insert(lastPart.data(), arg);
+                        if constexpr (moe::Meta::IsSameV<T, ParamFloat4>) {
+                            toml::array arr;
+                            arr.push_back(arg.x);
+                            arr.push_back(arg.y);
+                            arr.push_back(arg.z);
+                            arr.push_back(arg.w);
+                            currentTable->insert(lastPart.data(), arr);
+                        } else {
+                            currentTable->insert(lastPart.data(), arg);
+                        }
                     },
                     param.value);
         }
@@ -95,6 +106,19 @@ namespace game {
                         param->value = static_cast<float>(arg.template as<double>()->get());
                     } else {
                         param->value = arg.template as<typename T::value_type>()->get();
+                    }
+                } else if (toml::is_array<T>) {
+                    if (auto arr = arg.template as<toml::array>(); arr && arr->size() == 4) {
+                        ParamFloat4 vec4;
+                        vec4.x = static_cast<float>((*arr)[0].template as<double>()->get());
+                        vec4.y = static_cast<float>((*arr)[1].template as<double>()->get());
+                        vec4.z = static_cast<float>((*arr)[2].template as<double>()->get());
+                        vec4.w = static_cast<float>((*arr)[3].template as<double>()->get());
+                        param->value = vec4;
+                    } else {
+                        moe::Logger::warn(
+                                "ParamManager::registerParam: unsupported array param type for param {}",
+                                name.get());
                     }
                 } else {
                     moe::Logger::warn(
