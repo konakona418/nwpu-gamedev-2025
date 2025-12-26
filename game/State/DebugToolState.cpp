@@ -258,7 +258,7 @@ namespace game::State {
                            "Avg FPS: %.2f", avgFps);
 
         ImGui::PlotLines(
-                "Physics Frame Time",
+                "Physics Frame Time (ms)",
                 [](void* data, int idx) -> float {
                     auto& stats = *static_cast<moe::Deque<moe::PhysicsEngine::Stats>*>(data);
                     return stats[idx].physicsFrameTime;
@@ -266,7 +266,7 @@ namespace game::State {
                 &physicsHistoryStats,
                 static_cast<int>(physicsHistoryStats.size()));
         ImGui::TextColored(ImVec4(0.0f, 1.0f, 0.0f, 1.0f),
-                           "Avg Physics Frame Time: %.2f", avgPhysicsFrameTime);
+                           "Avg Physics Frame Time: %.2f ms", avgPhysicsFrameTime);
 
         ImGui::PlotLines(
                 "Physics TPS",
