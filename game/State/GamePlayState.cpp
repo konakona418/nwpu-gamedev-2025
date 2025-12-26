@@ -126,7 +126,7 @@ namespace game::State {
                     ctx.physics()
                             .syncTickIndex(
                                     syncInfo.lastServerTick,
-                                    syncInfo.lastServerTimeMillis);
+                                    syncInfo.roundTripTimeMs);
 
                     fsm.transitionTo(MatchPhase::GameStarting);
                 });

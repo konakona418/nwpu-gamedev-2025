@@ -22,7 +22,13 @@ namespace game {
     public:
         struct LastTimeSync {
             uint64_t lastServerTick{0};
-            uint64_t lastServerTimeMillis{0};
+
+            // ! fixme: this is suboptimal
+            // ! a more robust time sync mechanism is needed
+            // ! > sending time sync packets in unreliable channel periodically
+            // ! > calculating clock offset between server and client
+            // ! > using clock offset to adjust local time
+            uint64_t roundTripTimeMs{0};
         };
 
         struct Queues {

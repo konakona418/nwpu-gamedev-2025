@@ -14,6 +14,7 @@ namespace game {
 
     struct TransmitRecv {
         moe::Vector<uint8_t> payload;
+        uint64_t roundTripTimeMs{0};
     };
 
     using TransmitQueueRecv = moodycamel::ConcurrentQueue<TransmitRecv>;

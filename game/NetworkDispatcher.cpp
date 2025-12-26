@@ -46,7 +46,12 @@ namespace game {
                 auto* header = deserializedPacket->header();
 
                 m_lastTimeSync.lastServerTick = header->serverTick();
-                m_lastTimeSync.lastServerTimeMillis = header->serverTsMs();
+                //m_lastTimeSync.lastServerTimeMillis = header->serverTsMs();
+                // !!!
+                // we no longer use server time millis for synchronization
+                // instead, we use round trip time to estimate latency
+                // this is because the system clock on server and client are **NOT** synchronized
+                m_lastTimeSync.roundTripTimeMs = packet.roundTripTimeMs;
             }
 
             auto payloadType = deserializedPacket->packet_type();

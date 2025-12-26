@@ -10,46 +10,38 @@ enum Weapon : byte {
 }
 
 table PacketHeader {
-  client_tick: uint32;
+  client_tick: uint64;
   client_time: uint64;//ms
 }
 
 table FirePacket {
-  physics_id: uint32;
   temp_id: uint16;
-  fire_tick: uint32;
-  fire_time: uint64;
+
   origin_x: float;
   origin_y: float;
   origin_z: float;
+
   dir_x: float;
   dir_y: float;
   dir_z: float;
+
   weapon_id: uint16;
-  sequence: uint32;
+  sequence: uint32;//reserved
 }
 
 table MovePacket {
-  physics_id: uint32;
   temp_id: uint16;
-  input_tick: uint32;
+
   move_x: float;
   move_y: float;
+  move_z: float;
+
   yaw: float;
   pitch: float;
-  jump: bool;
-  sprint: bool;
-}
 
-table PlayerPositionPacket {
-  physics_id: uint32;
-  temp_id: uint16;
-  pos_x: float;
-  pos_y: float;
-  pos_z: float;
-  vel_x: float;
-  vel_y: float;
-  vel_z: float;
+  jump: bool;//reserved
+  crouch: bool;//reserved
+  sprint: bool;//reserved
 }
 
 table PlantBombEvent{
@@ -71,7 +63,7 @@ table PlayerInfo {
   ready: bool;
 }
 
-union PacketUnion { FirePacket, MovePacket, PlayerPositionPacket, PlayerInfo, PlantBombEvent, DefuseBombEvent, PurchaseEvent }
+union PacketUnion { FirePacket, MovePacket, PlayerInfo, PlantBombEvent, DefuseBombEvent, PurchaseEvent }
 
 table NetMessage {
   header: PacketHeader;

@@ -91,10 +91,14 @@ namespace game {
                 }
                 // only log reliable packets to avoid flooding the log
 
+                auto roundTripTime = m_serverPeer->roundTripTime;
                 m_receiveQueue->enqueue(
-                        {moe::Vector<uint8_t>(
-                                event.packet->data,
-                                event.packet->data + event.packet->dataLength)});
+                        {
+                                moe::Vector<uint8_t>(
+                                        event.packet->data,
+                                        event.packet->data + event.packet->dataLength),
+                                roundTripTime,
+                        });
                 enet_packet_destroy(event.packet);
                 break;
             }

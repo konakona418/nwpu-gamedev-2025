@@ -157,27 +157,30 @@ void PhysicsEngine::executeDispatchedFunctions() {
     m_dispatchedOnPhysicsThreadFn.clear();
 }
 
-void PhysicsEngine::syncTickIndex(size_t remoteTickIndex, TimeStampRemote remoteTimestampMs) {
-    auto currentTime =
-            std::chrono::duration_cast<std::chrono::milliseconds>(
-                    std::chrono::high_resolution_clock::now().time_since_epoch())
-                    .count();
-    auto latency = currentTime - remoteTimestampMs;
+void PhysicsEngine::syncTickIndex(size_t remoteTickIndex, RoundTripTimeMs roundTripTimeMs) {
+    double oneWayTimeSec = (roundTripTimeMs / 2.0) / 1000.0;
+    size_t latencyTicks = static_cast<size_t>(std::round(oneWayTimeSec / PHYSICS_TIMESTEP.count()));
 
-    size_t estimatedCurrentTickIndex =
-            remoteTickIndex +
-            static_cast<size_t>(
-                    (latency / 1000.0f) / PHYSICS_TIMESTEP.count());
+    size_t newEstimated = remoteTickIndex + latencyTicks;
+    size_t current = m_currentTickIndex.load();
 
-    m_currentTickIndex.store(estimatedCurrentTickIndex);
+    moe::Logger::debug(
+            "Syncing physics tick index: Local={}, Remote={}, RTT={}ms, NewEstimated={}",
+            current, remoteTickIndex, roundTripTimeMs, newEstimated);
 
-    moe::Logger::info(
-            "Syncing physics tick index: remoteTickIndex={}, remoteTimestampMs={}, currentTime={}, latency={}ms, estimatedCurrentTickIndex={}",
-            remoteTickIndex,
-            remoteTimestampMs,
-            currentTime,
-            latency,
-            estimatedCurrentTickIndex);
+    if (newEstimated < current) {
+        // todo: handle rewind case later
+        moe::Logger::warn(
+                "Received older tick index from server: Local={}, Remote={}, Estimated={}",
+                current, remoteTickIndex, newEstimated);
+        return;
+    }
+
+    if (newEstimated == current) {
+        return;
+    }
+
+    m_currentTickIndex.store(newEstimated);
 }
 
 MOE_END_NAMESPACE

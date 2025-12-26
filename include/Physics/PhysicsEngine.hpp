@@ -115,7 +115,7 @@ public:
     MOE_SINGLETON(PhysicsEngine)
 
     using Duration = std::chrono::duration<float, std::chrono::seconds::period>;
-    using TimeStampRemote = uint64_t;
+    using RoundTripTimeMs = uint64_t;
 
     static constexpr JPH::uint MAX_BODIES = 1024;
     static constexpr JPH::uint NUM_BODY_MUTEXES = 0;
@@ -176,7 +176,7 @@ public:
 
     // synchronize tick index from remote
     // atomic operation
-    void syncTickIndex(size_t remoteTickIndex, TimeStampRemote remoteTimestampMs);
+    void syncTickIndex(size_t remoteTickIndex, RoundTripTimeMs roundTripTimeMs);
 
     size_t getCurrentTickIndex() const { return m_currentTickIndex.load(); }
 
