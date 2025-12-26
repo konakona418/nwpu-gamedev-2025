@@ -65,6 +65,7 @@ namespace game {
                 return false;
             }
             std::swap(actionsCopy, m_pendingActions);
+            MOE_ASSERT(m_pendingActions.empty(), "Pending actions should be empty after swap");
         }
 
         for (auto& action: actionsCopy) {
@@ -82,7 +83,17 @@ namespace game {
                 }
             }
         }
-        m_pendingActions.clear();
+
+        // propagate state change notifications
+        if (!m_gameStateStack.empty()) {
+            // notify topmost state change
+            auto& topState = m_gameStateStack.back();
+            topState->_onStateChanged(*this, true);
+
+            for (size_t i = 0; i < m_gameStateStack.size() - 1; ++i) {
+                m_gameStateStack[i]->_onStateChanged(*this, false);
+            }
+        }
 
         return true;
     }

@@ -129,4 +129,9 @@ namespace game::State {
             moe::Logger::info("Exit button clicked");
         }
     }
+
+    void MainMenuState::onStateChanged(GameManager& ctx, bool isTopmostState) {
+        moe::Logger::info("MainMenuState::onStateChanged: isTopmostState = {}", isTopmostState);
+        m_inputProxy.setActive(isTopmostState);
+    }
 }// namespace game::State

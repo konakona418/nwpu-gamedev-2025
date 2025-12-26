@@ -19,6 +19,8 @@ namespace game {
         virtual void onPhysicsUpdate(GameManager& ctx, float deltaTimeSecs) {};
         virtual void onExit(GameManager& ctx) {};
 
+        virtual void onStateChanged(GameManager& ctx, bool isTopmostState) {};
+
         void _onEnter(GameManager& ctx) {
             onEnter(ctx);
             for (auto& child: m_childStates) {
@@ -46,6 +48,13 @@ namespace game {
                 child->_onExit(ctx);
             }
             onExit(ctx);
+        }
+
+        void _onStateChanged(GameManager& ctx, bool isTopmostState) {
+            onStateChanged(ctx, isTopmostState);
+            for (auto& child: m_childStates) {
+                child->_onStateChanged(ctx, isTopmostState);
+            }
         }
 
         void addChildState(moe::Ref<GameState> childState) {

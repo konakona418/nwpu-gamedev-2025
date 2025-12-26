@@ -25,6 +25,8 @@ namespace game::State {
         void onExit(GameManager& ctx) override;
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
+        void onStateChanged(GameManager& ctx, bool isTopmostState) override;
+
     private:
         moe::Secure<game::AnyCacheLoader<game::FontLoader<
                 moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>
