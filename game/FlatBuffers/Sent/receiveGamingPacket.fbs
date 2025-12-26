@@ -1,12 +1,22 @@
 namespace myu.net;
 
+enum Weapon : byte {
+    WEAPON_NONE = 0,
+    GLOCK = 1,
+    USP = 2,
+    DEAGLE = 3,
+    AK47 = 4,
+    M4A1 = 5,
+}
+
 table PacketHeader {
   client_tick: uint32;
-  client_time: uint64;
+  client_time: uint64;//ms
 }
 
 table FirePacket {
   physics_id: uint32;
+  temp_id: uint16;
   fire_tick: uint32;
   fire_time: uint64;
   origin_x: float;
@@ -21,6 +31,7 @@ table FirePacket {
 
 table MovePacket {
   physics_id: uint32;
+  temp_id: uint16;
   input_tick: uint32;
   move_x: float;
   move_y: float;
@@ -30,16 +41,29 @@ table MovePacket {
   sprint: bool;
 }
 
-table PlayerStatePacket {
+table PlayerPositionPacket {
   physics_id: uint32;
+  temp_id: uint16;
   pos_x: float;
   pos_y: float;
   pos_z: float;
   vel_x: float;
   vel_y: float;
   vel_z: float;
-  health: int16;
-  is_alive: bool;
+}
+
+table PlantBombEvent{
+  temp_id: uint16;
+  bomb_site: uint16; // 0 for A, 1 for B
+}
+
+table DefuseBombEvent{
+  temp_id: uint16;
+}
+
+table PurchaseEvent{
+  temp_id: uint16;
+  weapon : Weapon;
 }
 
 table PlayerInfo {
@@ -47,7 +71,7 @@ table PlayerInfo {
   ready: bool;
 }
 
-union PacketUnion { FirePacket, MovePacket, PlayerStatePacket, PlayerInfo }
+union PacketUnion { FirePacket, MovePacket, PlayerPositionPacket, PlayerInfo, PlantBombEvent, DefuseBombEvent, PurchaseEvent }
 
 table NetMessage {
   header: PacketHeader;

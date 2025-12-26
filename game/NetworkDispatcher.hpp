@@ -11,6 +11,7 @@
     X(::moe::net::RoundPurchaseStartedEvent, RoundPurchaseStartedEvent) \
     X(::moe::net::RoundStartedEvent, RoundStartedEvent)                 \
     X(::moe::net::RoundEndedEvent, RoundEndedEvent)                     \
+    X(::moe::net::GameEndedEvent, GameEndedEvent)                       \
     X(::moe::net::PlayerKilledEvent, PlayerKilledEvent)                 \
     X(::moe::net::BombPlantedEvent, BombPlantedEvent)                   \
     X(::moe::net::BombDefusedEvent, BombDefusedEvent)                   \

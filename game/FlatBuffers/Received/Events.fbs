@@ -61,6 +61,10 @@ table ChatMessageEvent {
     message: string;
 }
 
+table GameEndedEvent {
+    reason: string;
+}
+
 union EventData {
     PlayerJoinedEvent,
     PlayerLeftEvent,
@@ -72,6 +76,7 @@ union EventData {
     BombPlantedEvent,
     BombDefusedEvent,
     ChatMessageEvent,
+    GameEndedEvent
 }
 
 // avoid name conflict with CreateEvent macro
