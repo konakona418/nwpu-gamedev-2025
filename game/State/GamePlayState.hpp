@@ -4,8 +4,23 @@
 #include "GameState.hpp"
 
 #include "NetworkDispatcher.hpp"
+#include "SimpleFSM.hpp"
 
 namespace game::State {
+    enum class MatchPhase {
+        Initializing,
+
+        InWaitingRoom,
+
+        GameStarting,
+
+        PurchasingPhase,
+        RoundInProgress,
+        RoundEnded,
+
+        GameEnded,
+    };
+
     struct GamePlayState : public GameState {
     public:
         const moe::StringView getName() const override {
@@ -17,24 +32,10 @@ namespace game::State {
         // void onExit(GameManager& ctx) override;
 
     private:
-        enum class FSMState {
-            Initializing,
-
-            InWaitingRoom,
-
-            GameStarting,
-
-            PurchasingPhase,
-            RoundInProgress,
-            RoundEnded,
-
-            GameEnded,
-        };
-
         moe::UniquePtr<NetworkDispatcher> m_networkDispatcher{nullptr};
-        FSMState m_fsmState{FSMState::Initializing};
+        game::SimpleFSM<MatchPhase, MatchPhase::Initializing> m_fsm{};
 
-        void updateFSM(GameManager& ctx, float deltaTime);
+        void initFSM(GameManager& ctx);
 
         void sendReadySignalToServer(GameManager& ctx);
 

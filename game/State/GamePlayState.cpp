@@ -15,11 +15,90 @@ namespace game::State {
     void GamePlayState::onEnter(GameManager& ctx) {
         m_networkDispatcher = std::make_unique<game::NetworkDispatcher>(&ctx.network());
 
+        initFSM(ctx);
+
         auto pgstate = moe::Ref(new PlaygroundState());
         this->addChildState(pgstate);
 
         auto playerState = moe::Ref(new LocalPlayerState());
         this->addChildState(playerState);
+    }
+
+    void GamePlayState::initFSM(GameManager& ctx) {
+        m_fsm.setContext(ctx);
+
+        m_fsm.state(
+                MatchPhase::Initializing,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    sendReadySignalToServer(fsm.getContext());
+
+                    moe::Logger::info("Sent ready signal to server, waiting for other players...");
+                    moe::Logger::info("Transitioning to InWaitingRoom phase");
+
+                    fsm.transitionTo(MatchPhase::InWaitingRoom);
+                });
+
+        m_fsm.state(
+                MatchPhase::InWaitingRoom,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    auto& ctx = fsm.getContext();
+
+                    handlePlayerJoinQuit(ctx);
+                    if (!tryWaitForAllPlayersReady(ctx)) {
+                        return;
+                    }
+
+                    moe::Logger::info("All players are ready, starting the game");
+                    moe::Logger::info("Transitioning to GameStarting phase");
+
+                    fsm.transitionTo(MatchPhase::GameStarting);
+                });
+
+        m_fsm.state(
+                MatchPhase::GameStarting,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    auto& ctx = fsm.getContext();
+                    if (!tryWaitForPurchasePhaseStart(ctx)) {
+                        return;
+                    }
+
+                    moe::Logger::info("Purchase phase started");
+                    moe::Logger::info("Transitioning to PurchasingPhase phase");
+
+                    fsm.transitionTo(MatchPhase::PurchasingPhase);
+                });
+
+        m_fsm.state(
+                MatchPhase::PurchasingPhase,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    auto& ctx = fsm.getContext();
+                    if (!tryWaitForRoundStart(ctx)) {
+                        return;
+                    }
+
+                    moe::Logger::info("Round started");
+                    moe::Logger::info("Transitioning to RoundInProgress phase");
+
+                    fsm.transitionTo(MatchPhase::RoundInProgress);
+                });
+
+        m_fsm.state(
+                MatchPhase::RoundInProgress,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    // todo
+                });
+
+        m_fsm.state(
+                MatchPhase::RoundEnded,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    // todo
+                });
+
+        m_fsm.state(
+                MatchPhase::GameEnded,
+                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                    // todo
+                });
     }
 
     void GamePlayState::sendReadySignalToServer(GameManager& ctx) {
@@ -60,6 +139,14 @@ namespace game::State {
         const auto& event = gameStartQueue.front();
         // todo: process event data if needed
         // todo: sync time with server
+        for (const auto& player: event.players->players) {
+            moe::Logger::info(
+                    "Player '{}'(id: {}) is ready, team {}",
+                    player->name,
+                    player->tempId,
+                    player->team == moe::net::PlayerTeam::TEAM_CT ? "CT" : "T");
+        }
+        moe::Logger::info("Who am I: '{}'(id: {})", event.players->whoami->name, event.players->whoami->tempId);
 
         gameStartQueue.pop_front();
 
@@ -114,60 +201,9 @@ namespace game::State {
         return true;
     }
 
-    void GamePlayState::updateFSM(GameManager& ctx, float deltaTime) {
-        switch (m_fsmState) {
-            case FSMState::Initializing: {
-                // initial setup
-                moe::Logger::info("GamePlayState initializing");
-
-                m_fsmState = FSMState::InWaitingRoom;
-                sendReadySignalToServer(ctx);
-                break;
-            }
-            case FSMState::InWaitingRoom: {
-                // wait for players to join
-                handlePlayerJoinQuit(ctx);
-                if (tryWaitForAllPlayersReady(ctx)) {
-                    moe::Logger::info("All players are ready, starting the game");
-                    m_fsmState = FSMState::GameStarting;
-                }
-                break;
-            }
-            case FSMState::GameStarting: {
-                // game is starting, waiting for purchase phase
-                if (tryWaitForPurchasePhaseStart(ctx)) {
-                    moe::Logger::info("Purchase phase started");
-                    m_fsmState = FSMState::PurchasingPhase;
-                }
-                break;
-            }
-            case FSMState::PurchasingPhase: {
-                // allow players to purchase equipment
-                if (tryWaitForRoundStart(ctx)) {
-                    moe::Logger::info("Round started");
-                    m_fsmState = FSMState::RoundInProgress;
-                }
-                // todo: implement purchase logic
-                break;
-            }
-            case FSMState::RoundInProgress: {
-                // main gameplay
-                break;
-            }
-            case FSMState::RoundEnded: {
-                // show round results
-                break;
-            }
-            case FSMState::GameEnded: {
-                // show game results, return to lobby
-                break;
-            }
-        }
-    }
-
     void GamePlayState::onUpdate(GameManager& ctx, float deltaTime) {
         m_networkDispatcher->dispatchReceiveData();
 
-        updateFSM(ctx, deltaTime);
+        m_fsm.update(deltaTime);
     }
 }// namespace game::State
