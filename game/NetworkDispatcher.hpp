@@ -20,6 +20,11 @@
 namespace game {
     struct NetworkDispatcher : public moe::Meta::NonCopyable<NetworkDispatcher> {
     public:
+        struct LastTimeSync {
+            uint64_t lastServerTick{0};
+            uint64_t lastServerTimeMillis{0};
+        };
+
         struct Queues {
 #define X(fbs_type, queue_name) ::moe::Deque<fbs_type##T> queue##queue_name;
             _GAME_NETWORK_DISPATCHER_QUEUES_XXX()
@@ -33,9 +38,13 @@ namespace game {
 
         Queues& getQueues() { return *m_queues; }
 
+        LastTimeSync& getLastTimeSync() { return m_lastTimeSync; }
+
     private:
         NetworkAdaptor* m_networkAdaptor;
         moe::UniquePtr<Queues> m_queues = std::make_unique<Queues>();
+
+        LastTimeSync m_lastTimeSync;
 
         void dispatchReceivedEvent(const moe::net::ReceivedNetMessage* deserializedPacket);
     };

@@ -41,7 +41,14 @@ namespace game {
                 continue;
             }
 
-            auto* header = deserializedPacket->header();
+            // update last time sync info
+            {
+                auto* header = deserializedPacket->header();
+
+                m_lastTimeSync.lastServerTick = header->serverTick();
+                m_lastTimeSync.lastServerTimeMillis = header->serverTsMs();
+            }
+
             auto payloadType = deserializedPacket->packet_type();
 
             switch (payloadType) {
