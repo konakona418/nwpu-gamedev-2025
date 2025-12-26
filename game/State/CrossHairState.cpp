@@ -1,6 +1,10 @@
 #include "CrossHairState.hpp"
 
+#include "Param.hpp"
+
 namespace game::State {
+    static ParamF4 CROSSHAIR_COLOR("crosshair.color", {1.0f, 1.0f, 1.0f, 1.0f}, ParamScope::UserConfig);
+
     void CrossHairState::onEnter(GameManager& ctx) {
         m_crossHairNormalImageId = m_crossHairImageLoader.generate().value_or(moe::NULL_IMAGE_ID);
         if (m_crossHairNormalImageId == moe::NULL_IMAGE_ID) {
@@ -21,7 +25,10 @@ namespace game::State {
         container->setAlign(moe::BoxAlign::Center);
         container->setJustify(moe::BoxJustify::Center);
 
-        m_crossHairImageWidget = moe::Ref(new moe::VkImageWidget(m_crossHairNormalImageId));
+        // init color
+        auto color_ = CROSSHAIR_COLOR.get();
+        moe::Color crosshairColor = {color_.x, color_.y, color_.z, color_.w};
+        m_crossHairImageWidget = moe::Ref(new moe::VkImageWidget(m_crossHairNormalImageId, crosshairColor));
         container->addChild(m_crossHairImageWidget);
 
         m_rootWidget->addChild(container);
@@ -36,6 +43,12 @@ namespace game::State {
 
     void CrossHairState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderer = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
+
+        // update crosshair color
+        auto color_ = CROSSHAIR_COLOR.get();
+        moe::Color crosshairColor = {color_.x, color_.y, color_.z, color_.w};
+        m_crossHairImageWidget->setTintColor(crosshairColor);
+
         m_crossHairImageWidget->render(renderer);
     }
 }// namespace game::State
