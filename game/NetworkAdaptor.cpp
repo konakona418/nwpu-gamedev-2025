@@ -76,19 +76,21 @@ namespace game {
 
     void NetworkAdaptor::handleEnetEvent(const ENetEvent& event) {
         switch (event.type) {
-            case ENET_EVENT_TYPE_RECEIVE:
-                moe::Logger::info(
-                        "Received packet of length {} on channel {} from server",
-                        event.packet->dataLength,
-                        event.channelID);
-                {
-                    m_receiveQueue->enqueue(
-                            {moe::Vector<uint8_t>(
-                                    event.packet->data,
-                                    event.packet->data + event.packet->dataLength)});
+            case ENET_EVENT_TYPE_RECEIVE: {
+                if (event.channelID == Channels::RELIABLE) {
+                    moe::Logger::debug(
+                            "Received reliable packet of length {} from server",
+                            event.packet->dataLength);
                 }
+                // only log reliable packets to avoid flooding the log
+
+                m_receiveQueue->enqueue(
+                        {moe::Vector<uint8_t>(
+                                event.packet->data,
+                                event.packet->data + event.packet->dataLength)});
                 enet_packet_destroy(event.packet);
                 break;
+            }
             case ENET_EVENT_TYPE_DISCONNECT:
                 moe::Logger::info("Disconnected from server");
                 m_running = false;
