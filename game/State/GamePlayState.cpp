@@ -1,5 +1,6 @@
 #include "State/GamePlayState.hpp"
 
+#include "State/ChatboxState.hpp"
 #include "State/LocalPlayerState.hpp"
 #include "State/PlaygroundState.hpp"
 
@@ -22,6 +23,9 @@ namespace game::State {
 
         auto playerState = moe::Ref(new LocalPlayerState());
         this->addChildState(playerState);
+
+        auto chatboxState = moe::Ref(new ChatboxState());
+        this->addChildState(chatboxState);
     }
 
     void GamePlayState::initFSM(GameManager& ctx) {
