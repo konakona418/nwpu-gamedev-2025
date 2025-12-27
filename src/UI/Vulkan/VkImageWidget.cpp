@@ -7,13 +7,13 @@ void VkImageWidget::render(VulkanRenderObjectBus& renderer) {
         return;
     }
 
-    auto bounds = this->calculatedBounds();
+    auto rect = this->m_spriteRenderRect;
     renderer.submitSpriteRender(
             m_imageId,
             Transform{}
-                    .setPosition({bounds.x, bounds.y, 0}),
+                    .setPosition({rect.x, rect.y, 0}),
             m_tintColor,
-            {bounds.width, bounds.height});
+            {rect.width, rect.height});
 }
 
 MOE_END_NAMESPACE

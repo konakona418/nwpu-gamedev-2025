@@ -27,10 +27,11 @@ void VkButtonWidget::layout(const LayoutRect& rectAssigned) {
 }
 
 void VkButtonWidget::render(VulkanRenderObjectBus& renderer) {
-    const auto& bounds = this->calculatedBounds();
+    // real size is not calculatedBounds but spriteRenderRect
+    const auto& rect = this->m_spriteRenderRect;
 
-    const auto transform = Transform{}.setPosition(glm::vec3{bounds.x, bounds.y, 0.0f});
-    const auto size = glm::vec2{bounds.width, bounds.height};
+    const auto transform = Transform{}.setPosition(glm::vec3{rect.x, rect.y, 0.0f});
+    const auto size = glm::vec2{rect.width, rect.height};
 
     switch (m_buttonState) {
         case ButtonState::Normal:
@@ -60,7 +61,8 @@ void VkButtonWidget::render(VulkanRenderObjectBus& renderer) {
 }
 
 bool VkButtonWidget::checkButtonState(const glm::vec2& cursorPos, bool isPressed) {
-    const auto& b = this->calculatedBounds();
+    // use render size for hit test
+    const auto& b = this->m_spriteRenderRect;
     bool isHovered = cursorPos.x >= b.x && cursorPos.x <= b.x + b.width &&
                      cursorPos.y >= b.y && cursorPos.y <= b.y + b.height;
 
