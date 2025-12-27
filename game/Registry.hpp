@@ -5,6 +5,33 @@
 
 namespace game {
     namespace Detail {
+        namespace _TypeUtil {
+            // from my previous project
+            // https://github.com/konakona418/my-reflection/blob/master/include/simple_refl.h
+
+            std::string _remove_redundant_space(const std::string& full_string);
+            bool string_contains(const std::string& full_string, const std::string& sub_string);
+            std::string _string_replace(
+                    std::string& full_string, const std::string& sub_string,
+                    const std::string& replacement);
+            std::string _extract_type(std::string& full_string);
+
+            template<typename T>
+            std::string extract_type_name(bool& success) {
+                std::string fn_sig;
+                std::string type_name;
+#if defined(__GNUC__) || defined(__clang__)
+                fn_sig = __PRETTY_FUNCTION__;
+                type_name = _extract_type(fn_sig);
+                success = true;
+#else
+                success = false;
+                return "<Unknown Type; Compiler Unsupported>";
+#endif
+                return type_name;
+            }
+        }// namespace _TypeUtil
+
         struct TypeIdGenerator {
         public:
             TypeIdGenerator() = default;
@@ -33,6 +60,24 @@ namespace game {
                 moe::Logger::warn(
                         "Registry::emplace: type already registered, overwriting");
             }
+
+#ifndef NDEBUG
+            // show type name for debugging
+            {
+                bool success = false;
+                auto typeName =
+                        Detail::_TypeUtil::extract_type_name<T>(success);
+                if (success) {
+                    moe::Logger::debug(
+                            "TypeIdGenerator: registered type '{}' with type ID {}",
+                            typeName, typeId);
+                } else {
+                    moe::Logger::warn(
+                            "TypeIdGenerator: registered type with type ID {}, but failed to extract type name",
+                            typeId);
+                }
+            }
+#endif
 
             m_registryMap[typeId] =
                     moe::UniquePtr<Wrapper>(new WrapperImpl<T>(std::forward<Args>(args)...));
