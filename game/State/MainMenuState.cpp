@@ -8,6 +8,8 @@
 #include "State/GamePlayState.hpp"
 
 namespace game::State {
+    static I18N MAINMENU_TITLE("mainmenu.title", U"Game Title");
+
     static I18N MAINMENU_MULTIPLAYER_BUTTON("mainmenu.multiplayer_button", U"Multiplayer");
     static I18N MAINMENU_SETTINGS_BUTTON("mainmenu.settings_button", U"Settings");
     static I18N MAINMENU_CREDITS_BUTTON("mainmenu.credits_button", U"Credits");
@@ -24,13 +26,23 @@ namespace game::State {
         auto canvas = ctx.renderer().getCanvasSize();
         m_rootWidget = moe::makeRef<moe::RootWidget>(canvas.first, canvas.second);
 
+        auto mainBoxWidget =
+                moe::makeRef<moe::BoxWidget>(moe::BoxLayoutDirection::Vertical);
+        mainBoxWidget->setJustify(moe::BoxJustify::SpaceBetween);
+
+        m_titleTextWidget = moe::makeRef<moe::VkTextWidget>(
+                MAINMENU_TITLE.get(),
+                m_fontId.generate().value_or(moe::NULL_FONT_ID),
+                48.f,
+                moe::Color::fromNormalized(255, 255, 255, 255));
+        m_titleTextWidget->setMargin({50.f, 50.f, 0.f, 0.f});
+        mainBoxWidget->addChild(m_titleTextWidget);
+
         auto boxWidget = moe::makeRef<moe::BoxWidget>(
                 moe::BoxLayoutDirection::Vertical);
-        boxWidget->setJustify(moe::BoxJustify::SpaceBetween);
+        boxWidget->setJustify(moe::BoxJustify::End);
         boxWidget->setAlign(moe::BoxAlign::Start);
-        boxWidget->setPadding({20.f, 20.f, 20.f, 20.f});
-        boxWidget->setMargin({(canvas.first - 200.f) / 2.f, 0.f, (canvas.second - 300.f) / 2.f, 0.f});
-        m_rootWidget->addChild(boxWidget);
+        boxWidget->setPadding({40.f, 50.f, 50.f, 50.f});
 
         m_multiPlayerButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
@@ -42,6 +54,7 @@ namespace game::State {
                 moe::VkButtonWidget::ButtonPref{
                         .preferredSize = {200.f, 50.f},
                 });
+        m_multiPlayerButtonWidget->setMargin({0.f, 0.f, 0.f, 20.f});
 
         m_settingsButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
@@ -53,6 +66,7 @@ namespace game::State {
                 moe::VkButtonWidget::ButtonPref{
                         .preferredSize = {200.f, 50.f},
                 });
+        m_settingsButtonWidget->setMargin({0.f, 0.f, 0.f, 20.f});
 
         m_creditsButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
@@ -64,6 +78,7 @@ namespace game::State {
                 moe::VkButtonWidget::ButtonPref{
                         .preferredSize = {200.f, 50.f},
                 });
+        m_creditsButtonWidget->setMargin({0.f, 0.f, 0.f, 20.f});
 
         m_exitButtonWidget = moe::makeRef<moe::VkButtonWidget>(
                 moe::VkButtonWidget::TextPref{
@@ -75,12 +90,16 @@ namespace game::State {
                 moe::VkButtonWidget::ButtonPref{
                         .preferredSize = {200.f, 50.f},
                 });
+        m_exitButtonWidget->setMargin({0.f, 0.f, 0.f, 20.f});
 
         boxWidget->addChild(m_multiPlayerButtonWidget);
         boxWidget->addChild(m_settingsButtonWidget);
         boxWidget->addChild(m_creditsButtonWidget);
         boxWidget->addChild(m_exitButtonWidget);
 
+        mainBoxWidget->addChild(boxWidget);
+
+        m_rootWidget->addChild(mainBoxWidget);
         m_rootWidget->layout();
     }
 
@@ -88,6 +107,7 @@ namespace game::State {
         moe::Logger::info("Exiting MainMenuState");
 
         m_rootWidget.reset();
+        m_titleTextWidget.reset();
         m_multiPlayerButtonWidget.reset();
         m_settingsButtonWidget.reset();
         m_creditsButtonWidget.reset();
@@ -101,6 +121,8 @@ namespace game::State {
 
     void MainMenuState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
+
+        m_titleTextWidget->render(renderctx);
 
         auto mousePos = m_inputProxy.getMousePosition();
         bool isLMBPressed = m_inputProxy.getMouseButtonState().pressedLMB;

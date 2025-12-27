@@ -28,15 +28,19 @@ namespace game::State {
         void onStateChanged(GameManager& ctx, bool isTopmostState) override;
 
     private:
-        moe::Secure<game::AnyCacheLoader<game::FontLoader<
-                moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>
-                m_fontId{
-                        FontLoaderParam{48.0f, Util::glyphRangeChinese()},
-                        moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
+        using FontLoaderT =
+                moe::Secure<game::AnyCacheLoader<game::FontLoader<
+                        moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>;
+
+        FontLoaderT m_fontId{
+                FontLoaderParam{48.0f, Util::glyphRangeChinese()},
+                moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf")),
+        };
 
         InputProxy m_inputProxy{InputProxy::PRIORITY_UI_LOCK};
 
         moe::Ref<moe::RootWidget> m_rootWidget{nullptr};
+        moe::Ref<moe::VkTextWidget> m_titleTextWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_multiPlayerButtonWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_settingsButtonWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_creditsButtonWidget{nullptr};
