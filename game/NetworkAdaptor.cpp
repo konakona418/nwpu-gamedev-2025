@@ -6,6 +6,9 @@ namespace game {
     void NetworkAdaptor::init(moe::StringView serverAddress, uint16_t port) {
         m_serverAddress = serverAddress;
         m_serverPort = port;
+
+        m_sendQueue = std::make_unique<TransmitQueueSend>();
+        m_receiveQueue = std::make_unique<TransmitQueueRecv>();
     }
 
     void NetworkAdaptor::connect() {
@@ -24,6 +27,17 @@ namespace game {
         if (m_networkThread && m_networkThread->joinable()) {
             m_networkThread->join();
         }
+
+        moe::Logger::info("Cleaning network sending and receiving queues");
+
+        // clear queues
+        TransmitSend dummySend[32];
+        while (m_sendQueue->try_dequeue_bulk(dummySend, 32));
+
+        TransmitRecv dummyRecv[32];
+        while (m_receiveQueue->try_dequeue_bulk(dummyRecv, 32));
+
+        moe::Logger::info("Network sending and receiving queues cleaned up");
 
         moe::Logger::info("Network thread stopped");
     }

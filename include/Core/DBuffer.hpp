@@ -22,11 +22,11 @@ public:
     }
 
 private:
-    alignas(64) std::atomic<int> m_frontIdx{0};
-    alignas(64) T m_buffers[2];
+    std::atomic<int> m_frontIdx{0};
+    T m_buffers[2];
 
     // producer exclusive
-    alignas(64) int m_writingIdx{1};
+    int m_writingIdx{1};
 };
 
 MOE_END_NAMESPACE
