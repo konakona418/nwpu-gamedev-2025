@@ -10,6 +10,8 @@ namespace game {
     template<typename StateE, StateE InitialState = {}, typename = moe::Meta::EnableIfT<std::is_enum_v<StateE>>>
     struct SimpleFSM {
     public:
+        using StatePreFn = moe::Function<void(SimpleFSM<StateE>&)>;
+        using StatePostFn = moe::Function<void(SimpleFSM<StateE>&)>;
         using StateFactoryFn = moe::Function<void(SimpleFSM<StateE>&, float)>;
 
         SimpleFSM() = default;
@@ -32,8 +34,18 @@ namespace game {
             }
 
             if (auto it = m_stateFactories.find(newState); it != m_stateFactories.end()) {
+                // call post function of current state
+                if (m_currentState && m_currentState->postFn) {
+                    m_currentState->postFn(*this);
+                }
+
                 m_currentStateEnum = newState;
                 m_currentState = it->second;
+
+                // call pre function of new state
+                if (m_currentState->preFn) {
+                    m_currentState->preFn(*this);
+                }
             } else {
                 moe::Logger::error("SimpleFSM::transitionTo: no factory registered for state {}", static_cast<int>(newState));
             }
@@ -41,9 +53,11 @@ namespace game {
 
         void state(
                 StateE state,
-                StateFactoryFn factory) {
+                StateFactoryFn factory,
+                StatePreFn preFn = nullptr,
+                StatePostFn postFn = nullptr) {
             m_stateFactories[state] =
-                    std::make_shared<StateFactoryFn>(std::move(factory));
+                    std::make_shared<State>(State{state, std::move(preFn), std::move(postFn), std::move(factory)});
         }
 
         void update(float deltaTime) {
@@ -51,21 +65,33 @@ namespace game {
                 if (auto it = m_stateFactories.find(InitialState); it != m_stateFactories.end()) {
                     m_currentStateEnum = InitialState;
                     m_currentState = it->second;
+
+                    // call pre function of initial state
+                    if (m_currentState->preFn) {
+                        m_currentState->preFn(*this);
+                    }
                 } else {
                     moe::Logger::error("SimpleFSM::update: no factory registered for initial state {}", static_cast<int>(InitialState));
                     return;
                 }
             }
-            (*m_currentState)(*this, deltaTime);
+            m_currentState->factoryFn(*this, deltaTime);
         }
 
     private:
         GameManager* m_ctx{nullptr};
 
+        struct State {
+            StateE stateEnum;
+            StatePreFn preFn;
+            StatePostFn postFn;
+            StateFactoryFn factoryFn;
+        };
+
         StateE m_currentStateEnum = InitialState;
 
-        moe::SharedPtr<StateFactoryFn> m_currentState{nullptr};
-        moe::UnorderedMap<StateE, moe::SharedPtr<StateFactoryFn>> m_stateFactories{};
+        moe::SharedPtr<State> m_currentState{nullptr};
+        moe::UnorderedMap<StateE, moe::SharedPtr<State>> m_stateFactories{};
     };
 
 }// namespace game

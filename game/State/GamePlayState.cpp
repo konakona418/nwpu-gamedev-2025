@@ -120,6 +120,9 @@ namespace game::State {
                     displaySystemPrompt(ctx, WAITING_FOR_PLAYERS_PROMPT.get());
 
                     fsm.transitionTo(MatchPhase::InWaitingRoom);
+                },
+                [](game::SimpleFSM<MatchPhase>& fsm) {
+                    moe::Logger::info("GamePlayState FSM: Entered Initializing phase");
                 });
 
         m_fsm.state(
@@ -135,17 +138,10 @@ namespace game::State {
                     moe::Logger::info("All players are ready, starting the game");
                     moe::Logger::info("Transitioning to GameStarting phase");
 
-                    displaySystemPrompt(ctx, ALL_PLAYERS_READY_PROMPT.get());
-
-                    // sync time with server
-                    moe::Logger::info("Synchronizing time with server...");
-                    auto syncInfo = m_networkDispatcher->getLastTimeSync();
-                    ctx.physics()
-                            .syncTickIndex(
-                                    syncInfo.lastServerTick,
-                                    syncInfo.roundTripTimeMs);
-
                     fsm.transitionTo(MatchPhase::GameStarting);
+                },
+                [](game::SimpleFSM<MatchPhase>& fsm) {
+                    moe::Logger::info("GamePlayState FSM: Entered InWaitingRoom phase");
                 });
 
         m_fsm.state(
@@ -156,15 +152,22 @@ namespace game::State {
                         return;
                     }
 
-                    moe::Logger::info("Purchase phase started");
                     moe::Logger::info("Transitioning to PurchasingPhase phase");
 
-                    displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
-
-                    m_purchaseState = moe::Ref(new PurchaseState());
-                    this->addChildState(m_purchaseState);
-
                     fsm.transitionTo(MatchPhase::PurchasingPhase);
+                },
+                [this](game::SimpleFSM<MatchPhase>& fsm) {
+                    auto& ctx = fsm.getContext();
+                    moe::Logger::info("GamePlayState FSM: Entered GameStarting phase");
+                    displaySystemPrompt(ctx, ALL_PLAYERS_READY_PROMPT.get());
+
+                    // sync time with server
+                    moe::Logger::info("Synchronizing time with server...");
+                    auto syncInfo = m_networkDispatcher->getLastTimeSync();
+                    ctx.physics()
+                            .syncTickIndex(
+                                    syncInfo.lastServerTick,
+                                    syncInfo.roundTripTimeMs);
                 });
 
         m_fsm.state(
@@ -177,20 +180,27 @@ namespace game::State {
                         return;
                     }
 
-                    MOE_ASSERT(
-                            m_purchaseState,
-                            "PurchaseState should exist when transitioning from PurchasingPhase");
+                    moe::Logger::info("Transitioning to RoundInProgress phase");
+
+                    fsm.transitionTo(MatchPhase::RoundInProgress);
+                },
+                [this](game::SimpleFSM<MatchPhase>& fsm) {
+                    auto& ctx = fsm.getContext();
+                    moe::Logger::info("GamePlayState FSM: Entered PurchasingPhase phase");
+
+                    displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
+
+                    m_purchaseState = moe::Ref(new PurchaseState());
+                    this->addChildState(m_purchaseState);
+                },
+                [this](game::SimpleFSM<MatchPhase>& fsm) {
+                    moe::Logger::info("GamePlayState FSM: Exiting PurchasingPhase phase");
+
+                    // remove purchase state
                     if (m_purchaseState) {
                         this->removeChildState(m_purchaseState);
                         m_purchaseState.reset();
                     }
-
-                    moe::Logger::info("Round started");
-                    moe::Logger::info("Transitioning to RoundInProgress phase");
-
-                    displaySystemPrompt(ctx, ROUND_STARTED_PROMPT.get());
-
-                    fsm.transitionTo(MatchPhase::RoundInProgress);
                 });
 
         m_fsm.state(
@@ -201,10 +211,16 @@ namespace game::State {
                         return;
                     }
 
-                    moe::Logger::info("Round ended");
                     moe::Logger::info("Transitioning to RoundEnded phase");
 
                     fsm.transitionTo(MatchPhase::RoundEnded);
+                },
+                [this](game::SimpleFSM<MatchPhase>& fsm) {
+                    auto& ctx = fsm.getContext();
+                    moe::Logger::info("GamePlayState FSM: Entered RoundInProgress phase");
+                    moe::Logger::info("Round started");
+
+                    displaySystemPrompt(ctx, ROUND_STARTED_PROMPT.get());
                 });
 
         m_fsm.state(
@@ -212,7 +228,6 @@ namespace game::State {
                 [this](game::SimpleFSM<MatchPhase>& fsm, float) {
                     auto& ctx = fsm.getContext();
                     if (tryWaitForGameEnd(ctx)) {
-                        moe::Logger::info("Game ended");
                         moe::Logger::info("Transitioning to GameEnded phase");
 
                         fsm.transitionTo(MatchPhase::GameEnded);
@@ -223,14 +238,13 @@ namespace game::State {
                         return;
                     }
 
-                    moe::Logger::info("Purchase phase started");
                     moe::Logger::info("Transitioning to PurchasingPhase phase");
-                    displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
-
-                    m_purchaseState = moe::Ref(new PurchaseState());
-                    this->addChildState(m_purchaseState);
 
                     fsm.transitionTo(MatchPhase::PurchasingPhase);
+                },
+                [](game::SimpleFSM<MatchPhase>& fsm) {
+                    moe::Logger::info("GamePlayState FSM: Entered RoundEnded phase");
+                    moe::Logger::info("Round ended");
                 });
 
         m_fsm.state(
@@ -250,6 +264,10 @@ namespace game::State {
 
                     // exit to main menu
                     ctx.queueFree(this->intoRef());
+                },
+                [](game::SimpleFSM<MatchPhase>& fsm) {
+                    moe::Logger::info("GamePlayState FSM: Entered GameEnded phase");
+                    moe::Logger::info("Game ended");
                 });
     }
 
