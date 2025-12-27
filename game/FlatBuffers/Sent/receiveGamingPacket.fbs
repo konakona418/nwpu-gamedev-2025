@@ -9,6 +9,11 @@ enum Weapon : byte {
     M4A1 = 5,
 }
 
+enum WeaponSlot : byte {
+    SLOT_PRIMARY = 0,
+    SLOT_SECONDARY = 1
+}
+
 table PacketHeader {
   client_tick: uint64;
   client_time: uint64;//ms
@@ -25,7 +30,7 @@ table FirePacket {
   dir_y: float;
   dir_z: float;
 
-  weapon_id: uint16;
+  weapon_slot : WeaponSlot;
   sequence: uint32;//reserved
 }
 
@@ -36,12 +41,13 @@ table MovePacket {
   move_y: float;
   move_z: float;
 
-  yaw: float;
-  pitch: float;
+  yaw_radian: float;
+  pitch_radian: float;
 
   jump: bool;//reserved
   crouch: bool;//reserved
   sprint: bool;//reserved
+  sequence: uint32;//reserved
 }
 
 table PlantBombEvent{

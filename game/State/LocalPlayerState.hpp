@@ -2,7 +2,6 @@
 
 #include "GameState.hpp"
 #include "Input.hpp"
-#include "Param.hpp"
 
 #include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
@@ -30,10 +29,18 @@ namespace game::State {
 
     private:
         moe::DBuffer<glm::vec3> m_movingDirection;
-        moe::AFlag m_jumpRequested;
-        moe::DBuffer<glm::vec3> m_realPosition;
-        moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
+        moe::DBuffer<float> m_lookingYawDegrees;
+        moe::DBuffer<float> m_lookingPitchDegrees;
 
+        moe::AFlag m_jumpRequested;
+
+        moe::DBuffer<glm::vec3> m_realPosition;
+
+        moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
         InputProxy m_inputProxy{InputProxy::PRIORITY_DEFAULT};
+
+        uint32_t m_movementSequenceNumber{0};
+
+        void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
     };
 }// namespace game::State

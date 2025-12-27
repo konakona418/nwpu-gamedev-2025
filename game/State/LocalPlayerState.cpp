@@ -1,15 +1,20 @@
 #include "State/LocalPlayerState.hpp"
 
+#include "State/GamePlayData.hpp"
 #include "State/PauseUIState.hpp"
 
-#include "App.hpp"
 #include "GameManager.hpp"
 #include "InputUtil.hpp"
+#include "NetworkAdaptor.hpp"
+#include "Param.hpp"
+#include "Registry.hpp"
 
 #include "Physics/TypeUtils.hpp"
 
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
+
+#include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
 
 
 namespace game::State {
@@ -122,7 +127,7 @@ namespace game::State {
 
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
             yawDelta = mouseX * PLAYER_MOUSE_SENSITIVITY;
-            pitchDelta = mouseY * PLAYER_MOUSE_SENSITIVITY;
+            pitchDelta = -mouseY * PLAYER_MOUSE_SENSITIVITY;// invert Y axis
 
             // if escape is just released, show menu
             if (m_inputProxy.isKeyJustReleased("escape_player")) {
@@ -135,8 +140,11 @@ namespace game::State {
         pos.y += PLAYER_CAMERA_OFFSET_Y;
         cam.setPosition(pos);
 
-        cam.setYaw(cam.getYaw() + yawDelta);
-        cam.setPitch(cam.getPitch() - pitchDelta);
+        float newYaw = cam.getYaw() + yawDelta;
+        cam.setYaw(newYaw);
+
+        float newPitch = cam.getPitch() + pitchDelta;
+        cam.setPitch(newPitch);
 
         if (dir.y > 0.001f) {
             m_jumpRequested.set();
@@ -144,6 +152,8 @@ namespace game::State {
         // todo: implement crouch later
 
         m_movingDirection.publish(std::move(dir));
+        m_lookingYawDegrees.publish(newYaw);
+        m_lookingPitchDegrees.publish(newPitch);
     }
 
     void LocalPlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
@@ -160,6 +170,9 @@ namespace game::State {
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
 
         auto dir = m_movingDirection.get();
+        float yawDegrees = m_lookingYawDegrees.get();// these two are for sending to server later
+        float pitchDegrees = m_lookingPitchDegrees.get();
+
         auto velocity = dir * PLAYER_SPEED.get();
 
         auto lastVel = character->GetLinearVelocity();
@@ -246,6 +259,52 @@ namespace game::State {
                 *ctx.physics().getTempAllocator());
 
         m_realPosition.publish(moe::Physics::fromJoltType<glm::vec3>(character->GetPosition()));
+
+        constructMovementUpdateAndSend(ctx, dir, yawDegrees, pitchDegrees);
+    }
+
+    void LocalPlayerState::constructMovementUpdateAndSend(
+            GameManager& ctx,
+            const glm::vec3& dir,
+            float yawDeg, float pitchDeg) {
+        // don't send if network is not running
+        if (!ctx.network().isRunning()) {
+            return;
+        }
+
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+
+        MOE_ASSERT(
+                gamePlaySharedData->playerTempId != INVALID_PLAYER_TEMP_ID,
+                "LocalPlayerState::constructMovementUpdateAndSend: invalid player temp id");
+
+        flatbuffers::FlatBufferBuilder fbb;
+        auto movePkt = myu::net::CreateMovePacket(
+                fbb,
+                gamePlaySharedData->playerTempId,
+                dir.x, dir.y, dir.z,
+                yawDeg,
+                pitchDeg,
+                false, false, false,
+                m_movementSequenceNumber++);// increment after use
+
+        auto time = game::Util::getTimePack();
+        auto header = myu::net::CreatePacketHeader(
+                fbb,
+                time.physicsTick,
+                time.currentTimeMillis);
+
+        auto msg = myu::net::CreateNetMessage(
+                fbb,
+                header,
+                myu::net::PacketUnion::MovePacket,
+                movePkt.Union());
+
+        fbb.Finish(msg);
+
+        // send via unreliable channel
+        ctx.network().sendData(fbb.GetBufferSpan(), false);
     }
 
 #undef PLAYER_KEY_MAPPING_XXX
