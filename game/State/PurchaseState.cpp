@@ -1,17 +1,43 @@
 #include "State/PurchaseState.hpp"
 
+#include "State/GamePlayState.hpp"
+
+#include "State/GamePlayData.hpp"
+
 #include "Localization.hpp"
+#include "Registry.hpp"
+
+#include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
 
 namespace game::State {
+
+#define _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()                             \
+    X("Glock", PurchaseState::Items::Glock, ::myu::net::Weapon::GLOCK)               \
+    X("USP", PurchaseState::Items::USP, ::myu::net::Weapon::USP)                     \
+    X("Desert Eagle", PurchaseState::Items::DesertEagle, ::myu::net::Weapon::DEAGLE) \
+    X("AK47", PurchaseState::Items::AK47, ::myu::net::Weapon::AK47)                  \
+    X("M4A1", PurchaseState::Items::M4A1, ::myu::net::Weapon::M4A1)
+
     const moe::Pair<moe::String, PurchaseState::Items> PurchaseState::s_itemNameToEnumMap[] = {
-            {"Glock", PurchaseState::Items::Glock},
-            {"USP", PurchaseState::Items::USP},
-            {"Desert Eagle", PurchaseState::Items::DesertEagle},
-            {"AK47", PurchaseState::Items::AK47},
-            {"M4A1", PurchaseState::Items::M4A1},
+#define X(name, enumVal, _) {name, enumVal},
+            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+#undef X
     };
 
     static I18N PURCHASE_MENU_TITLE("purchase_menu.title", U"Purchase Phase");
+
+    moe::StringView purchaseStateItemToString(PurchaseState::Items item) {
+        switch (item) {
+#define X(name, enumVal, _) \
+    case enumVal:           \
+        return name;
+            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+#undef X
+            case PurchaseState::Items::None:
+                break;
+        }
+        MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
+    }
 
     void PurchaseState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering PurchaseState");
@@ -80,6 +106,54 @@ namespace game::State {
         m_itemButtonWidgets.clear();
     }
 
+    myu::net::Weapon purchaseStateItemToWeaponEnum(PurchaseState::Items item) {
+        switch (item) {
+#define X(_, enumVal, weaponEnum) \
+    case enumVal:                 \
+        return weaponEnum;
+            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+#undef X
+            case PurchaseState::Items::None:
+                break;
+        }
+        MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
+    }
+
+    void constructSendPurchaseReq(GameManager& ctx, PurchaseState::Items item) {
+        auto* gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            moe::Logger::error("PurchaseState::constructPurchaseRequest: GamePlaySharedData not found");
+            return;
+        }
+
+        auto playerTempId = gamePlaySharedData->playerTempId;
+
+
+        flatbuffers::FlatBufferBuilder fbb;
+        auto purchaseEvent = myu::net::CreatePurchaseEvent(
+                fbb, playerTempId,
+                purchaseStateItemToWeaponEnum(item));
+
+        auto time = game::Util::getTimePack();
+
+        auto header = myu::net::CreatePacketHeader(
+                fbb,
+                time.physicsTick,
+                time.currentTimeMillis);
+
+        auto message = myu::net::CreateNetMessage(
+                fbb,
+                header,
+                myu::net::PacketUnion::PurchaseEvent,
+                purchaseEvent.Union());
+
+        fbb.Finish(message);
+
+        // send to server
+        ctx.network().sendData(fbb.GetBufferSpan(), true);
+    }
+
     void PurchaseState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderer = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         m_containerWidget->render(renderer);
@@ -91,7 +165,18 @@ namespace game::State {
             auto lmbPressed = m_inputProxy.getMouseButtonState().pressedLMB;
             if (itemButton->checkButtonState(cursorPos, lmbPressed)) {
                 moe::Logger::info("Item button '{}' clicked", utf8::utf32to8(itemButton->text()));
-                // todo: send purchase request to server
+                auto itemIndex = std::distance(
+                        m_itemButtonWidgets.begin(),
+                        std::find(
+                                m_itemButtonWidgets.begin(),
+                                m_itemButtonWidgets.end(),
+                                itemButton));
+                auto item = static_cast<PurchaseState::Items>(itemIndex);
+                moe::Logger::info("Constructing and sending purchase request for item '{}'",
+                                  purchaseStateItemToString(item));
+                constructSendPurchaseReq(ctx, item);
+
+                // we dont handle response here; main gameplay state will handle purchase result
             }
         }
     }

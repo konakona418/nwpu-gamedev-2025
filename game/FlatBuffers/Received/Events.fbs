@@ -3,6 +3,15 @@ include "PlayerTeam.fbs";
 
 namespace moe.net;
 
+enum Weapon : byte {
+    WEAPON_NONE = 0,
+    GLOCK = 1,
+    USP = 2,
+    DEAGLE = 3,
+    AK47 = 4,
+    M4A1 = 5,
+}
+
 // waiting room
 table PlayerJoinedEvent {
     uuid: string;
@@ -66,6 +75,13 @@ table GameEndedEvent {
     winner: PlayerTeam;
 }
 
+table PurchaseEvent {
+    primary_weapon: Weapon;
+    secondary_weapon: Weapon;
+    success: bool;
+    balance: uint32;
+}
+
 union EventData {
     PlayerJoinedEvent,
     PlayerLeftEvent,
@@ -77,7 +93,8 @@ union EventData {
     BombPlantedEvent,
     BombDefusedEvent,
     ChatMessageEvent,
-    GameEndedEvent
+    GameEndedEvent,
+    PurchaseEvent
 }
 
 // avoid name conflict with CreateEvent macro

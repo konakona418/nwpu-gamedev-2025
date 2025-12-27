@@ -6,7 +6,10 @@
 #include "State/PlaygroundState.hpp"
 #include "State/PurchaseState.hpp"
 
+#include "State/GamePlayData.hpp"
+
 #include "Param.hpp"
+#include "Registry.hpp"
 #include "Util.hpp"
 
 #include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
@@ -63,8 +66,10 @@ namespace game::State {
 
         moe::Logger::info("Setting up network adaptor and dispatcher...");
         ctx.network().connect();
-
         m_networkDispatcher = std::make_unique<game::NetworkDispatcher>(&ctx.network());
+
+        moe::Logger::debug("Setting up gameplay shared data");
+        Registry::getInstance().emplace<GamePlaySharedData>();
 
         initFSM(ctx);
 
@@ -83,6 +88,8 @@ namespace game::State {
 
     void GamePlayState::onExit(GameManager& ctx) {
         moe::Logger::info("Exiting GamePlayState");
+
+        Registry::getInstance().remove<GamePlaySharedData>();
 
         m_chatboxState.reset();
     }
@@ -277,6 +284,10 @@ namespace game::State {
                     player->team == moe::net::PlayerTeam::TEAM_CT ? "CT" : "T");
         }
         moe::Logger::info("Who am I: '{}'(id: {})", event.players->whoami->name, event.players->whoami->tempId);
+
+        auto* gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        gamePlaySharedData->playerTempId = event.players->whoami->tempId;
 
         gameStartQueue.pop_front();
 

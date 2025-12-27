@@ -42,6 +42,8 @@ namespace game::Util {
         auto now = std::chrono::steady_clock::now();
         auto epoch = now.time_since_epoch();
 
+        // ! fixme: this is not guaranteed to be synchronized with server time
+        // ! a more robust time sync mechanism is needed
         pack.currentTimeMillis = std::chrono::duration_cast<std::chrono::milliseconds>(epoch).count();
         pack.physicsTick = physicsTick;
 
