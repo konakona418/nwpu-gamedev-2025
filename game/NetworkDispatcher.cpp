@@ -5,7 +5,8 @@ namespace game {
         auto* eventPayload =
                 static_cast<const moe::net::GameEvent*>(deserializedPacket->packet());
 
-        switch (eventPayload->payload_type()) {
+        auto type = eventPayload->payload_type();
+        switch (type) {
 #define X(fbs_type, queue_name)                                          \
     case moe::net::EventData::queue_name: {                              \
         auto* eventData = eventPayload->payload_as_##queue_name();       \
@@ -59,6 +60,10 @@ namespace game {
             switch (payloadType) {
                 case moe::net::ReceivedPacketUnion::GameEvent: {
                     dispatchReceivedEvent(deserializedPacket);
+                    break;
+                }
+                case moe::net::ReceivedPacketUnion::AllPlayerUpdate: {
+                    // todo: handle player update
                     break;
                 }
                 default: {

@@ -7,6 +7,7 @@
 #include "SimpleFSM.hpp"
 
 #include "State/ChatboxState.hpp"
+#include "State/PurchaseState.hpp"
 
 namespace game::State {
     enum class MatchPhase {
@@ -39,9 +40,13 @@ namespace game::State {
 
         moe::Ref<State::ChatboxState> m_chatboxState{nullptr};
 
+        // temporary purchase state
+        moe::Ref<State::PurchaseState> m_purchaseState{nullptr};
+
         void initFSM(GameManager& ctx);
 
-        void displaySystemPrompt(GameManager& ctx, moe::U32StringView prompt);
+        void displaySystemPrompt(GameManager& ctx, moe::U32StringView prompt, const moe::Color& color = moe::Colors::Yellow);
+        void displaySystemError(GameManager& ctx, moe::U32StringView errorMsg);
 
         void sendReadySignalToServer(GameManager& ctx);
 
@@ -49,6 +54,7 @@ namespace game::State {
         void handlePlayerJoinQuit(GameManager& ctx);
 
         bool tryWaitForPurchasePhaseStart(GameManager& ctx);
+        void handlePurchaseResponse(GameManager& ctx);
 
         bool tryWaitForRoundStart(GameManager& ctx);
         bool tryWaitForRoundEnd(GameManager& ctx);

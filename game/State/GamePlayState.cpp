@@ -4,7 +4,6 @@
 #include "State/CrossHairState.hpp"
 #include "State/LocalPlayerState.hpp"
 #include "State/PlaygroundState.hpp"
-#include "State/PurchaseState.hpp"
 
 #include "State/GamePlayData.hpp"
 
@@ -26,21 +25,32 @@ namespace game::State {
     static I18N WAITING_FOR_PLAYERS_PROMPT(
             "gameplay.waiting_for_players",
             U"Waiting for other players to be ready...");
+
     static I18N PURCHASE_PHASE_STARTED_PROMPT(
             "gameplay.purchase_phase_started",
             U"Purchase phase has started! Buy your equipment.");
+    static I18N PURCHASE_RESULT_SUCCESS_PROMPT(
+            "gameplay.purchase_result_success",
+            U"Purchase successful, balance: {}");
+    static I18N PURCHASE_RESULT_FAILURE_PROMPT(
+            "gameplay.purchase_result_failure",
+            U"Purchase failed!");
+
     static I18N ROUND_STARTED_PROMPT(
             "gameplay.round_started",
             U"The round has started! Good luck.");
     static I18N ROUND_ENDED_PROMPT(
             "gameplay.round_ended",
             U"Round {} has ended. Team {} won!");
+
     static I18N GAME_ENDED_SUMMARY_PROMPT(
             "gameplay.game_ended_summary",
             U"Game Over! Result: {}");
+
     static I18N GAME_ENDED_PROMPT(
             "gameplay.game_ended",
             U"The game has ended. Thank you for playing! Message from server: {}");
+
     static I18N PLAYER_JOINED_PROMPT(
             "gameplay.player_joined",
             U"Player '{}' has joined the game.");
@@ -151,6 +161,9 @@ namespace game::State {
 
                     displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
 
+                    m_purchaseState = moe::Ref(new PurchaseState());
+                    this->addChildState(m_purchaseState);
+
                     fsm.transitionTo(MatchPhase::PurchasingPhase);
                 });
 
@@ -159,7 +172,17 @@ namespace game::State {
                 [this](game::SimpleFSM<MatchPhase>& fsm, float) {
                     auto& ctx = fsm.getContext();
                     if (!tryWaitForRoundStart(ctx)) {
+                        // if still in purchasing phase, handle purchase responses
+                        handlePurchaseResponse(ctx);
                         return;
+                    }
+
+                    MOE_ASSERT(
+                            m_purchaseState,
+                            "PurchaseState should exist when transitioning from PurchasingPhase");
+                    if (m_purchaseState) {
+                        this->removeChildState(m_purchaseState);
+                        m_purchaseState.reset();
                     }
 
                     moe::Logger::info("Round started");
@@ -204,6 +227,9 @@ namespace game::State {
                     moe::Logger::info("Transitioning to PurchasingPhase phase");
                     displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
 
+                    m_purchaseState = moe::Ref(new PurchaseState());
+                    this->addChildState(m_purchaseState);
+
                     fsm.transitionTo(MatchPhase::PurchasingPhase);
                 });
 
@@ -227,7 +253,7 @@ namespace game::State {
                 });
     }
 
-    void GamePlayState::displaySystemPrompt(GameManager& ctx, moe::U32StringView prompt) {
+    void GamePlayState::displaySystemPrompt(GameManager& ctx, moe::U32StringView prompt, const moe::Color& color) {
         auto chatboxState = m_chatboxState;
         if (!chatboxState) {
             moe::Logger::warn("GamePlayState::displaySystemPrompt: ChatboxState not found");
@@ -236,7 +262,11 @@ namespace game::State {
 
         chatboxState->addChatMessage(
                 U"System", prompt,
-                moe::Colors::Yellow);
+                color);
+    }
+
+    void GamePlayState::displaySystemError(GameManager& ctx, moe::U32StringView errorMsg) {
+        displaySystemPrompt(ctx, errorMsg, moe::Colors::Red);
     }
 
     void GamePlayState::sendReadySignalToServer(GameManager& ctx) {
@@ -327,6 +357,30 @@ namespace game::State {
 
         purchasePhaseStartQueue.pop_front();
         return true;
+    }
+
+    void GamePlayState::handlePurchaseResponse(GameManager& ctx) {
+        auto& purchaseResponseQueue = m_networkDispatcher->getQueues().queuePurchaseEvent;
+        while (!purchaseResponseQueue.empty()) {
+            const auto& event = purchaseResponseQueue.front();
+
+            if (event.success) {
+                moe::Logger::info(
+                        "Purchase successful: balance after purchase: {}",
+                        event.balance);
+
+                displaySystemPrompt(
+                        ctx,
+                        Util::formatU32(
+                                PURCHASE_RESULT_SUCCESS_PROMPT.get(),
+                                event.balance),
+                        moe::Colors::Green);
+            } else {
+                moe::Logger::info("Purchase failed");
+                displaySystemError(ctx, PURCHASE_RESULT_FAILURE_PROMPT.get());
+            }
+            purchaseResponseQueue.pop_front();
+        }
     }
 
     bool GamePlayState::tryWaitForRoundStart(GameManager& ctx) {

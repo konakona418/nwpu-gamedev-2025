@@ -39,6 +39,15 @@ namespace game::State {
         MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
     }
 
+    PurchaseState::Items purchaseStateStringToItemEnum(moe::StringView itemName) {
+        for (const auto& [name, enumVal]: PurchaseState::s_itemNameToEnumMap) {
+            if (name == itemName) {
+                return enumVal;
+            }
+        }
+        return PurchaseState::Items::None;
+    }
+
     void PurchaseState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering PurchaseState");
 
@@ -164,14 +173,10 @@ namespace game::State {
             auto cursorPos = m_inputProxy.getMousePosition();
             auto lmbPressed = m_inputProxy.getMouseButtonState().pressedLMB;
             if (itemButton->checkButtonState(cursorPos, lmbPressed)) {
-                moe::Logger::info("Item button '{}' clicked", utf8::utf32to8(itemButton->text()));
-                auto itemIndex = std::distance(
-                        m_itemButtonWidgets.begin(),
-                        std::find(
-                                m_itemButtonWidgets.begin(),
-                                m_itemButtonWidgets.end(),
-                                itemButton));
-                auto item = static_cast<PurchaseState::Items>(itemIndex);
+                auto text = utf8::utf32to8(itemButton->text());
+                moe::Logger::info("Item button '{}' clicked", text);
+                auto item = purchaseStateStringToItemEnum(text);
+
                 moe::Logger::info("Constructing and sending purchase request for item '{}'",
                                   purchaseStateItemToString(item));
                 constructSendPurchaseReq(ctx, item);
