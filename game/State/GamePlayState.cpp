@@ -371,7 +371,10 @@ namespace game::State {
 
         // purchase phase started
         const auto& event = purchasePhaseStartQueue.front();
-        // todo: process event data if needed
+        auto* gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        gamePlaySharedData->playerBalance = event.balance;
+        moe::Logger::info("Purchase phase player balance: {}", event.balance);
 
         purchasePhaseStartQueue.pop_front();
         return true;
@@ -393,6 +396,10 @@ namespace game::State {
                                 PURCHASE_RESULT_SUCCESS_PROMPT.get(),
                                 event.balance),
                         moe::Colors::Green);
+
+                auto* gamePlaySharedData =
+                        Registry::getInstance().get<GamePlaySharedData>();
+                gamePlaySharedData->playerBalance = event.balance;// update balance
             } else {
                 moe::Logger::info("Purchase failed");
                 displaySystemError(ctx, PURCHASE_RESULT_FAILURE_PROMPT.get());

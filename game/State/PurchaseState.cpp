@@ -25,6 +25,7 @@ namespace game::State {
     };
 
     static I18N PURCHASE_MENU_TITLE("purchase_menu.title", U"Purchase Phase");
+    static I18N PURCHASE_MENU_BALANCE("purchase_menu.balance", U"Balance: {}");
 
     moe::StringView purchaseStateItemToString(PurchaseState::Items item) {
         switch (item) {
@@ -95,6 +96,18 @@ namespace game::State {
             m_itemButtonWidgets.push_back(itemButton);
         }
 
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        m_lastKnownBalance = gamePlaySharedData->playerBalance;
+
+        m_balanceTextWidget = moe::makeRef<moe::VkTextWidget>(
+                Util::formatU32(PURCHASE_MENU_BALANCE.get(), gamePlaySharedData->playerBalance),
+                m_fontId,
+                24.f,
+                moe::Colors::Yellow);
+        m_balanceTextWidget->setMargin({10.f, 10.f, 10.f, 10.f});
+        m_containerWidget->addChild(m_balanceTextWidget);
+
         m_rootWidget->addChild(m_containerWidget);
 
         m_rootWidget->layout();
@@ -164,6 +177,17 @@ namespace game::State {
     }
 
     void PurchaseState::onUpdate(GameManager& ctx, float deltaTime) {
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        if (gamePlaySharedData->playerBalance != m_lastKnownBalance) {
+            m_lastKnownBalance = gamePlaySharedData->playerBalance;
+            m_balanceTextWidget->setText(
+                    Util::formatU32(
+                            PURCHASE_MENU_BALANCE.get(),
+                            gamePlaySharedData->playerBalance));
+            m_rootWidget->layout();
+        }
+
         auto& renderer = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         m_containerWidget->render(renderer);
         m_titleTextWidget->render(renderer);
@@ -184,5 +208,7 @@ namespace game::State {
                 // we dont handle response here; main gameplay state will handle purchase result
             }
         }
+
+        m_balanceTextWidget->render(renderer);
     }
 }// namespace game::State

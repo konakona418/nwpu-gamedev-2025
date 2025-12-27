@@ -38,6 +38,7 @@ table GameStartedEvent {
 // per-round events
 table RoundPurchaseStartedEvent {
     round_number: uint16;
+    balance: uint32;
 }
 
 table RoundStartedEvent {
