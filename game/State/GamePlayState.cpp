@@ -22,6 +22,10 @@ namespace game::State {
             "gameplay.game_exit_to_main_menu_delay",
             5.0f, ParamScope::System);
 
+    static I18N WAITING_FOR_CONNECTION_PROMPT(
+            "gameplay.waiting_for_connection",
+            U"Connecting to server...");
+
     static I18N WAITING_FOR_PLAYERS_PROMPT(
             "gameplay.waiting_for_players",
             U"Waiting for other players to be ready...");
@@ -80,6 +84,7 @@ namespace game::State {
 
         moe::Logger::debug("Setting up gameplay shared data");
         Registry::getInstance().emplace<GamePlaySharedData>();
+        Registry::getInstance().get<GamePlaySharedData>()->networkDispatcher = m_networkDispatcher.get();
 
         initFSM(ctx);
 
@@ -111,6 +116,10 @@ namespace game::State {
                 MatchPhase::Initializing,
                 [this](game::SimpleFSM<MatchPhase>& fsm, float) {
                     auto& ctx = fsm.getContext();
+                    if (!ctx.network().isConnected()) {
+                        // wait until connected
+                        return;
+                    }
 
                     sendReadySignalToServer(ctx);
 
@@ -121,8 +130,11 @@ namespace game::State {
 
                     fsm.transitionTo(MatchPhase::InWaitingRoom);
                 },
-                [](game::SimpleFSM<MatchPhase>& fsm) {
+                [this](game::SimpleFSM<MatchPhase>& fsm) {
                     moe::Logger::info("GamePlayState FSM: Entered Initializing phase");
+                    displaySystemPrompt(
+                            fsm.getContext(),
+                            WAITING_FOR_CONNECTION_PROMPT.get());
                 });
 
         m_fsm.state(
@@ -336,6 +348,30 @@ namespace game::State {
         auto* gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         gamePlaySharedData->playerTempId = event.players->whoami->tempId;
+
+        // register player update buffers, populate player info map
+        for (const auto& player: event.players->players) {
+            m_networkDispatcher->registerPlayerUpdateBuffer(player->tempId);
+
+            GamePlayerTeam team = GamePlayerTeam::None;
+            switch (player->team) {
+                case moe::net::PlayerTeam::TEAM_T:
+                    team = GamePlayerTeam::T;
+                    break;
+                case moe::net::PlayerTeam::TEAM_CT:
+                    team = GamePlayerTeam::CT;
+                    break;
+                default:
+                    team = GamePlayerTeam::None;
+                    break;
+            }
+            gamePlaySharedData->playersByTempId[player->tempId] = GamePlayer{
+                    .tempId = player->tempId,
+                    .name = utf8::utf8to32(player->name),
+                    .team = team,
+            };
+        }
+        // todo: add remote player controllers here
 
         gameStartQueue.pop_front();
 
