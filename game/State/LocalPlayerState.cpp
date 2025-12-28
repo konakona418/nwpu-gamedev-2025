@@ -159,22 +159,14 @@ namespace game::State {
         m_lookingPitchDegrees.publish(newPitch);
     }
 
-    void LocalPlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
-        auto characterOpt = m_character.get();
-        if (!characterOpt) {
-            return;
-        }
-
-        auto character = characterOpt.value();
-        if (!character) {
-            return;
-        }
+    void LocalPlayerState::handleCharacterUpdate(
+            JPH::Ref<JPH::CharacterVirtual> character,
+            const glm::vec3& inputIntention, bool jumpRequested,
+            float deltaTime,
+            GameManager& ctx) {
+        auto dir = inputIntention;
 
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
-
-        auto dir = m_movingDirection.get();
-        float yawDegrees = m_lookingYawDegrees.get();// these two are for sending to server later
-        float pitchDegrees = m_lookingPitchDegrees.get();
 
         auto velocity = dir * PLAYER_SPEED.get();
 
@@ -183,11 +175,6 @@ namespace game::State {
         auto velXoZ = moe::Physics::toJoltType<JPH::Vec3>(
                 glm::vec3(velocity.x, 0, velocity.z));
         float velY = 0.0f;
-
-        // no matter what, the state of m_jumpRequested is consumed here
-        // otherwise, if in some cases the jump request is never processed,
-        // the state will remain true and cause unwanted jumps later
-        bool jumpRequested = m_jumpRequested.consume();
 
         auto groundState = character->GetGroundState();
 
@@ -249,21 +236,6 @@ namespace game::State {
                             0);
         }
 
-        // sync position with server
-        // ! fixme: this is too violent, need to implement smooth interpolation later
-        {
-            bool positionShouldUpdate = false;
-            auto sync = syncPositionWithServer(ctx, character->GetPosition(), positionShouldUpdate);
-            if (positionShouldUpdate) {
-                moe::Logger::debug(
-                        "LocalPlayerState: Syncing position with server to ({}, {}, {})",
-                        sync.GetX(),
-                        sync.GetY(),
-                        sync.GetZ());
-                character->SetPosition(JPH::RVec3(sync));
-            }
-        }
-
         character->SetLinearVelocity(finalVel);
         character->ExtendedUpdate(
                 deltaTime,
@@ -275,10 +247,102 @@ namespace game::State {
                         moe::Physics::Details::Layers::MOVING),
                 {}, {},
                 *ctx.physics().getTempAllocator());
+    }
+
+    void LocalPlayerState::replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character) {
+        bool positionShouldUpdate = false;
+        uint64_t serverPhysicsTick = 0;
+
+        auto sync = syncPositionWithServer(ctx, character->GetPosition(), positionShouldUpdate, serverPhysicsTick);
+        if (!positionShouldUpdate) {
+            return;
+        }
+
+        moe::Logger::debug(
+                "LocalPlayerState: Syncing position with server to ({}, {}, {})",
+                sync.GetX(),
+                sync.GetY(),
+                sync.GetZ());
+        size_t replayBeginIndex = 0;
+        for (size_t i = 0; i < m_positionInterpolationBuffer->size(); ++i) {
+            auto& data = (*m_positionInterpolationBuffer)[i];
+            if (data.physicsTick > serverPhysicsTick) {
+                replayBeginIndex = i + 1;
+            } else {
+                break;
+            }
+        }
+
+        character->SetPosition(sync);
+        if (replayBeginIndex == 0) {
+            // no need to replay
+            return;
+        }
+
+        if (replayBeginIndex > 16) {
+            moe::Logger::warn(
+                    "LocalPlayerState: Large number of position updates to replay: {}, may cause noticeable correction",
+                    replayBeginIndex);
+            return;
+        }
+
+        moe::Logger::debug(
+                "LocalPlayerState: Replaying {} physics updates after sync; starting from index {}, tick {}",
+                replayBeginIndex + 1, replayBeginIndex, serverPhysicsTick);
+
+        for (int i = replayBeginIndex; i > 0; --i) {
+            auto& data = (*m_positionInterpolationBuffer)[i];
+
+            handleCharacterUpdate(
+                    character,
+                    data.inputIntention,
+                    data.jumpRequested,
+                    data.deltaTime,
+                    ctx);
+        }
+    }
+
+    void LocalPlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
+        auto characterOpt = m_character.get();
+        if (!characterOpt) {
+            return;
+        }
+
+        auto character = characterOpt.value();
+        if (!character) {
+            return;
+        }
+
+        auto dir = m_movingDirection.get();
+        float yawDegrees = m_lookingYawDegrees.get();// these two are for sending to server later
+        float pitchDegrees = m_lookingPitchDegrees.get();
+
+        auto jumpRequested = m_jumpRequested.consume();
+
+        // no matter what, the state of m_jumpRequested is consumed here
+        // otherwise, if in some cases the jump request is never processed,
+        // the state will remain true and cause unwanted jumps later
+        constructMovementUpdateAndSend(ctx, dir, yawDegrees, pitchDegrees);
+
+        m_positionInterpolationBuffer->pushBack(
+                PlayerStateInterpolationData{
+                        .inputIntention = dir,
+                        .jumpRequested = jumpRequested,
+                        .deltaTime = deltaTime,
+                        .physicsTick = ctx.physics().getCurrentTickIndex(),
+                });
+
+        // sync position with server
+        replayPositionUpdatesUpToTick(ctx, character);
+
+        handleCharacterUpdate(
+                character,
+                dir,
+                jumpRequested,
+                deltaTime,
+                ctx);
 
         m_realPosition.publish(moe::Physics::fromJoltType<glm::vec3>(character->GetPosition()));
-
-        constructMovementUpdateAndSend(ctx, dir, yawDegrees, pitchDegrees);
     }
 
     void LocalPlayerState::constructMovementUpdateAndSend(
@@ -326,7 +390,7 @@ namespace game::State {
         ctx.network().sendData(fbb.GetBufferSpan(), false);
     }
 
-    JPH::Vec3 LocalPlayerState::syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate) {
+    JPH::Vec3 LocalPlayerState::syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate, uint64_t& outServerPhysicsTick) {
         // don't recv if network is not running
         if (!ctx.network().isConnected()) {
             outPositionShouldUpdate = false;
@@ -351,13 +415,6 @@ namespace game::State {
                 break;
             }
 
-            m_positionInterpolationBuffer.pushBack(
-                    PlayerStateInterpolationData{
-                            playerUpdate->position,
-                            playerUpdate->velocity,
-                            playerUpdate->heading,
-                    },
-                    playerUpdate->physicsTick);
             lastPlayerUpdate = playerUpdate;
         }
 
@@ -379,6 +436,7 @@ namespace game::State {
         }
 
         outPositionShouldUpdate = true;
+        outServerPhysicsTick = lastPlayerUpdate->physicsTick;
         return moe::Physics::toJoltType<JPH::Vec3>(lastPlayerUpdate->position);
     }
 

@@ -2,7 +2,7 @@
 
 #include "GameState.hpp"
 #include "Input.hpp"
-#include "InterpolationBuffer.hpp"
+#include "RingBuffer.hpp"
 
 #include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
@@ -19,20 +19,10 @@
 namespace game::State {
 
     struct PlayerStateInterpolationData {
-        glm::vec3 position{0.0f};
-        glm::vec3 velocity{0.0f};
-        glm::vec3 heading{0.0f};// pitch vec on xOz plane
-
-        static PlayerStateInterpolationData interpolate(
-                const PlayerStateInterpolationData& a,
-                const PlayerStateInterpolationData& b,
-                float t) {
-            PlayerStateInterpolationData result;
-            result.position = glm::mix(a.position, b.position, t);
-            result.velocity = glm::mix(a.velocity, b.velocity, t);
-            result.heading = glm::mix(a.heading, b.heading, t);
-            return result;
-        }
+        glm::vec3 inputIntention;
+        bool jumpRequested{false};
+        float deltaTime{0.0f};
+        uint64_t physicsTick{0};
     };
 
     struct LocalPlayerState : public GameState {
@@ -60,12 +50,21 @@ namespace game::State {
 
         uint32_t m_movementSequenceNumber{0};
 
-        game::InterpolationBuffer<PlayerStateInterpolationData> m_positionInterpolationBuffer{};
-        static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 20;// force position sync every 20 updates ~ 1/3s
+        moe::UniquePtr<game::RingBuffer<PlayerStateInterpolationData, 32>> m_positionInterpolationBuffer =
+                std::make_unique<game::RingBuffer<PlayerStateInterpolationData, 32>>();
+        static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 60;// force position sync every 5 updates ~ 1/12s
         size_t m_localPlayerSyncCounter{0};
 
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
 
-        JPH::Vec3 syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate);
+        JPH::Vec3 syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate, uint64_t& outServerPhysicsTick);
+
+        void handleCharacterUpdate(
+                JPH::Ref<JPH::CharacterVirtual> character,
+                const glm::vec3& inputIntention, bool jumpRequested,
+                float deltaTime,
+                GameManager& ctx);
+
+        void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
     };
 }// namespace game::State

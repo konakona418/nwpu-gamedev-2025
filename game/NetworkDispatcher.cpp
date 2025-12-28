@@ -55,12 +55,12 @@ namespace game {
             auto& updateBuffer = it->second;
             if (updateBuffer.size() >= MAX_PLAYER_UPDATE_BUFFER_SIZE) {
                 // drop oldest update
-                moe::Logger::warn(
+                /*moe::Logger::warn(
                         "NetworkDispatcher::handlePlayerUpdateEvent: "
                         "player temp ID {} update buffer full (size: {}), dropping oldest update. "
                         "Are updates not being consumed correctly?",
                         tempId,
-                        updateBuffer.size());
+                        updateBuffer.size());*/
                 updateBuffer.pop_front();
             }
 
