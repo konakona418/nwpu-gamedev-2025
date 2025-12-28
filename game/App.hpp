@@ -28,6 +28,10 @@ namespace game {
 
         const Stats& getStats() const { return m_stats; }
 
+        void requestExit() {
+            m_isExitRequested.store(true);
+        }
+
     private:
         moe::UniquePtr<moe::VulkanEngine> m_graphicsEngine;
         moe::PhysicsEngine* m_physicsEngine;
@@ -39,5 +43,7 @@ namespace game {
         moe::UniquePtr<NetworkAdaptor> m_networkAdaptor;
 
         Stats m_stats;
+
+        std::atomic_bool m_isExitRequested{false};
     };
 }// namespace game

@@ -1,5 +1,6 @@
 #include "MainMenuState.hpp"
 
+#include "App.hpp"
 #include "GameManager.hpp"
 #include "Localization.hpp"
 
@@ -153,6 +154,7 @@ namespace game::State {
         m_exitButtonWidget->render(renderctx);
         if (m_exitButtonWidget->checkButtonState(mousePos, isLMBPressed)) {
             moe::Logger::info("Exit button clicked");
+            ctx.app().requestExit();
         }
     }
 

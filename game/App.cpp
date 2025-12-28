@@ -30,8 +30,21 @@ namespace game {
 
     static ParamS IMGUI_FONT_PATH("graphics.imgui_font_path", "assets/fonts/NotoSansSC-Regular.ttf", ParamScope::System);
 
+    static ParamS PROJECT_NAME("project.name", "NWPU GameDev 2025", ParamScope::System);
+
     void App::init() {
         moe::Logger::setThreadName("Graphics");
+
+        moe::Logger::info(
+                "Initializing Application...\n"
+                "Project Code {} \n"
+                "   Made with love by group Genshiken - NWPU Software Engineering / Game Development 2025\n"
+                "   Powered by Moe Graphics Engine, Zimeng Li, 2025, with Vulkan Graphics Backend;\n"
+                "   Jolt physics engine, Jolt Physics;\n"
+                "   Audio with OpenAL Soft, OpenAL Community;\n"
+                "   ENet networking library, ENet Project.\n"
+                "   Ciallo~~",
+                PROJECT_NAME.get().c_str());
 
         moe::MainScheduler::getInstance().init();
         moe::ThreadPoolScheduler::init();
@@ -90,6 +103,8 @@ namespace game {
         moe::ThreadPoolScheduler::getInstance().shutdown();
         moe::MainScheduler::getInstance().shutdown();
         moe::FileReader::destroyReader();
+
+        moe::Logger::info("Application shutdown complete. Bye!");
     }
 
     void App::run() {
@@ -137,6 +152,11 @@ namespace game {
                 float frameTimeMs = deltaTime * 1000.0f;
                 m_stats.frameTimeMs = frameTimeMs;
                 m_stats.fps = 1.0f / deltaTime;
+            }
+
+            // check exit request
+            if (m_isExitRequested.load()) {
+                running = false;
             }
         }
     }
