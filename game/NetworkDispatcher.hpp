@@ -2,6 +2,8 @@
 
 #include "NetworkAdaptor.hpp"
 
+#include "Math/Common.hpp"
+
 #include "FlatBuffers/Generated/Received/Main_generated.h"
 
 #define _GAME_NETWORK_DISPATCHER_QUEUES_XXX()                           \
@@ -40,6 +42,23 @@ namespace game {
 #undef X
         };
 
+        struct PlayerUpdateData {
+            glm::vec3 position;
+            glm::vec3 velocity;
+            glm::vec3 heading;
+            uint64_t physicsTick;
+
+            PlayerUpdateData(
+                    const glm::vec3& pos,
+                    const glm::vec3& vel,
+                    const glm::vec3& head,
+                    uint64_t tick)
+                : position(pos),
+                  velocity(vel),
+                  heading(head),
+                  physicsTick(tick) {}
+        };
+
         explicit NetworkDispatcher(NetworkAdaptor* adaptor)
             : m_networkAdaptor(adaptor) {}
 
@@ -57,7 +76,7 @@ namespace game {
                         playerTempId);
                 return;
             }
-            m_playerUpdateBufferMap[playerTempId] = moe::Deque<moe::net::PlayerUpdateT>();
+            m_playerUpdateBufferMap[playerTempId] = moe::Deque<PlayerUpdateData>();
         }
 
         void unregisterPlayerUpdateBuffer(uint16_t playerTempId) {
@@ -68,13 +87,13 @@ namespace game {
             m_playerUpdateBufferMap.clear();
         }
 
-        moe::Optional<moe::net::PlayerUpdateT> getPlayerUpdate(uint16_t tempId);
+        moe::Optional<PlayerUpdateData> getPlayerUpdate(uint16_t tempId);
 
     private:
         NetworkAdaptor* m_networkAdaptor;
         moe::UniquePtr<Queues> m_queues = std::make_unique<Queues>();
 
-        moe::UnorderedMap<uint16_t, moe::Deque<moe::net::PlayerUpdateT>> m_playerUpdateBufferMap;
+        moe::UnorderedMap<uint16_t, moe::Deque<PlayerUpdateData>> m_playerUpdateBufferMap;
 
         LastTimeSync m_lastTimeSync;
 

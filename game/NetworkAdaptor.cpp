@@ -184,6 +184,8 @@ namespace game {
         MOE_ASSERT(m_serverPeer != nullptr, "Server is null");
         MOE_ASSERT(m_client != nullptr, "Client is null");
 
+        m_connected = true;
+
         while (m_running) {
             ENetEvent event;
             while (enet_host_service(m_client, &event, NETWORK_LOOP_TIME_WAIT_MS) > 0) {
@@ -195,6 +197,8 @@ namespace game {
         }
 
         enet_deinitialize();
+
+        m_connected = false;
     }
 
     void NetworkAdaptor::sendData(moe::Span<const uint8_t> data, bool reliable) {

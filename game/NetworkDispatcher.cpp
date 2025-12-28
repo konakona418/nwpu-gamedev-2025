@@ -64,7 +64,15 @@ namespace game {
                 updateBuffer.pop_front();
             }
 
-            updateBuffer.push_back(*playerUpdate->UnPack());
+            auto pos = playerUpdate->pos();
+            auto vel = playerUpdate->vel();
+            auto head = playerUpdate->head();
+
+            updateBuffer.emplace_back(
+                    glm::vec3(pos->x(), pos->y(), pos->z()),
+                    glm::vec3(vel->x(), vel->y(), vel->z()),
+                    glm::vec3(head->x(), head->y(), head->z()),
+                    deserializedPacket->header()->serverTick());
         }
     }
 
@@ -113,7 +121,7 @@ namespace game {
         }
     }
 
-    moe::Optional<moe::net::PlayerUpdateT> NetworkDispatcher::getPlayerUpdate(uint16_t tempId) {
+    moe::Optional<NetworkDispatcher::PlayerUpdateData> NetworkDispatcher::getPlayerUpdate(uint16_t tempId) {
         auto it = m_playerUpdateBufferMap.find(tempId);
         if (it == m_playerUpdateBufferMap.end()) {
             moe::Logger::warn(

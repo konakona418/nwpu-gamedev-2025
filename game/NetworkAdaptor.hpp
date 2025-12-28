@@ -37,7 +37,11 @@ namespace game {
 
         moe::Optional<TransmitRecv> tryReceiveData();
 
+        // this only indicates whether the network thread is running
         bool isRunning() const { return m_running.load(std::memory_order_acquire); }
+
+        // use this to check connection status
+        bool isConnected() const { return m_connected.load(std::memory_order_acquire); }
 
     private:
         // wait for 1ms
@@ -58,6 +62,7 @@ namespace game {
         uint16_t m_serverPort{0};
 
         std::atomic_bool m_running{false};
+        std::atomic_bool m_connected{false};
         moe::UniquePtr<std::thread> m_networkThread;
 
         moe::UniquePtr<TransmitQueueSend> m_sendQueue{nullptr};
