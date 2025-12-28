@@ -168,14 +168,6 @@ void PhysicsEngine::syncTickIndex(size_t remoteTickIndex, RoundTripTimeMs roundT
             "Syncing physics tick index: Local={}, Remote={}, RTT={}ms, NewEstimated={}",
             current, remoteTickIndex, roundTripTimeMs, newEstimated);
 
-    if (newEstimated < current) {
-        // todo: handle rewind case later
-        moe::Logger::warn(
-                "Received older tick index from server: Local={}, Remote={}, Estimated={}",
-                current, remoteTickIndex, newEstimated);
-        return;
-    }
-
     if (newEstimated == current) {
         return;
     }
