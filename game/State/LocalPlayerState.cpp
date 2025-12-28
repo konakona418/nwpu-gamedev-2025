@@ -6,6 +6,7 @@
 #include "GameManager.hpp"
 #include "InputUtil.hpp"
 #include "NetworkAdaptor.hpp"
+#include "NetworkDispatcher.hpp"
 #include "Param.hpp"
 #include "Registry.hpp"
 
@@ -136,8 +137,25 @@ namespace game::State {
         }
 
         auto pos = m_realPosition.get();
+
+        // sync remote
+        {
+            // request sync position with server every few updates
+            syncPositionWithServer(ctx);
+
+            // apply any requested interpolation delta
+            if (glm::length2(m_interpolateRequestedDelta) > 0.001f) {
+                float lerpFactor = 1.0f - std::exp(-10.0f * deltaTime);
+                auto applyDelta = m_interpolateRequestedDelta * lerpFactor;
+
+                pos += applyDelta;
+                m_interpolateRequestedDelta -= applyDelta;
+            }
+        }
+
         // offset camera position from mass center to eye level
         pos.y += PLAYER_CAMERA_OFFSET_Y;
+
         cam.setPosition(pos);
 
         float newYaw = cam.getYaw() + yawDelta;
@@ -268,16 +286,17 @@ namespace game::State {
             const glm::vec3& dir,
             float yawDeg, float pitchDeg) {
         // don't send if network is not running
-        if (!ctx.network().isRunning()) {
+        if (!ctx.network().isConnected()) {
             return;
         }
 
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
 
-        MOE_ASSERT(
-                gamePlaySharedData->playerTempId != INVALID_PLAYER_TEMP_ID,
-                "LocalPlayerState::constructMovementUpdateAndSend: invalid player temp id");
+        // not registered yet
+        if (gamePlaySharedData->playerTempId == INVALID_PLAYER_TEMP_ID) {
+            return;
+        }
 
         flatbuffers::FlatBufferBuilder fbb;
         auto movePkt = myu::net::CreateMovePacket(
@@ -305,6 +324,47 @@ namespace game::State {
 
         // send via unreliable channel
         ctx.network().sendData(fbb.GetBufferSpan(), false);
+    }
+
+    void LocalPlayerState::syncPositionWithServer(GameManager& ctx) {
+        // don't send if network is not connected
+        if (!ctx.network().isConnected()) {
+            return;
+        }
+
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+
+        // not registered
+        if (gamePlaySharedData->playerTempId == INVALID_PLAYER_TEMP_ID) {
+            return;
+        }
+
+        auto networkDispatcher = gamePlaySharedData->networkDispatcher;
+        auto playerUpdate = networkDispatcher->getPlayerUpdate(gamePlaySharedData->playerTempId);
+
+        if (!playerUpdate) {
+            return;
+        }
+
+        m_positionInterpolationBuffer.pushBack(
+                PlayerStateInterpolationData{
+                        playerUpdate->position,
+                        playerUpdate->velocity,
+                        playerUpdate->heading,
+                },
+                playerUpdate->physicsTick);
+
+        if (m_localPlayerSyncCounter++ % LOCAL_PLAYER_SYNC_RATE != 0) {
+            return;
+        }
+
+        auto requestedDelta = playerUpdate->position - m_realPosition.get();
+        if (glm::length2(requestedDelta) < 0.05f * 0.05f) {// 0.05m threshold
+            return;
+        }
+
+        m_interpolateRequestedDelta = requestedDelta;
     }
 
 #undef PLAYER_KEY_MAPPING_XXX

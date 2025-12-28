@@ -40,7 +40,6 @@ namespace game {
 
         struct BufferItem {
             uint64_t physicsTick{0};
-            uint64_t localTimeMs{0};
             T value;
         };
 
@@ -51,10 +50,9 @@ namespace game {
             m_buffer.pushBack(item);
         }
 
-        void pushBack(T value, uint64_t physicsTick, uint64_t localTimeMs) {
+        void pushBack(T value, uint64_t physicsTick) {
             pushBack(BufferItem{
                     .physicsTick = physicsTick,
-                    .localTimeMs = localTimeMs,
                     .value = value,
             });
         }
