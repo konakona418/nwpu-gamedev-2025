@@ -284,8 +284,8 @@ namespace game::State {
                 fbb,
                 gamePlaySharedData->playerTempId,
                 dir.x, dir.y, dir.z,
-                yawDeg,
-                pitchDeg,
+                glm::radians(yawDeg),// require radians
+                glm::radians(pitchDeg),
                 false, false, false,
                 m_movementSequenceNumber++);// increment after use
 
