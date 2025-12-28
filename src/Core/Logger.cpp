@@ -43,8 +43,13 @@ namespace moe {
     }
 
     void Logger::setThreadName(std::string_view name) {
-        auto logger = get();
-        logger->m_threadNames[std::this_thread::get_id()] = name;
+        static std::mutex mutex;
+        // protect m_threadNames map
+        {
+            std::lock_guard<std::mutex> lk(mutex);
+            auto logger = get();
+            logger->m_threadNames[std::this_thread::get_id()] = name;
+        }
     }
 
     std::shared_ptr<Logger> Logger::get() {
