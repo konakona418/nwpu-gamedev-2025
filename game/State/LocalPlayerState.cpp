@@ -356,6 +356,9 @@ namespace game::State {
 
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            return;
+        }
 
         // not registered yet
         if (gamePlaySharedData->playerTempId == INVALID_PLAYER_TEMP_ID) {
@@ -399,6 +402,10 @@ namespace game::State {
 
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            outPositionShouldUpdate = false;
+            return {};
+        }
 
         // not registered
         if (gamePlaySharedData->playerTempId == INVALID_PLAYER_TEMP_ID) {

@@ -86,21 +86,14 @@ namespace game {
 
         template<typename T>
         moe::Ref<T> get() {
-            // this will fail directly if in debug mode
             size_t typeId = Detail::TypeIdGenerator::typeId<T>();
             auto it = m_registryMap.find(typeId);
             if (it == m_registryMap.end()) {
-                MOE_ASSERT(
-                        false,
-                        "Registry::get: type not registered");
                 return moe::Ref<T>(nullptr);
             }
 
             auto* wrapperImpl = static_cast<WrapperImpl<T>*>(it->second.get());
             if (!wrapperImpl) {
-                MOE_ASSERT(
-                        false,
-                        "Registry::get: type mismatch for registered type");
                 moe::Logger::error("Registry::get: type mismatch for registered type");
                 return moe::Ref<T>(nullptr);
             }
