@@ -157,8 +157,16 @@ namespace moe {
             realTexSize = size;
         }
 
+        auto pos = transform.getPosition();
+        auto transformCopy = transform;
+
+        // clamp pos to integer to avoid blurry sprite rendering
+        transformCopy.setPosition(glm::vec3(std::floor(pos.x + 0.5f), std::floor(pos.y + 0.5f), pos.z));
+        transformCopy.setRotation(transform.getRotation());
+        transformCopy.setScale(transform.getScale());
+
         m_spriteRenderCommands.push_back(VulkanSprite{
-                .transform = transform,
+                .transform = transformCopy,
                 .color = color,
                 .size = size,
                 .texOffset = texOffset,

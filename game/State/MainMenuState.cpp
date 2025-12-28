@@ -5,6 +5,7 @@
 
 #include "UI/BoxWidget.hpp"
 
+#include "State/CreditsState.hpp"
 #include "State/GamePlayState.hpp"
 
 namespace game::State {
@@ -144,6 +145,9 @@ namespace game::State {
         m_creditsButtonWidget->render(renderctx);
         if (m_creditsButtonWidget->checkButtonState(mousePos, isLMBPressed)) {
             moe::Logger::info("Credits button clicked");
+
+            auto creditsState = moe::Ref(new CreditsState());
+            this->addChildState(creditsState);
         }
 
         m_exitButtonWidget->render(renderctx);

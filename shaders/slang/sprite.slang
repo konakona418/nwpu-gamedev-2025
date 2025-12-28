@@ -46,7 +46,8 @@ float4 fragmentMain(VertexOutput input) : SV_TARGET {
     if (pcs.texId != INVALID_TEXTURE_ID) {
         if (pcs.isTextSprite != 0) {
             outColor = pcs.color;
-            outColor.a *= sampleTextureNearest(pcs.texId, input.uv).r;
+            // outColor.a *= sampleTextureNearest(pcs.texId, input.uv).r;
+            outColor.a *= sampleTextureLinear(pcs.texId, input.uv).r;
         } else {
             outColor = sampleTextureNearest(pcs.texId, input.uv) * pcs.color;
         }
