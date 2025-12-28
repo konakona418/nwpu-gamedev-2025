@@ -21,6 +21,8 @@
 namespace game {
     struct NetworkDispatcher : public moe::Meta::NonCopyable<NetworkDispatcher> {
     public:
+        static constexpr uint32_t MAX_PLAYER_UPDATE_BUFFER_SIZE = 64;
+
         struct LastTimeSync {
             uint64_t lastServerTick{0};
 
@@ -47,12 +49,37 @@ namespace game {
 
         LastTimeSync& getLastTimeSync() { return m_lastTimeSync; }
 
+        void registerPlayerUpdateBuffer(uint16_t playerTempId) {
+            if (m_playerUpdateBufferMap.find(playerTempId) != m_playerUpdateBufferMap.end()) {
+                moe::Logger::warn(
+                        "NetworkDispatcher::registerPlayerUpdateBuffer: "
+                        "player temp ID {} update buffer already registered",
+                        playerTempId);
+                return;
+            }
+            m_playerUpdateBufferMap[playerTempId] = moe::Deque<moe::net::PlayerUpdateT>();
+        }
+
+        void unregisterPlayerUpdateBuffer(uint16_t playerTempId) {
+            m_playerUpdateBufferMap.erase(playerTempId);
+        }
+
+        void clearPlayerUpdateBuffer() {
+            m_playerUpdateBufferMap.clear();
+        }
+
+        moe::Optional<moe::net::PlayerUpdateT> getPlayerUpdate(uint16_t tempId);
+
     private:
         NetworkAdaptor* m_networkAdaptor;
         moe::UniquePtr<Queues> m_queues = std::make_unique<Queues>();
 
+        moe::UnorderedMap<uint16_t, moe::Deque<moe::net::PlayerUpdateT>> m_playerUpdateBufferMap;
+
         LastTimeSync m_lastTimeSync;
 
         void dispatchReceivedEvent(const moe::net::ReceivedNetMessage* deserializedPacket);
+
+        void handlePlayerUpdateEvent(const moe::net::ReceivedNetMessage* deserializedPacket);
     };
 }// namespace game

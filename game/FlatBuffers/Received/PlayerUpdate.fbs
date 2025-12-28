@@ -25,7 +25,6 @@ table PlayerUpdate {
 
 table AllPlayerUpdate {
     updates: [PlayerUpdate];
-    my_update: PlayerUpdate;
 }
 
 root_type AllPlayerUpdate;

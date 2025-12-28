@@ -31,6 +31,43 @@ namespace game {
             }
         }
     }
+
+    void NetworkDispatcher::handlePlayerUpdateEvent(const moe::net::ReceivedNetMessage* deserializedPacket) {
+        auto* eventData = deserializedPacket->packet_as_AllPlayerUpdate();
+        if (!eventData) {
+            moe::Logger::warn(
+                    "NetworkDispatcher::handlePlayerUpdateEvent: "
+                    "failed to deserialize AllPlayerUpdate event");
+            return;
+        }
+
+        for (const auto playerUpdate: *eventData->updates()) {
+            uint16_t tempId = playerUpdate->tempId();
+            auto it = m_playerUpdateBufferMap.find(tempId);
+            if (it == m_playerUpdateBufferMap.end()) {
+                moe::Logger::warn(
+                        "NetworkDispatcher::handlePlayerUpdateEvent: "
+                        "no update buffer found for player temp ID {}",
+                        tempId);
+                continue;
+            }
+
+            auto& updateBuffer = it->second;
+            if (updateBuffer.size() >= MAX_PLAYER_UPDATE_BUFFER_SIZE) {
+                // drop oldest update
+                moe::Logger::warn(
+                        "NetworkDispatcher::handlePlayerUpdateEvent: "
+                        "player temp ID {} update buffer full (size: {}), dropping oldest update. "
+                        "Are updates not being consumed correctly?",
+                        tempId,
+                        updateBuffer.size());
+                updateBuffer.pop_front();
+            }
+
+            updateBuffer.push_back(*playerUpdate->UnPack());
+        }
+    }
+
     void NetworkDispatcher::dispatchReceiveData() {
         auto& network = *m_networkAdaptor;
         while (auto packet_ = network.tryReceiveData()) {
@@ -63,7 +100,7 @@ namespace game {
                     break;
                 }
                 case moe::net::ReceivedPacketUnion::AllPlayerUpdate: {
-                    // todo: handle player update
+                    handlePlayerUpdateEvent(deserializedPacket);
                     break;
                 }
                 default: {
@@ -74,5 +111,25 @@ namespace game {
                 }
             }
         }
-    }// namespace game
+    }
+
+    moe::Optional<moe::net::PlayerUpdateT> NetworkDispatcher::getPlayerUpdate(uint16_t tempId) {
+        auto it = m_playerUpdateBufferMap.find(tempId);
+        if (it == m_playerUpdateBufferMap.end()) {
+            moe::Logger::warn(
+                    "NetworkDispatcher::getPlayerUpdate: "
+                    "no update buffer found for player temp ID {}",
+                    tempId);
+            return std::nullopt;
+        }
+
+        auto& updateBuffer = it->second;
+        if (updateBuffer.empty()) {
+            return std::nullopt;
+        }
+
+        auto update = updateBuffer.front();
+        updateBuffer.pop_front();
+        return update;
+    }
 }// namespace game
