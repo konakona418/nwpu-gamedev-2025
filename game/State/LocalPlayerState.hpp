@@ -63,12 +63,9 @@ namespace game::State {
         game::InterpolationBuffer<PlayerStateInterpolationData> m_positionInterpolationBuffer{};
         static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 20;// force position sync every 20 updates ~ 1/3s
         size_t m_localPlayerSyncCounter{0};
-        // difference to apply when syncing is requested
-        // should be interpolated over time, and not applied instantly!!!
-        glm::vec3 m_interpolateRequestedDelta{0.0f};
 
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
 
-        void syncPositionWithServer(GameManager& ctx);
+        JPH::Vec3 syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate);
     };
 }// namespace game::State

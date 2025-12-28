@@ -138,21 +138,6 @@ namespace game::State {
 
         auto pos = m_realPosition.get();
 
-        // sync remote
-        {
-            // request sync position with server every few updates
-            syncPositionWithServer(ctx);
-
-            // apply any requested interpolation delta
-            if (glm::length2(m_interpolateRequestedDelta) > 0.001f) {
-                float lerpFactor = 1.0f - std::exp(-10.0f * deltaTime);
-                auto applyDelta = m_interpolateRequestedDelta * lerpFactor;
-
-                pos += applyDelta;
-                m_interpolateRequestedDelta -= applyDelta;
-            }
-        }
-
         // offset camera position from mass center to eye level
         pos.y += PLAYER_CAMERA_OFFSET_Y;
 
@@ -264,6 +249,21 @@ namespace game::State {
                             0);
         }
 
+        // sync position with server
+        // ! fixme: this is too violent, need to implement smooth interpolation later
+        {
+            bool positionShouldUpdate = false;
+            auto sync = syncPositionWithServer(ctx, character->GetPosition(), positionShouldUpdate);
+            if (positionShouldUpdate) {
+                moe::Logger::debug(
+                        "LocalPlayerState: Syncing position with server to ({}, {}, {})",
+                        sync.GetX(),
+                        sync.GetY(),
+                        sync.GetZ());
+                character->SetPosition(JPH::RVec3(sync));
+            }
+        }
+
         character->SetLinearVelocity(finalVel);
         character->ExtendedUpdate(
                 deltaTime,
@@ -326,10 +326,11 @@ namespace game::State {
         ctx.network().sendData(fbb.GetBufferSpan(), false);
     }
 
-    void LocalPlayerState::syncPositionWithServer(GameManager& ctx) {
-        // don't send if network is not connected
+    JPH::Vec3 LocalPlayerState::syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate) {
+        // don't recv if network is not running
         if (!ctx.network().isConnected()) {
-            return;
+            outPositionShouldUpdate = false;
+            return {};
         }
 
         auto gamePlaySharedData =
@@ -337,34 +338,48 @@ namespace game::State {
 
         // not registered
         if (gamePlaySharedData->playerTempId == INVALID_PLAYER_TEMP_ID) {
-            return;
+            outPositionShouldUpdate = false;
+            return {};
         }
 
         auto networkDispatcher = gamePlaySharedData->networkDispatcher;
-        auto playerUpdate = networkDispatcher->getPlayerUpdate(gamePlaySharedData->playerTempId);
 
-        if (!playerUpdate) {
-            return;
+        moe::Optional<NetworkDispatcher::PlayerUpdateData> lastPlayerUpdate;
+        while (auto playerUpdate = networkDispatcher->getPlayerUpdate(gamePlaySharedData->playerTempId)) {
+            if (!playerUpdate.has_value()) {
+                // no more updates
+                break;
+            }
+
+            m_positionInterpolationBuffer.pushBack(
+                    PlayerStateInterpolationData{
+                            playerUpdate->position,
+                            playerUpdate->velocity,
+                            playerUpdate->heading,
+                    },
+                    playerUpdate->physicsTick);
+            lastPlayerUpdate = playerUpdate;
         }
 
-        m_positionInterpolationBuffer.pushBack(
-                PlayerStateInterpolationData{
-                        playerUpdate->position,
-                        playerUpdate->velocity,
-                        playerUpdate->heading,
-                },
-                playerUpdate->physicsTick);
+        if (!lastPlayerUpdate.has_value()) {
+            // no update received
+            outPositionShouldUpdate = false;
+            return {};
+        }
 
         if (m_localPlayerSyncCounter++ % LOCAL_PLAYER_SYNC_RATE != 0) {
-            return;
+            outPositionShouldUpdate = false;
+            return {};
         }
 
-        auto requestedDelta = playerUpdate->position - m_realPosition.get();
-        if (glm::length2(requestedDelta) < 0.05f * 0.05f) {// 0.05m threshold
-            return;
+        auto requestedDelta = lastPlayerUpdate->position - moe::Physics::fromJoltType<glm::vec3>(currentPos);
+        if (glm::length2(requestedDelta) < 0.01f * 0.01f) {// 0.05m threshold
+            outPositionShouldUpdate = false;
+            return {};
         }
 
-        m_interpolateRequestedDelta = requestedDelta;
+        outPositionShouldUpdate = true;
+        return moe::Physics::toJoltType<JPH::Vec3>(lastPlayerUpdate->position);
     }
 
 #undef PLAYER_KEY_MAPPING_XXX
