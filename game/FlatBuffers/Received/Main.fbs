@@ -1,5 +1,6 @@
 include "PlayerUpdate.fbs";
 include "Events.fbs";
+include "Weapon.fbs";
 
 namespace moe.net;
 

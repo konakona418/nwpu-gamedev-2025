@@ -1,0 +1,10 @@
+namespace moe.net;
+
+enum Weapon : byte {
+    WEAPON_NONE = 0,
+    GLOCK = 1,
+    USP = 2,
+    DEAGLE = 3,
+    AK47 = 4,
+    M4A1 = 5,
+}
