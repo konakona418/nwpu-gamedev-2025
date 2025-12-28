@@ -142,7 +142,7 @@ namespace game::State {
     }
 
     void constructSendPurchaseReq(GameManager& ctx, PurchaseState::Items item) {
-        auto* gamePlaySharedData =
+        auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         if (!gamePlaySharedData) {
             moe::Logger::error("PurchaseState::constructPurchaseRequest: GamePlaySharedData not found");

@@ -2,6 +2,7 @@
 
 #include "Core/Common.hpp"
 #include "Core/Meta/Feature.hpp"
+#include "Core/Ref.hpp"
 
 namespace game {
     namespace Detail {
@@ -84,7 +85,7 @@ namespace game {
         }
 
         template<typename T>
-        T* get() {
+        moe::Ref<T> get() {
             // this will fail directly if in debug mode
             size_t typeId = Detail::TypeIdGenerator::typeId<T>();
             auto it = m_registryMap.find(typeId);
@@ -92,7 +93,7 @@ namespace game {
                 MOE_ASSERT(
                         false,
                         "Registry::get: type not registered");
-                return nullptr;
+                return moe::Ref<T>(nullptr);
             }
 
             auto* wrapperImpl = static_cast<WrapperImpl<T>*>(it->second.get());
@@ -101,10 +102,10 @@ namespace game {
                         false,
                         "Registry::get: type mismatch for registered type");
                 moe::Logger::error("Registry::get: type mismatch for registered type");
-                return nullptr;
+                return moe::Ref<T>(nullptr);
             }
 
-            return &wrapperImpl->value;
+            return wrapperImpl->value;
         }
 
         template<typename T>
@@ -130,11 +131,11 @@ namespace game {
 
         template<typename T>
         struct WrapperImpl : public Wrapper {
-            T value;
+            moe::Ref<T> value;
 
             template<typename... Args>
             explicit WrapperImpl(Args&&... args)
-                : value(std::forward<Args>(args)...) {}
+                : value(moe::Ref(new T(std::forward<Args>(args)...))) {}
         };
 
         moe::UnorderedMap<size_t, moe::UniquePtr<Wrapper>> m_registryMap;

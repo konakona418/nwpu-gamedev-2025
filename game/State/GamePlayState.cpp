@@ -107,6 +107,8 @@ namespace game::State {
         Registry::getInstance().remove<GamePlaySharedData>();
 
         m_chatboxState.reset();
+
+        ctx.network().shutdown();
     }
 
     void GamePlayState::initFSM(GameManager& ctx) {
@@ -345,7 +347,7 @@ namespace game::State {
         }
         moe::Logger::info("Who am I: '{}'(id: {})", event.players->whoami->name, event.players->whoami->tempId);
 
-        auto* gamePlaySharedData =
+        auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         gamePlaySharedData->playerTempId = event.players->whoami->tempId;
 
@@ -407,7 +409,7 @@ namespace game::State {
 
         // purchase phase started
         const auto& event = purchasePhaseStartQueue.front();
-        auto* gamePlaySharedData =
+        auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         gamePlaySharedData->playerBalance = event.balance;
         moe::Logger::info("Purchase phase player balance: {}", event.balance);
@@ -433,7 +435,7 @@ namespace game::State {
                                 event.balance),
                         moe::Colors::Green);
 
-                auto* gamePlaySharedData =
+                auto gamePlaySharedData =
                         Registry::getInstance().get<GamePlaySharedData>();
                 gamePlaySharedData->playerBalance = event.balance;// update balance
             } else {
