@@ -4,6 +4,8 @@
 #include "State/CrossHairState.hpp"
 #include "State/LocalPlayerState.hpp"
 #include "State/PlaygroundState.hpp"
+#include "State/RemotePlayerState.hpp"
+
 
 #include "State/GamePlayData.hpp"
 
@@ -372,8 +374,13 @@ namespace game::State {
                     .name = utf8::utf8to32(player->name),
                     .team = team,
             };
+
+            if (player->tempId != gamePlaySharedData->playerTempId) {
+                // create remote player state
+                auto remotePlayerState = moe::Ref(new RemotePlayerState(player->tempId));
+                this->addChildState(remotePlayerState);
+            }
         }
-        // todo: add remote player controllers here
 
         gameStartQueue.pop_front();
 

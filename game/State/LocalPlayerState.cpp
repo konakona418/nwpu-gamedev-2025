@@ -2,6 +2,7 @@
 
 #include "State/GamePlayData.hpp"
 #include "State/PauseUIState.hpp"
+#include "State/PlayerSharedConfig.hpp"
 
 #include "GameManager.hpp"
 #include "InputUtil.hpp"
@@ -19,22 +20,6 @@
 
 
 namespace game::State {
-    static ParamF PLAYER_SPEED("player.speed", 3.0f);
-    static ParamF PLAYER_JUMP_VELOCITY("player.jump_velocity", 5.0f);
-
-    static ParamF PLAYER_MOUSE_SENSITIVITY("player.rotation_speed", 0.1f, ParamScope::UserConfig);
-
-    static ParamF PLAYER_HALF_HEIGHT("player.half_height", 0.8f);
-    static ParamF PLAYER_RADIUS("player.radius", 0.4f);
-
-    // offset from mass center (half height) to camera position (eye level)
-    static ParamF PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
-
-    static ParamF PLAYER_SUPPORTING_VOLUME_CONSTANT("player.supporting_volume_constant", -0.5f);
-    static ParamF PLAYER_MAX_SLOPE_ANGLE_DEGREES("player.max_slope_angle_degrees", 45.0f);
-
-    static ParamF PLAYER_STICK_TO_FLOOR_STEP_DOWN("player.stick_to_floor_step_down", -0.4f);
-    static ParamF PLAYER_WALK_STAIRS_STEP_UP("player.walk_stairs_step_up", 0.4f);
 
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
