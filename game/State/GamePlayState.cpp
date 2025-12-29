@@ -51,6 +51,12 @@ namespace game::State {
     static I18N PLAYER_KILLED_OTHER_PROMPT(
             "gameplay.player_killed_other",
             U"Player '{}' was killed by '{}', weapon: {}.");
+    static I18N BOMB_PLANTED_PROMPT(
+            "gameplay.bomb_planted",
+            U"Bomb has been planted at Site {} by {}!");
+    static I18N BOMB_DEFUSED_PROMPT(
+            "gameplay.bomb_defused",
+            U"Bomb has been defused by {}!");
     static I18N ROUND_ENDED_PROMPT(
             "gameplay.round_ended",
             U"Round {} has ended. Team {} won!");
@@ -266,6 +272,7 @@ namespace game::State {
 
                     // handle in-round events
                     handlePlayerDeaths(ctx);
+                    handleBombEvents(ctx);
 
                     if (!tryWaitForRoundEnd(ctx)) {
                         return;
@@ -396,6 +403,10 @@ namespace game::State {
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         gamePlaySharedData->playerTempId = event.players->whoami->tempId;
+        gamePlaySharedData->playerTeam =
+                event.players->whoami->team == moe::net::PlayerTeam::TEAM_CT
+                        ? GamePlayerTeam::CT
+                        : GamePlayerTeam::T;
 
         // register player update buffers, populate player info map
         for (const auto& player: event.players->players) {
@@ -558,6 +569,48 @@ namespace game::State {
             }
 
             playerKilledQueue.pop_front();
+        }
+    }
+
+    void GamePlayState::handleBombEvents(GameManager& ctx) {
+        auto& bombPlantedQueue = m_networkDispatcher->getQueues().queueBombPlantedEvent;
+        auto& bombDefusedQueue = m_networkDispatcher->getQueues().queueBombDefusedEvent;
+
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("GamePlayState::handleBombEvents: GamePlaySharedData not found");
+            return;
+        }
+
+        while (!bombPlantedQueue.empty()) {
+            const auto& event = bombPlantedQueue.front();
+            auto playerName = utf8::utf32to8(sharedData->playersByTempId[event.planterTempId].name);
+            moe::Logger::info("Bomb planted at site id: {} by player id: {} ({})", event.bombSite, event.planterTempId, playerName);
+
+            displaySystemPrompt(
+                    ctx,
+                    Util::formatU32(
+                            BOMB_PLANTED_PROMPT.get(),
+                            event.bombSite == 0 ? "A" : "B",
+                            playerName),
+                    moe::Colors::Yellow);
+
+            bombPlantedQueue.pop_front();
+        }
+
+        while (!bombDefusedQueue.empty()) {
+            const auto& event = bombDefusedQueue.front();
+            auto playerName = utf8::utf32to8(sharedData->playersByTempId[event.defuserTempId].name);
+            moe::Logger::info("Bomb defused by player id: {} ({})", event.defuserTempId, playerName);
+
+            displaySystemPrompt(
+                    ctx,
+                    Util::formatU32(
+                            BOMB_DEFUSED_PROMPT.get(),
+                            playerName),
+                    moe::Colors::Yellow);
+
+            bombDefusedQueue.pop_front();
         }
     }
 

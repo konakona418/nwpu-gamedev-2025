@@ -27,6 +27,7 @@ namespace game {
 
         uint16_t playerTempId{INVALID_PLAYER_TEMP_ID};
         uint32_t playerBalance{0};
+        GamePlayerTeam playerTeam{GamePlayerTeam::None};
 
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
 

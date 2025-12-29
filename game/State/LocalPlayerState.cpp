@@ -18,6 +18,8 @@
 
 #include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
 
+#include "imgui.h"
+
 
 namespace game::State {
 
@@ -39,6 +41,55 @@ namespace game::State {
 
         input.addKeyEventMapping("escape_player", GLFW_KEY_ESCAPE);
         m_inputProxy.setMouseState(false);// disable mouse cursor
+
+        ctx.addDebugDrawFunction(
+                "LocalPlayerState Debug",
+                [state = this->asRef<LocalPlayerState>(), &ctx]() mutable {
+                    ImGui::Begin("LocalPlayerState Debug Info");
+                    ImGui::Text("Real Position: (%.2f, %.2f, %.2f)",
+                                state->m_realPosition.get().x,
+                                state->m_realPosition.get().y,
+                                state->m_realPosition.get().z);
+                    ImGui::Text("Real Yaw Degrees: %.2f",
+                                state->m_lookingYawDegrees.get());
+                    ImGui::Text("Real Pitch Degrees: %.2f",
+                                state->m_lookingPitchDegrees.get());
+
+                    ImGui::Separator();
+
+                    auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+                    if (sharedData) {
+                        ImGui::Text("Player Temp ID: %u", sharedData->playerTempId);
+                        ImGui::Text("Player Team: %s",
+                                    sharedData->playerTeam == GamePlayerTeam::CT
+                                            ? "CT"
+                                    : sharedData->playerTeam == GamePlayerTeam::T
+                                            ? "T"
+                                            : "None");
+                        ImGui::Text("Player Balance: %u", sharedData->playerBalance);
+
+                        if (sharedData->playerTeam == GamePlayerTeam::T) {
+                            ImGui::Separator();
+
+                            if (ImGui::Button("Plant bomb at Site A")) {
+                                state->plantBombAtBombsite(ctx, BombSite::A);
+                            }
+                            if (ImGui::Button("Plant bomb at Site B")) {
+                                state->plantBombAtBombsite(ctx, BombSite::B);
+                            }
+                        } else if (sharedData->playerTeam == GamePlayerTeam::CT) {
+                            ImGui::Separator();
+
+                            if (ImGui::Button("Defuse bomb")) {
+                                state->defuseBomb(ctx);
+                            }
+                        } else {
+                            ImGui::Text("You are not in any team, cannot plant or defuse bomb.");
+                        }
+                    }
+
+                    ImGui::End();
+                });
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<LocalPlayerState>()](moe::PhysicsEngine& physics) mutable {
@@ -495,6 +546,71 @@ namespace game::State {
         outPositionShouldUpdate = true;
         outServerPhysicsTick = lastPlayerUpdate->physicsTick;
         return moe::Physics::toJoltType<JPH::Vec3>(lastPlayerUpdate->position);
+    }
+
+    void LocalPlayerState::plantBombAtBombsite(GameManager& ctx, BombSite site) {
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            moe::Logger::warn(
+                    "LocalPlayerState::plantBombAtBombsite: "
+                    "no GamePlaySharedData found in registry");
+            return;
+        }
+
+        flatbuffers::FlatBufferBuilder fbb;
+        auto plantBombPkt = myu::net::CreatePlantBombEvent(
+                fbb,
+                gamePlaySharedData->playerTempId,
+                static_cast<uint8_t>(site));
+
+        auto timePack = game::Util::getTimePack();
+        auto header = myu::net::CreatePacketHeader(
+                fbb,
+                timePack.physicsTick,
+                timePack.currentTimeMillis);
+
+        auto message = myu::net::CreateNetMessage(
+                fbb,
+                header,
+                myu::net::PacketUnion::PlantBombEvent,
+                plantBombPkt.Union());
+        fbb.Finish(message);
+
+        auto dataSpan = fbb.GetBufferSpan();
+        ctx.network().sendData(dataSpan, true);// reliable
+    }
+
+    void LocalPlayerState::defuseBomb(GameManager& ctx) {
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            moe::Logger::warn(
+                    "LocalPlayerState::defuseBomb: "
+                    "no GamePlaySharedData found in registry");
+            return;
+        }
+
+        flatbuffers::FlatBufferBuilder fbb;
+        auto defuseBombPkt = myu::net::CreateDefuseBombEvent(
+                fbb,
+                gamePlaySharedData->playerTempId);
+
+        auto timePack = game::Util::getTimePack();
+        auto header = myu::net::CreatePacketHeader(
+                fbb,
+                timePack.physicsTick,
+                timePack.currentTimeMillis);
+
+        auto message = myu::net::CreateNetMessage(
+                fbb,
+                header,
+                myu::net::PacketUnion::DefuseBombEvent,
+                defuseBombPkt.Union());
+        fbb.Finish(message);
+
+        auto dataSpan = fbb.GetBufferSpan();
+        ctx.network().sendData(dataSpan, true);// reliable
     }
 
 #undef PLAYER_KEY_MAPPING_XXX

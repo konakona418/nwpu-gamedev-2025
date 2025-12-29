@@ -60,6 +60,7 @@ namespace game::State {
 
         bool tryWaitForRoundStart(GameManager& ctx);
         void handlePlayerDeaths(GameManager& ctx);
+        void handleBombEvents(GameManager& ctx);
         bool tryWaitForRoundEnd(GameManager& ctx);
 
         bool tryWaitForGameEnd(GameManager& ctx);

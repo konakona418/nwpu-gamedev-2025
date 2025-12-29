@@ -25,6 +25,11 @@ namespace game::State {
         uint64_t physicsTick{0};
     };
 
+    enum class BombSite {
+        A = 0,
+        B = 1,
+    };
+
     struct LocalPlayerState : public GameState {
     public:
         const moe::StringView getName() const override {
@@ -68,5 +73,9 @@ namespace game::State {
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
 
         void constructOpenFireEventAndSend(GameManager& ctx, const glm::vec3& position, const glm::vec3& direction);
+
+        void plantBombAtBombsite(GameManager& ctx, BombSite site);
+
+        void defuseBomb(GameManager& ctx);
     };
 }// namespace game::State
