@@ -41,6 +41,7 @@ namespace game {
             return;
         }
 
+        std::lock_guard lock(m_playerUpdateBufferMapMutex);
         for (const auto playerUpdate: *eventData->updates()) {
             uint16_t tempId = playerUpdate->tempId();
             auto it = m_playerUpdateBufferMap.find(tempId);
@@ -53,26 +54,30 @@ namespace game {
             }
 
             auto& updateBuffer = it->second;
-            if (updateBuffer.size() >= MAX_PLAYER_UPDATE_BUFFER_SIZE) {
-                // drop oldest update
-                /*moe::Logger::warn(
+
+            if (updateBuffer.size_approx() >= MAX_PLAYER_UPDATE_BUFFER_SIZE) {
+                // drop old updates
+                PlayerUpdateData discarded;
+                updateBuffer.try_dequeue(discarded);
+
+                moe::Logger::warn(
                         "NetworkDispatcher::handlePlayerUpdateEvent: "
-                        "player temp ID {} update buffer full (size: {}), dropping oldest update. "
+                        "player temp ID {} update buffer full, dropping oldest update."
                         "Are updates not being consumed correctly?",
-                        tempId,
-                        updateBuffer.size());*/
-                updateBuffer.pop_front();
+                        tempId);
             }
 
             auto pos = playerUpdate->pos();
             auto vel = playerUpdate->vel();
             auto head = playerUpdate->head();
 
-            updateBuffer.emplace_back(
-                    glm::vec3(pos->x(), pos->y(), pos->z()),
-                    glm::vec3(vel->x(), vel->y(), vel->z()),
-                    glm::vec3(head->x(), head->y(), head->z()),
-                    deserializedPacket->header()->serverTick());
+            updateBuffer.enqueue(
+                    {
+                            glm::vec3(pos->x(), pos->y(), pos->z()),
+                            glm::vec3(vel->x(), vel->y(), vel->z()),
+                            glm::vec3(head->x(), head->y(), head->z()),
+                            deserializedPacket->header()->serverTick(),
+                    });
         }
     }
 
@@ -132,12 +137,11 @@ namespace game {
         }
 
         auto& updateBuffer = it->second;
-        if (updateBuffer.empty()) {
+        PlayerUpdateData update;
+        if (!updateBuffer.try_dequeue(update)) {
             return std::nullopt;
         }
 
-        auto update = updateBuffer.front();
-        updateBuffer.pop_front();
         return update;
     }
 }// namespace game

@@ -23,7 +23,7 @@
 namespace game {
     struct NetworkDispatcher : public moe::Meta::NonCopyable<NetworkDispatcher> {
     public:
-        static constexpr uint32_t MAX_PLAYER_UPDATE_BUFFER_SIZE = 64;
+        static constexpr uint32_t MAX_PLAYER_UPDATE_BUFFER_SIZE = 256;
 
         struct LastTimeSync {
             uint64_t lastServerTick{0};
@@ -36,6 +36,7 @@ namespace game {
             uint64_t roundTripTimeMs{0};
         };
 
+        // ! fixme: consider concurrent queue for event queues
         struct Queues {
 #define X(fbs_type, queue_name) ::moe::Deque<fbs_type##T> queue##queue_name;
             _GAME_NETWORK_DISPATCHER_QUEUES_XXX()
@@ -57,7 +58,13 @@ namespace game {
                   velocity(vel),
                   heading(head),
                   physicsTick(tick) {}
+
+            PlayerUpdateData() = default;
         };
+
+        // a bare queue cause concurrency issues
+        // we use concurrent queue instead
+        using PlayerUpdateDataQueue = moodycamel::ConcurrentQueue<PlayerUpdateData>;
 
         explicit NetworkDispatcher(NetworkAdaptor* adaptor)
             : m_networkAdaptor(adaptor) {}
@@ -69,6 +76,7 @@ namespace game {
         LastTimeSync& getLastTimeSync() { return m_lastTimeSync; }
 
         void registerPlayerUpdateBuffer(uint16_t playerTempId) {
+            std::lock_guard lock(m_playerUpdateBufferMapMutex);// still, protect map access
             if (m_playerUpdateBufferMap.find(playerTempId) != m_playerUpdateBufferMap.end()) {
                 moe::Logger::warn(
                         "NetworkDispatcher::registerPlayerUpdateBuffer: "
@@ -76,14 +84,16 @@ namespace game {
                         playerTempId);
                 return;
             }
-            m_playerUpdateBufferMap[playerTempId] = moe::Deque<PlayerUpdateData>();
+            m_playerUpdateBufferMap[playerTempId] = PlayerUpdateDataQueue();
         }
 
         void unregisterPlayerUpdateBuffer(uint16_t playerTempId) {
+            std::lock_guard lock(m_playerUpdateBufferMapMutex);
             m_playerUpdateBufferMap.erase(playerTempId);
         }
 
         void clearPlayerUpdateBuffer() {
+            std::lock_guard lock(m_playerUpdateBufferMapMutex);
             m_playerUpdateBufferMap.clear();
         }
 
@@ -93,7 +103,8 @@ namespace game {
         NetworkAdaptor* m_networkAdaptor;
         moe::UniquePtr<Queues> m_queues = std::make_unique<Queues>();
 
-        moe::UnorderedMap<uint16_t, moe::Deque<PlayerUpdateData>> m_playerUpdateBufferMap;
+        moe::UnorderedMap<uint16_t, PlayerUpdateDataQueue> m_playerUpdateBufferMap;
+        std::mutex m_playerUpdateBufferMapMutex;
 
         LastTimeSync m_lastTimeSync;
 
