@@ -26,7 +26,7 @@ namespace game::State {
         // void onPhysicsUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
-        moe::Preload<moe::Secure<game::ModelLoader>> m_playgroundModelLoader{
+        moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>> m_playgroundModelLoader{
                 ModelLoaderParam{moe::asset("assets/models/playground.glb")}};
 
         moe::RenderableId m_playgroundRenderable{moe::NULL_RENDERABLE_ID};
