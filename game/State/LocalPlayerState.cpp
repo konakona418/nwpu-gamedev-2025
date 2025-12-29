@@ -108,7 +108,7 @@ namespace game::State {
                 position.x, position.y, position.z,
                 direction.x, direction.y, direction.z,
                 myu::net::WeaponSlot::SLOT_SECONDARY,
-                m_fireSequenceNumber++);
+                sharedData->playerFireSequence++);
 
         auto timePack = game::Util::getTimePack();
         auto header = myu::net::CreatePacketHeader(
@@ -416,7 +416,7 @@ namespace game::State {
                 glm::radians(yawDeg),// require radians
                 glm::radians(pitchDeg),
                 false, false, false,
-                m_movementSequenceNumber++);// increment after use
+                gamePlaySharedData->playerMoveSequence++);// increment after use
 
         auto time = game::Util::getTimePack();
         auto header = myu::net::CreatePacketHeader(

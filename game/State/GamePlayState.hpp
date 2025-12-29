@@ -7,6 +7,7 @@
 #include "SimpleFSM.hpp"
 
 #include "State/ChatboxState.hpp"
+#include "State/LocalPlayerState.hpp"
 #include "State/PurchaseState.hpp"
 
 namespace game::State {
@@ -42,6 +43,7 @@ namespace game::State {
 
         // temporary purchase state
         moe::Ref<State::PurchaseState> m_purchaseState{nullptr};
+        moe::Ref<State::LocalPlayerState> m_localPlayerState{nullptr};
 
         void initFSM(GameManager& ctx);
 
@@ -57,6 +59,7 @@ namespace game::State {
         void handlePurchaseResponse(GameManager& ctx);
 
         bool tryWaitForRoundStart(GameManager& ctx);
+        void handlePlayerDeaths(GameManager& ctx);
         bool tryWaitForRoundEnd(GameManager& ctx);
 
         bool tryWaitForGameEnd(GameManager& ctx);

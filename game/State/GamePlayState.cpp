@@ -45,6 +45,12 @@ namespace game::State {
     static I18N ROUND_STARTED_PROMPT(
             "gameplay.round_started",
             U"The round has started! Good luck.");
+    static I18N PLAYER_KILLED_PROMPT(
+            "gameplay.player_killed",
+            U"You were killed by '{}', weapon: {}.");
+    static I18N PLAYER_KILLED_OTHER_PROMPT(
+            "gameplay.player_killed_other",
+            U"Player '{}' was killed by '{}', weapon: {}.");
     static I18N ROUND_ENDED_PROMPT(
             "gameplay.round_ended",
             U"Round {} has ended. Team {} won!");
@@ -77,6 +83,31 @@ namespace game::State {
             "gameplay.game_summary_ct_win",
             U"Counter-Terrorists Win");
 
+#define _GAME_WEAPON_ITEM_NAME_TO_ENUM_MAP_XXX()   \
+    X(U"Glock", ::moe::net::Weapon::GLOCK)         \
+    X(U"USP", ::moe::net::Weapon::USP)             \
+    X(U"Desert Eagle", ::moe::net::Weapon::DEAGLE) \
+    X(U"AK47", ::moe::net::Weapon::AK47)           \
+    X(U"M4A1", ::moe::net::Weapon::M4A1)
+
+    moe::U32StringView weaponNameFromNetEnum(::moe::net::Weapon weapon) {
+#define X(name, enumVal) \
+    case enumVal:        \
+        return name;
+
+        switch (weapon) {
+            _GAME_WEAPON_ITEM_NAME_TO_ENUM_MAP_XXX()
+            case moe::net::Weapon::WEAPON_NONE:
+                break;
+        }
+
+#undef X
+
+        return U"No weapon";
+    }
+
+#undef _GAME_WEAPON_ITEM_NAME_TO_ENUM_MAP_XXX
+
     void GamePlayState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering GamePlayState");
 
@@ -92,9 +123,6 @@ namespace game::State {
 
         auto pgstate = moe::Ref(new PlaygroundState());
         this->addChildState(pgstate);
-
-        auto playerState = moe::Ref(new LocalPlayerState());
-        this->addChildState(playerState);
 
         auto crossHairState = moe::Ref(new CrossHairState());
         this->addChildState(crossHairState);
@@ -206,6 +234,18 @@ namespace game::State {
 
                     displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
 
+                    // add local player state
+                    if (m_localPlayerState) {
+                        moe::Logger::info("LocalPlayerState already exists, removing old instance");
+                        this->removeChildState(m_localPlayerState);
+                        m_localPlayerState.reset();
+                    }
+
+                    moe::Logger::info("Adding LocalPlayerState");
+                    auto localPlayerState = moe::Ref(new LocalPlayerState());
+                    this->addChildState(localPlayerState);
+                    m_localPlayerState = localPlayerState;
+
                     m_purchaseState = moe::Ref(new PurchaseState());
                     this->addChildState(m_purchaseState);
                 },
@@ -223,6 +263,10 @@ namespace game::State {
                 MatchPhase::RoundInProgress,
                 [this](game::SimpleFSM<MatchPhase>& fsm, float) {
                     auto& ctx = fsm.getContext();
+
+                    // handle in-round events
+                    handlePlayerDeaths(ctx);
+
                     if (!tryWaitForRoundEnd(ctx)) {
                         return;
                     }
@@ -467,6 +511,44 @@ namespace game::State {
         roundStartQueue.pop_front();
 
         return true;
+    }
+
+    void GamePlayState::handlePlayerDeaths(GameManager& ctx) {
+        auto& playerKilledQueue = m_networkDispatcher->getQueues().queuePlayerKilledEvent;
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("GamePlayState::handlePlayerDeaths: GamePlaySharedData not found");
+            return;
+        }
+
+        while (!playerKilledQueue.empty()) {
+            const auto& event = playerKilledQueue.front();
+
+            if (event.victimTempId == sharedData->playerTempId) {
+                moe::Logger::info("Player was killed by player id: {}", event.killerTempId);
+                displaySystemPrompt(
+                        ctx,
+                        Util::formatU32(
+                                PLAYER_KILLED_PROMPT.get(),
+                                utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
+                                utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
+
+                moe::Logger::info("Removing LocalPlayerState due to player death");
+                this->removeChildState(m_localPlayerState);
+                m_localPlayerState.reset();
+            } else {
+                moe::Logger::info("Player id: {} killed player id: {}", event.killerTempId, event.victimTempId);
+                displaySystemPrompt(
+                        ctx,
+                        Util::formatU32(
+                                PLAYER_KILLED_OTHER_PROMPT.get(),
+                                utf8::utf32to8(sharedData->playersByTempId[event.victimTempId].name),
+                                utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
+                                utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
+            }
+
+            playerKilledQueue.pop_front();
+        }
     }
 
     bool GamePlayState::tryWaitForRoundEnd(GameManager& ctx) {

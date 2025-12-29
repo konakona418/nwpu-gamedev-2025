@@ -29,5 +29,8 @@ namespace game {
         uint32_t playerBalance{0};
 
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
+
+        uint32_t playerFireSequence{0};
+        uint32_t playerMoveSequence{0};
     };
 }// namespace game

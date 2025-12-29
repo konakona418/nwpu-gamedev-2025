@@ -48,9 +48,6 @@ namespace game::State {
         moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
         InputProxy m_inputProxy{InputProxy::PRIORITY_DEFAULT};
 
-        uint32_t m_movementSequenceNumber{0};
-        uint32_t m_fireSequenceNumber{0};
-
         moe::UniquePtr<game::RingBuffer<PlayerStateInterpolationData, 32>> m_positionInterpolationBuffer =
                 std::make_unique<game::RingBuffer<PlayerStateInterpolationData, 32>>();
         static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 60;// force position sync every 60 updates
