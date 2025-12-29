@@ -23,6 +23,7 @@ table PlayerUpdate {
 
     motion_state: PlayerMotionState;
     weapon: Weapon;
+    health: float;
 }
 
 table AllPlayerUpdate {

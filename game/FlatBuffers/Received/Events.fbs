@@ -47,7 +47,7 @@ table RoundEndedEvent {
 table PlayerKilledEvent {
     victim_temp_id: uint16;
     killer_temp_id: uint16;
-    weapon_id: uint16;
+    weapon: Weapon;
 }
 
 table BombPlantedEvent {

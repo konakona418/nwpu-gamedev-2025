@@ -88,6 +88,46 @@ namespace game::State {
                 });
     }
 
+    void LocalPlayerState::constructOpenFireEventAndSend(GameManager& ctx, const glm::vec3& position, const glm::vec3& direction) {
+        // construct OpenFire event
+        flatbuffers::FlatBufferBuilder fbb;
+
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::warn(
+                    "LocalPlayerState::constructOpenFireEventAndSend: "
+                    "no GamePlaySharedData found in registry");
+            return;
+        }
+
+        // todo: weapon slot id later
+        // !!
+        auto firePkt = myu::net::CreateFirePacket(
+                fbb,
+                sharedData->playerTempId,
+                position.x, position.y, position.z,
+                direction.x, direction.y, direction.z,
+                myu::net::WeaponSlot::SLOT_SECONDARY,
+                m_fireSequenceNumber++);
+
+        auto timePack = game::Util::getTimePack();
+        auto header = myu::net::CreatePacketHeader(
+                fbb,
+                timePack.physicsTick,
+                timePack.currentTimeMillis);
+
+        auto message = myu::net::CreateNetMessage(
+                fbb,
+                header,
+                myu::net::PacketUnion::FirePacket,
+                firePkt.Union());
+
+        fbb.Finish(message);
+
+        auto dataSpan = fbb.GetBufferSpan();
+        ctx.network().sendData(dataSpan, true);//reliable
+    }
+
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& cam = ctx.renderer().getDefaultCamera();
 
@@ -118,6 +158,24 @@ namespace game::State {
             // if escape is just released, show menu
             if (m_inputProxy.isKeyJustReleased("escape_player")) {
                 this->addChildState(moe::Ref(new State::PauseUIState()));
+            }
+
+            if (m_inputProxy.getMouseButtonState().pressedLMB) {
+                constexpr float PLAYER_OPEN_FIRE_COOLDOWN = 0.5f;// secs
+                m_openFireCooldownTimer -= deltaTime;
+                if (m_openFireCooldownTimer <= 0.0f) {
+                    // can open fire
+                    auto camPos = cam.getPosition();
+                    auto camFront = cam.getFront();
+
+                    constructOpenFireEventAndSend(ctx, camPos, camFront);
+
+                    moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
+                                       camPos.x, camPos.y, camPos.z,
+                                       camFront.x, camFront.y, camFront.z);
+
+                    m_openFireCooldownTimer = PLAYER_OPEN_FIRE_COOLDOWN;
+                }
             }
         }
 

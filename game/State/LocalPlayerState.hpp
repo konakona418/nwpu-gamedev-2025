@@ -49,11 +49,14 @@ namespace game::State {
         InputProxy m_inputProxy{InputProxy::PRIORITY_DEFAULT};
 
         uint32_t m_movementSequenceNumber{0};
+        uint32_t m_fireSequenceNumber{0};
 
         moe::UniquePtr<game::RingBuffer<PlayerStateInterpolationData, 32>> m_positionInterpolationBuffer =
                 std::make_unique<game::RingBuffer<PlayerStateInterpolationData, 32>>();
-        static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 60;// force position sync every 5 updates ~ 1/12s
+        static constexpr size_t LOCAL_PLAYER_SYNC_RATE = 60;// force position sync every 60 updates
         size_t m_localPlayerSyncCounter{0};
+
+        float m_openFireCooldownTimer{0.0f};
 
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
 
@@ -66,5 +69,7 @@ namespace game::State {
                 GameManager& ctx);
 
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
+
+        void constructOpenFireEventAndSend(GameManager& ctx, const glm::vec3& position, const glm::vec3& direction);
     };
 }// namespace game::State
