@@ -14,6 +14,8 @@ namespace game {
 
         // offset from mass center (half height) to camera position (eye level)
         static ParamF PLAYER_CAMERA_OFFSET_Y;
+        static ParamF PLAYER_CAMERA_LERP_FACTOR;
+
         static ParamF PLAYER_SUPPORTING_VOLUME_CONSTANT;
         static ParamF PLAYER_MAX_SLOPE_ANGLE_DEGREES;
 

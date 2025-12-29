@@ -11,6 +11,8 @@ namespace game {
 
     // offset from mass center (half height) to camera position (eye level)
     ParamF Config::PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
+    ParamF Config::PLAYER_CAMERA_LERP_FACTOR("player.camera_lerp_factor", 0.1f);
+
     ParamF Config::PLAYER_SUPPORTING_VOLUME_CONSTANT("player.supporting_volume_constant", -0.5f);
     ParamF Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES("player.max_slope_angle_degrees", 45.0f);
 

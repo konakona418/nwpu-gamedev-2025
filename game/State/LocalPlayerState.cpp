@@ -184,6 +184,13 @@ namespace game::State {
         // offset camera position from mass center to eye level
         pos.y += Config::PLAYER_CAMERA_OFFSET_Y;
 
+        // lerp
+        {
+            auto currentCamPos = cam.getPosition();
+            float lerpFactor = Config::PLAYER_CAMERA_LERP_FACTOR;
+            pos = glm::mix(currentCamPos, pos, lerpFactor);
+        }
+
         cam.setPosition(pos);
 
         float newYaw = cam.getYaw() + yawDelta;
