@@ -534,8 +534,18 @@ namespace game::State {
                                 utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
 
                 moe::Logger::info("Removing LocalPlayerState due to player death");
-                this->removeChildState(m_localPlayerState);
-                m_localPlayerState.reset();
+
+                if (m_localPlayerState) {
+                    // this is too violent, but for simplicity we just remove the state
+                    // ! fixme: removing LocalPlayerState and the event queue will soon be full
+                    // ! add a flag rather than removing the state
+                    this->removeChildState(m_localPlayerState);
+                    m_localPlayerState.reset();
+                } else {
+                    // somehow after player is dead, his rivals still kill him again
+                    // this is about server logic, but we just log a warning here
+                    moe::Logger::warn("LocalPlayerState not found when handling player death");
+                }
             } else {
                 moe::Logger::info("Player id: {} killed player id: {}", event.killerTempId, event.victimTempId);
                 displaySystemPrompt(
