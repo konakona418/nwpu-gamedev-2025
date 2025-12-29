@@ -1328,6 +1328,8 @@ namespace moe {
                         .set_required_features_13(vkPhysicalDeviceVulkan13Features)
                         .add_required_extension("VK_EXT_descriptor_indexing")
                         .add_required_extension("VK_KHR_shader_non_semantic_info")
+                        .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
+                        .allow_any_gpu_device_type(true)
                         .set_surface(m_surface)
                         .select();
 
