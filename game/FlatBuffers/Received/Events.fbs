@@ -50,6 +50,14 @@ table PlayerKilledEvent {
     weapon: Weapon;
 }
 
+table PlayerOpenFireEvent {
+    shooter_temp_id: uint16;
+
+    pos_x: float;
+    pos_y: float;
+    pos_z: float;
+}
+
 table BombPlantedEvent {
     planter_temp_id: uint16;
     bomb_site: uint16; // 0 for A, 1 for B
@@ -84,6 +92,7 @@ union EventData {
     RoundStartedEvent,
     RoundEndedEvent,
     PlayerKilledEvent,
+    PlayerOpenFireEvent,
     BombPlantedEvent,
     BombDefusedEvent,
     ChatMessageEvent,

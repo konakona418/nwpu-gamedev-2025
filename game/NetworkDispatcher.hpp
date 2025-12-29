@@ -15,6 +15,7 @@
     X(::moe::net::RoundEndedEvent, RoundEndedEvent)                     \
     X(::moe::net::GameEndedEvent, GameEndedEvent)                       \
     X(::moe::net::PlayerKilledEvent, PlayerKilledEvent)                 \
+    X(::moe::net::PlayerOpenFireEvent, PlayerOpenFireEvent)             \
     X(::moe::net::BombPlantedEvent, BombPlantedEvent)                   \
     X(::moe::net::BombDefusedEvent, BombDefusedEvent)                   \
     X(::moe::net::ChatMessageEvent, ChatMessageEvent)                   \
