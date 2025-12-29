@@ -22,8 +22,8 @@ namespace game::State {
 
                     auto capsuleShape =
                             JPH::CapsuleShapeSettings(
-                                    PLAYER_HALF_HEIGHT,
-                                    PLAYER_RADIUS)
+                                    Config::PLAYER_HALF_HEIGHT,
+                                    Config::PLAYER_RADIUS)
                                     .Create()
                                     .Get();
                     auto characterSettings = JPH::CharacterVirtualSettings();
@@ -32,9 +32,9 @@ namespace game::State {
                     characterSettings.mSupportingVolume =
                             JPH::Plane(
                                     JPH::Vec3::sAxisY(),
-                                    PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
+                                    Config::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
                     characterSettings.mMaxSlopeAngle =
-                            JPH::DegreesToRadians(PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
+                            JPH::DegreesToRadians(Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
 
                     auto character =
                             new JPH::CharacterVirtual(
@@ -63,15 +63,15 @@ namespace game::State {
         auto heading = m_realHeading.get();
 
         renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
-            auto cameraOffset = PLAYER_CAMERA_OFFSET_Y;
+            auto cameraOffset = Config::PLAYER_CAMERA_OFFSET_Y;
 
             Im3d::PushDrawState();
             Im3d::SetColor(Im3d::Color{0.0f, 0.0f, 1.0f, 1.0f});
             Im3d::SetSize(5.0f);
             Im3d::DrawCapsule(
-                    Im3d::Vec3{pos.x, pos.y - PLAYER_HALF_HEIGHT, pos.z},
-                    Im3d::Vec3{pos.x, pos.y + PLAYER_HALF_HEIGHT, pos.z},
-                    PLAYER_RADIUS);
+                    Im3d::Vec3{pos.x, pos.y - Config::PLAYER_HALF_HEIGHT, pos.z},
+                    Im3d::Vec3{pos.x, pos.y + Config::PLAYER_HALF_HEIGHT, pos.z},
+                    Config::PLAYER_RADIUS);
             Im3d::PopDrawState();
 
             Im3d::PushDrawState();

@@ -46,8 +46,8 @@ namespace game::State {
 
                     auto capsuleShape =
                             JPH::CapsuleShapeSettings(
-                                    PLAYER_HALF_HEIGHT,
-                                    PLAYER_RADIUS)
+                                    Config::PLAYER_HALF_HEIGHT,
+                                    Config::PLAYER_RADIUS)
                                     .Create()
                                     .Get();
                     auto characterSettings = JPH::CharacterVirtualSettings();
@@ -56,9 +56,9 @@ namespace game::State {
                     characterSettings.mSupportingVolume =
                             JPH::Plane(
                                     JPH::Vec3::sAxisY(),
-                                    PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
+                                    Config::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
                     characterSettings.mMaxSlopeAngle =
-                            JPH::DegreesToRadians(PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
+                            JPH::DegreesToRadians(Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
 
                     auto character =
                             new JPH::CharacterVirtual(
@@ -152,8 +152,8 @@ namespace game::State {
             dir = movementHelper.realMovementVecFPS(front, cam.getRight(), cam.getUp());
 
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
-            yawDelta = mouseX * PLAYER_MOUSE_SENSITIVITY;
-            pitchDelta = -mouseY * PLAYER_MOUSE_SENSITIVITY;// invert Y axis
+            yawDelta = mouseX * Config::PLAYER_MOUSE_SENSITIVITY;
+            pitchDelta = -mouseY * Config::PLAYER_MOUSE_SENSITIVITY;// invert Y axis
 
             // if escape is just released, show menu
             if (m_inputProxy.isKeyJustReleased("escape_player")) {
@@ -182,7 +182,7 @@ namespace game::State {
         auto pos = m_realPosition.get();
 
         // offset camera position from mass center to eye level
-        pos.y += PLAYER_CAMERA_OFFSET_Y;
+        pos.y += Config::PLAYER_CAMERA_OFFSET_Y;
 
         cam.setPosition(pos);
 
@@ -211,7 +211,7 @@ namespace game::State {
 
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
 
-        auto velocity = dir * PLAYER_SPEED.get();
+        auto velocity = dir * Config::PLAYER_SPEED.get();
 
         auto lastVel = character->GetLinearVelocity();
 
@@ -229,7 +229,7 @@ namespace game::State {
             if (jumpRequested) {
                 // apply jump impulse
                 moe::Logger::debug("LocalPlayerState: Jump requested");
-                velY = PLAYER_JUMP_VELOCITY.get();
+                velY = Config::PLAYER_JUMP_VELOCITY.get();
             } else {
                 // on ground, preserve horizontal velocity, reset vertical velocity
                 velY = 0.0f;
@@ -269,13 +269,13 @@ namespace game::State {
             settings.mStickToFloorStepDown =
                     JPH::Vec3(
                             0,
-                            PLAYER_STICK_TO_FLOOR_STEP_DOWN.get(),
+                            Config::PLAYER_STICK_TO_FLOOR_STEP_DOWN.get(),
                             0);
 
             settings.mWalkStairsStepUp =
                     JPH::Vec3(
                             0,
-                            PLAYER_WALK_STAIRS_STEP_UP.get(),
+                            Config::PLAYER_WALK_STAIRS_STEP_UP.get(),
                             0);
         }
 
