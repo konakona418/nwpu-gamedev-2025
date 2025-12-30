@@ -8,6 +8,8 @@
 #include "FontLoader.hpp"
 #include "Util.hpp"
 
+#include "State/GameCommon.hpp"
+
 #include "UI/RootWidget.hpp"
 #include "UI/Vulkan/VkBoxWidget.hpp"
 #include "UI/Vulkan/VkButtonWidget.hpp"
@@ -21,14 +23,7 @@
 namespace game::State {
     struct PurchaseState : public GameState {
     public:
-        enum class Items {
-            None,
-            Glock,
-            USP,
-            DesertEagle,
-            AK47,
-            M4A1,
-        };
+        using Items = WeaponItems;
 
         const moe::StringView getName() const override {
             return "PurchaseState";

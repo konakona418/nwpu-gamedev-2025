@@ -4,6 +4,8 @@
 #include "Input.hpp"
 #include "RingBuffer.hpp"
 
+#include "State/GameCommon.hpp"
+
 #include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
 #include "Core/Deferred.hpp"
@@ -23,11 +25,6 @@ namespace game::State {
         bool jumpRequested{false};
         float deltaTime{0.0f};
         uint64_t physicsTick{0};
-    };
-
-    enum class BombSite {
-        A = 0,
-        B = 1,
     };
 
     struct LocalPlayerState : public GameState {

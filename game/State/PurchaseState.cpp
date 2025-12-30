@@ -11,16 +11,9 @@
 
 namespace game::State {
 
-#define _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()                             \
-    X("Glock", PurchaseState::Items::Glock, ::myu::net::Weapon::GLOCK)               \
-    X("USP", PurchaseState::Items::USP, ::myu::net::Weapon::USP)                     \
-    X("Desert Eagle", PurchaseState::Items::DesertEagle, ::myu::net::Weapon::DEAGLE) \
-    X("AK47", PurchaseState::Items::AK47, ::myu::net::Weapon::AK47)                  \
-    X("M4A1", PurchaseState::Items::M4A1, ::myu::net::Weapon::M4A1)
-
     const moe::Pair<moe::String, PurchaseState::Items> PurchaseState::s_itemNameToEnumMap[] = {
-#define X(name, enumVal, _) {name, enumVal},
-            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+#define X(name, enumVal, _1, _2) {name, enumVal},
+            _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()
 #undef X
     };
 
@@ -29,10 +22,10 @@ namespace game::State {
 
     moe::StringView purchaseStateItemToString(PurchaseState::Items item) {
         switch (item) {
-#define X(name, enumVal, _) \
-    case enumVal:           \
+#define X(name, enumVal, _1, _2) \
+    case enumVal:                \
         return name;
-            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+            _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()
 #undef X
             case PurchaseState::Items::None:
                 break;
@@ -130,10 +123,10 @@ namespace game::State {
 
     myu::net::Weapon purchaseStateItemToWeaponEnum(PurchaseState::Items item) {
         switch (item) {
-#define X(_, enumVal, weaponEnum) \
-    case enumVal:                 \
+#define X(_1, enumVal, weaponEnum, _2) \
+    case enumVal:                      \
         return weaponEnum;
-            _GAME_PURCHASE_STATE_ITEM_NAME_TO_ENUM_MAP_XXX()
+            _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()
 #undef X
             case PurchaseState::Items::None:
                 break;
