@@ -9,10 +9,19 @@ namespace game {
     }
 
     void GameState::_onEnter(GameManager& ctx) {
+        // ! watch out for this direct usage of m_childStates
+        // handle existing child states first
+        for (auto& child: m_childStates) {
+            child->_onEnter(ctx);
+        }
+
         onEnter(ctx);
 
         // this must be called after onEnter to avoid any changes
         // not being processed
+        // however the _onEnter of child states is called by processPendingChildStateChanges()
+        // if it's called before the previous iteration
+        // it may lead to double _onEnter calls for newly added child states
         processPendingChildStateChanges(ctx);
 
         // create snapshot for the first time
@@ -22,11 +31,6 @@ namespace game {
             newSnap->childStates = m_childStates;
             newSnap->retain();
             m_childStateSnapShot.store(newSnap, std::memory_order_release);
-        }
-
-        // ! watch out for this direct usage of m_childStates
-        for (auto& child: m_childStates) {
-            child->_onEnter(ctx);
         }
     }
 
