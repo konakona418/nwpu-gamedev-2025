@@ -242,29 +242,6 @@ namespace game::State {
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
             yawDelta = mouseX * Config::PLAYER_MOUSE_SENSITIVITY;
             pitchDelta = -mouseY * Config::PLAYER_MOUSE_SENSITIVITY;// invert Y axis
-
-            // if escape is just released, show menu
-            if (m_inputProxy.isKeyJustReleased("escape_player")) {
-                this->addChildState(moe::Ref(new State::PauseUIState()));
-            }
-
-            if (m_inputProxy.getMouseButtonState().pressedLMB) {
-                constexpr float PLAYER_OPEN_FIRE_COOLDOWN = 0.5f;// secs
-                m_openFireCooldownTimer -= deltaTime;
-                if (m_openFireCooldownTimer <= 0.0f) {
-                    // can open fire
-                    auto camPos = cam.getPosition();
-                    auto camFront = cam.getFront();
-
-                    constructOpenFireEventAndSend(ctx, camPos, camFront);
-
-                    moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
-                                       camPos.x, camPos.y, camPos.z,
-                                       camFront.x, camFront.y, camFront.z);
-
-                    m_openFireCooldownTimer = PLAYER_OPEN_FIRE_COOLDOWN;
-                }
-            }
         }
 
         auto pos = m_realPosition.get();
@@ -297,10 +274,45 @@ namespace game::State {
         m_lookingPitchDegrees.publish(newPitch);
     }
 
+    void LocalPlayerState::handleInputStateUpdate(GameManager& ctx, float deltaTime) {
+        if (!m_inputProxy.isValid()) {
+            return;
+        }
+
+        m_openFireCooldownTimer -= deltaTime;
+        m_openFireCooldownTimer = std::max(-1.0f, m_openFireCooldownTimer);// clamp to -1.0f not 0.0f, to avoid some floating point issues
+
+        auto& cam = ctx.renderer().getDefaultCamera();
+
+        // if escape is just released, show menu
+        if (m_inputProxy.isKeyJustReleased("escape_player")) {
+            this->addChildState(moe::Ref(new State::PauseUIState()));
+        }
+
+        if (m_inputProxy.getMouseButtonState().pressedLMB) {
+            constexpr float PLAYER_OPEN_FIRE_COOLDOWN = 0.5f;// secs
+            if (m_openFireCooldownTimer <= 0.0f) {
+                // can open fire
+                auto camPos = cam.getPosition();
+                auto camFront = cam.getFront();
+
+                constructOpenFireEventAndSend(ctx, camPos, camFront);
+
+                moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
+                                   camPos.x, camPos.y, camPos.z,
+                                   camFront.x, camFront.y, camFront.z);
+
+                m_openFireCooldownTimer = PLAYER_OPEN_FIRE_COOLDOWN;
+            }
+        }
+    }
+
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         if (m_valid) {
             // update motion state
             handleMotionStateUpdate(ctx, deltaTime);
+            // update input state
+            handleInputStateUpdate(ctx, deltaTime);
 
             // handle weapon switch
             {

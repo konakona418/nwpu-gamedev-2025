@@ -89,6 +89,7 @@ namespace game::State {
         // render
         void handleHudUpdate(GameManager& ctx);
         void handleMotionStateUpdate(GameManager& ctx, float deltaTime);
+        void handleInputStateUpdate(GameManager& ctx, float deltaTime);
 
         // physics
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
