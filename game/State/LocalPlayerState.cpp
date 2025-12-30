@@ -74,6 +74,7 @@ namespace game::State {
                                             ? "T"
                                             : "None");
                         ImGui::Text("Player Balance: %u", sharedData->playerBalance);
+                        ImGui::Text("Health: %.2f", state->m_healthBuffer.get());
 
                         if (sharedData->playerTeam == GamePlayerTeam::T) {
                             ImGui::Separator();
@@ -311,9 +312,9 @@ namespace game::State {
                     moe::Logger::info("Player switched to Secondary Weapon");
                 }
             }
-        }
 
-        handleHudUpdate(ctx);// update HUD info
+            handleHudUpdate(ctx);// update HUD info
+        }
     }
 
     void LocalPlayerState::handleCharacterUpdate(
@@ -588,6 +589,9 @@ namespace game::State {
             return {};
         }
 
+        // fill in health buffer
+        m_healthBuffer.publish(lastPlayerUpdate->health);
+
         if (m_localPlayerSyncCounter++ % LOCAL_PLAYER_SYNC_RATE != 0) {
             outPositionShouldUpdate = false;
             return {};
@@ -601,9 +605,6 @@ namespace game::State {
 
         outPositionShouldUpdate = true;
         outServerPhysicsTick = lastPlayerUpdate->physicsTick;
-
-        // fill in health buffer
-        m_healthBuffer.publish(lastPlayerUpdate->health);
 
         return moe::Physics::toJoltType<JPH::Vec3>(lastPlayerUpdate->position);
     }

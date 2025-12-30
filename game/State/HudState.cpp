@@ -99,27 +99,43 @@ namespace game::State {
             return;
         }
 
-        m_currentWeapon = weapon;
         auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
         if (!sharedData) {
             moe::Logger::error("HudState::updateWeapon: GamePlaySharedData not found");
             return;
         }
 
-        if (weapon != WeaponSlot::None) {
-            State::WeaponItems item =
-                    (weapon == WeaponSlot::Primary)
-                            ? sharedData->playerPrimaryWeapon
-                            : sharedData->playerSecondaryWeapon;
-
-            m_weaponTextWidget->setText(
-                    Util::formatU32(
-                            HUD_WEAPON_TEXT.get(),
-                            weaponItemToString(item)));
-        } else {
-            m_weaponTextWidget->setText(
-                    Util::formatU32(HUD_WEAPON_TEXT.get(), "N/A"));
+        if (weapon == WeaponSlot::None) {
+            if (m_currentWeapon != WeaponSlot::None) {
+                m_weaponTextWidget->setText(
+                        Util::formatU32(HUD_WEAPON_TEXT.get(), "N/A"));
+                m_rootWidget->layout();
+            }
+            return;
         }
+
+        State::WeaponItems item =
+                (weapon == WeaponSlot::Primary)
+                        ? sharedData->playerPrimaryWeapon
+                        : sharedData->playerSecondaryWeapon;
+
+        if (item == State::WeaponItems::None) {
+            if (m_currentWeapon != WeaponSlot::None) {
+                m_weaponTextWidget->setText(
+                        Util::formatU32(HUD_WEAPON_TEXT.get(), "N/A"));
+                m_rootWidget->layout();
+            }
+            return;
+        }
+
+        m_currentWeapon = weapon;
+
+        m_weaponTextWidget->setText(
+                Util::formatU32(
+                        HUD_WEAPON_TEXT.get(),
+                        weaponItemToString(item)));
+
+        moe::Logger::debug("HudState::updateWeapon: weapon updated to {}", weaponItemToString(item));
 
         m_rootWidget->layout();
     }

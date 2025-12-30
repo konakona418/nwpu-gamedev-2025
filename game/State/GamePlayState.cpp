@@ -227,9 +227,10 @@ namespace game::State {
                 MatchPhase::PurchasingPhase,
                 [this](game::SimpleFSM<MatchPhase>& fsm, float) {
                     auto& ctx = fsm.getContext();
+
+                    // if still in purchasing phase, handle purchase responses
+                    handlePurchaseResponse(ctx);
                     if (!tryWaitForRoundStart(ctx)) {
-                        // if still in purchasing phase, handle purchase responses
-                        handlePurchaseResponse(ctx);
                         return;
                     }
 
