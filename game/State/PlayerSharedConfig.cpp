@@ -6,8 +6,8 @@ namespace game {
 
     ParamF Config::PLAYER_MOUSE_SENSITIVITY("player.rotation_speed", 0.1f, ParamScope::UserConfig);
 
-    ParamF Config::PLAYER_HALF_HEIGHT("player.half_height", 0.4f);
-    ParamF Config::PLAYER_RADIUS("player.radius", 0.4f);
+    ParamF Config::PLAYER_HALF_HEIGHT("player.half_height", 0.5f);
+    ParamF Config::PLAYER_RADIUS("player.radius", 0.3f);
 
     // offset from mass center (half height) to camera position (eye level)
     ParamF Config::PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);

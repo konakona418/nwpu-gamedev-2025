@@ -27,7 +27,7 @@
 namespace game::State {
     static ParamF BOMB_PLANT_DEFUSE_TIME(
             "gameplay.bomb_plant_defuse_time",
-            5.0f,
+            3.5f,
             ParamScope::System);
 
 #define PLAYER_KEY_MAPPING_XXX() \
