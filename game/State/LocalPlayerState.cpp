@@ -25,6 +25,10 @@
 
 
 namespace game::State {
+    static ParamF BOMB_PLANT_DEFUSE_TIME(
+            "gameplay.bomb_plant_defuse_time",
+            5.0f,
+            ParamScope::System);
 
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
@@ -115,6 +119,8 @@ namespace game::State {
         input.addKeyEventMapping("escape_player", GLFW_KEY_ESCAPE);
         input.addKeyEventMapping("player_switch_to_primary_weapon", GLFW_KEY_1);
         input.addKeyEventMapping("player_switch_to_secondary_weapon", GLFW_KEY_2);
+
+        input.addKeyMapping("player_plant_defuse_bomb", GLFW_KEY_E);
 
         m_inputProxy.setMouseState(false);// disable mouse cursor
 
@@ -221,6 +227,7 @@ namespace game::State {
         input.removeKeyEventMapping("escape_player");
         input.removeKeyEventMapping("player_switch_to_primary_weapon");
         input.removeKeyEventMapping("player_switch_to_secondary_weapon");
+        input.removeKeyEventMapping("player_plant_defuse_bomb");
 
         input.removeProxy(&m_inputProxy);
 
@@ -408,6 +415,78 @@ namespace game::State {
         }
     }
 
+    void LocalPlayerState::handlePlayerPlantDefuseInput(GameManager& ctx, float deltaTime) {
+        if (!m_inputProxy.isValid()) {
+            return;
+        }
+
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            return;
+        }
+
+        auto camPos = ctx.renderer().getDefaultCamera().getPosition();
+
+        BombSite currentSite = testInWhichBombsite(camPos);
+        if (currentSite == BombSite::Neither) {
+            // not in any bombsite
+            m_bombPlantingOrDefuseProgressSecs = 0.0f;
+            m_bombPlantState->setVisible(false);
+            return;
+        }
+
+        if ((sharedData->isBombPlanted && sharedData->playerTeam != GamePlayerTeam::CT) ||
+            (!sharedData->isBombPlanted && sharedData->playerTeam != GamePlayerTeam::T)) {
+            // if:
+            // 1. bomb is planted, and player is not CT (cannot defuse)
+            // 2. bomb is not planted, and player is not T (cannot plant)
+            m_bombPlantingOrDefuseProgressSecs = 0.0f;
+            m_bombPlantState->setVisible(false);
+            return;
+        }
+
+        m_bombPlantState->setVisible(true);
+
+        float requiredTime = BOMB_PLANT_DEFUSE_TIME.get();
+        if (m_inputProxy.isKeyPressed("player_plant_defuse_bomb")) {
+            // planting or defusing
+            m_bombPlantingOrDefuseProgressSecs += deltaTime;
+
+            if (m_bombPlantingOrDefuseProgressSecs >= requiredTime) {
+                // completed
+                if (sharedData->playerTeam == GamePlayerTeam::T) {
+                    // plant bomb
+                    moe::Logger::info("Player planting bomb at site {}", currentSite == BombSite::A ? "A" : "B");
+                    plantBombAtBombsite(ctx, currentSite);
+                } else if (sharedData->playerTeam == GamePlayerTeam::CT) {
+                    // defuse bomb
+                    moe::Logger::info("Player defusing bomb at site {}", currentSite == BombSite::A ? "A" : "B");
+                    defuseBomb(ctx);
+                }
+
+                m_bombPlantingOrDefuseProgressSecs = 0.0f;// reset progress
+            }
+        } else {
+            // not planting or defusing
+            m_bombPlantingOrDefuseProgressSecs = 0.0f;
+        }
+
+        // update progress
+        float progress = m_bombPlantingOrDefuseProgressSecs / requiredTime;
+        m_bombPlantState->setPlantingProgress(progress);
+    }
+
+    BombSite LocalPlayerState::testInWhichBombsite(const glm::vec3& position) const {
+        for (const auto& [site, info]: m_bombsiteInfoMap) {
+            float distSq = glm::length2(position - info.position);
+            if (distSq <= info.radius * info.radius) {
+                return site;
+            }
+        }
+        return BombSite::Neither;
+    }
+
+
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         // render debug bombsite radius
         renderDebugBombsiteRadius(ctx);
@@ -417,6 +496,8 @@ namespace game::State {
             handleMotionStateUpdate(ctx, deltaTime);
             // update input state
             handleInputStateUpdate(ctx, deltaTime);
+            // handle plant/defuse input
+            handlePlayerPlantDefuseInput(ctx, deltaTime);
 
             // handle weapon switch
             {

@@ -34,6 +34,8 @@ namespace game {
         State::WeaponItems playerPrimaryWeapon{State::WeaponItems::None};
         State::WeaponItems playerSecondaryWeapon{State::WeaponItems::None};
 
+        bool isBombPlanted{false};
+
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
 
         uint32_t playerFireSequence{0};

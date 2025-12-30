@@ -2,6 +2,9 @@
 
 #include "GameManager.hpp"
 #include "Localization.hpp"
+#include "Registry.hpp"
+
+#include "State/GamePlayData.hpp"
 
 #include "UI/BoxWidget.hpp"
 
@@ -9,7 +12,9 @@
 
 namespace game::State {
     static I18N BOMB_PLANTING_TEXT_PROMPT("bomb_planting.text", U"Press [E] to Plant the Bomb");
+    static I18N BOMB_DEFUSING_TEXT_PROMPT("bomb_defusing.text", U"Press [E] to Defuse the Bomb");
     static I18N BOMB_PLANTING_TEXT("bomb_planting.planting", U"Planting... {}/100%");
+    static I18N BOMB_DEFUSING_TEXT("bomb_defusing.defusing", U"Defusing... {}/100%");
 
     void BombPlantState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering BombPlantState");
@@ -98,13 +103,28 @@ namespace game::State {
         m_plantingProgress = moe::Math::clamp(progress, 0.0f, 1.0f);
         uint32_t percent = std::round(m_plantingProgress * 100.0f);
 
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("BombPlantState::setPlantingProgress: GamePlaySharedData not found");
+            return;
+        }
+
+        auto team = sharedData->playerTeam;
+
         if (percent <= 1) {
-            m_plantingTextWidget->setText(BOMB_PLANTING_TEXT_PROMPT.get());
+            m_plantingTextWidget->setText(
+                    team == GamePlayerTeam::T
+                            ? BOMB_PLANTING_TEXT_PROMPT.get()
+                            : BOMB_DEFUSING_TEXT_PROMPT.get());
         } else {
             m_plantingTextWidget->setText(
                     Util::formatU32(
-                            BOMB_PLANTING_TEXT.get(),
+                            team == GamePlayerTeam::T
+                                    ? BOMB_PLANTING_TEXT.get()
+                                    : BOMB_DEFUSING_TEXT.get(),
                             percent));
         }
+
+        m_rootWidget->layout();
     }
 }// namespace game::State

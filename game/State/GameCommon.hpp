@@ -17,6 +17,7 @@ namespace game::State {
     enum class BombSite {
         A = 0,
         B = 1,
+        Neither = 2,
     };
 
     struct BombSiteInfo {

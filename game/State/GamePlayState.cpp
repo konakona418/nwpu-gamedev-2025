@@ -287,6 +287,11 @@ namespace game::State {
                     moe::Logger::info("Round started");
 
                     displaySystemPrompt(ctx, ROUND_STARTED_PROMPT.get());
+
+                    auto gamePlaySharedData = Registry::getInstance().get<GamePlaySharedData>();
+                    if (gamePlaySharedData) {
+                        gamePlaySharedData->isBombPlanted = false;// reset bomb planted state
+                    }
                 });
 
         m_fsm.state(
@@ -626,6 +631,8 @@ namespace game::State {
                             playerName),
                     moe::Colors::Yellow);
 
+            sharedData->isBombPlanted = true;// mark bomb as planted
+
             bombPlantedQueue.pop_front();
         }
 
@@ -640,6 +647,8 @@ namespace game::State {
                             BOMB_DEFUSED_PROMPT.get(),
                             playerName),
                     moe::Colors::Yellow);
+
+            sharedData->isBombPlanted = false;// mark bomb as defused
 
             bombDefusedQueue.pop_front();
         }
