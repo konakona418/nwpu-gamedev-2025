@@ -39,6 +39,14 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
         void onPhysicsUpdate(GameManager& ctx, float deltaTime) override;
 
+        void setValid(bool valid) {
+            m_valid = valid;
+        }
+
+        bool isValid() const {
+            return m_valid;
+        }
+
     private:
         moe::DBuffer<glm::vec3> m_movingDirection;
         moe::DBuffer<float> m_lookingYawDegrees;
@@ -62,6 +70,9 @@ namespace game::State {
         moe::Ref<HudState> m_hudState{nullptr};
         moe::DBuffer<float> m_healthBuffer;
 
+        // by default, the local player state is invalid until set otherwise
+        bool m_valid{false};
+
         // physics
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
 
@@ -77,6 +88,7 @@ namespace game::State {
 
         // render
         void handleHudUpdate(GameManager& ctx);
+        void handleMotionStateUpdate(GameManager& ctx, float deltaTime);
 
         // physics
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);

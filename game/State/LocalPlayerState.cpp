@@ -52,6 +52,7 @@ namespace game::State {
                 "LocalPlayerState Debug",
                 [state = this->asRef<LocalPlayerState>(), &ctx]() mutable {
                     ImGui::Begin("LocalPlayerState Debug Info");
+                    ImGui::Text("Valid: %s", state->isValid() ? "true" : "false");
                     ImGui::Text("Real Position: (%.2f, %.2f, %.2f)",
                                 state->m_realPosition.get().x,
                                 state->m_realPosition.get().y,
@@ -211,7 +212,7 @@ namespace game::State {
         m_hudState->updateWeapon(m_currentWeaponSlot);
     }
 
-    void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
+    void LocalPlayerState::handleMotionStateUpdate(GameManager& ctx, float deltaTime) {
         auto& cam = ctx.renderer().getDefaultCamera();
 
         glm::vec3 dir{0.0f};
@@ -290,15 +291,22 @@ namespace game::State {
         m_movingDirection.publish(std::move(dir));
         m_lookingYawDegrees.publish(newYaw);
         m_lookingPitchDegrees.publish(newPitch);
+    }
 
-        // handle weapon switch
-        {
-            if (m_inputProxy.isKeyJustReleased("player_switch_to_primary_weapon")) {
-                m_currentWeaponSlot = WeaponSlot::Primary;
-                moe::Logger::info("Player switched to Primary Weapon");
-            } else if (m_inputProxy.isKeyJustReleased("player_switch_to_secondary_weapon")) {
-                m_currentWeaponSlot = WeaponSlot::Secondary;
-                moe::Logger::info("Player switched to Secondary Weapon");
+    void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
+        if (m_valid) {
+            // update motion state
+            handleMotionStateUpdate(ctx, deltaTime);
+
+            // handle weapon switch
+            {
+                if (m_inputProxy.isKeyJustReleased("player_switch_to_primary_weapon")) {
+                    m_currentWeaponSlot = WeaponSlot::Primary;
+                    moe::Logger::info("Player switched to Primary Weapon");
+                } else if (m_inputProxy.isKeyJustReleased("player_switch_to_secondary_weapon")) {
+                    m_currentWeaponSlot = WeaponSlot::Secondary;
+                    moe::Logger::info("Player switched to Secondary Weapon");
+                }
             }
         }
 

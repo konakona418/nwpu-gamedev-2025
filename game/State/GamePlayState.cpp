@@ -6,8 +6,6 @@
 #include "State/PlaygroundState.hpp"
 #include "State/RemotePlayerState.hpp"
 
-#include "State/HudState.hpp"
-
 
 #include "State/GamePlayData.hpp"
 
@@ -138,8 +136,8 @@ namespace game::State {
         m_chatboxState = moe::Ref(new ChatboxState());
         this->addChildState(m_chatboxState);
 
-        auto hud = moe::Ref(new HudState());
-        this->addChildState(hud);
+        m_localPlayerState = moe::Ref(new LocalPlayerState());
+        this->addChildState(m_localPlayerState);
     }
 
     void GamePlayState::onExit(GameManager& ctx) {
@@ -245,17 +243,12 @@ namespace game::State {
 
                     displaySystemPrompt(ctx, PURCHASE_PHASE_STARTED_PROMPT.get());
 
-                    // add local player state
                     if (m_localPlayerState) {
-                        moe::Logger::info("LocalPlayerState already exists, removing old instance");
-                        this->removeChildState(m_localPlayerState);
-                        m_localPlayerState.reset();
+                        moe::Logger::info("Marking LocalPlayerState as valid");
+                        m_localPlayerState->setValid(true);// mark as valid
+                    } else {
+                        moe::Logger::error("GamePlayState FSM: LocalPlayerState not found when entering PurchasingPhase");
                     }
-
-                    moe::Logger::info("Adding LocalPlayerState");
-                    auto localPlayerState = moe::Ref(new LocalPlayerState());
-                    this->addChildState(localPlayerState);
-                    m_localPlayerState = localPlayerState;
 
                     m_purchaseState = moe::Ref(new PurchaseState());
                     this->addChildState(m_purchaseState);
@@ -585,14 +578,10 @@ namespace game::State {
                                 utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
                                 utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
 
-                moe::Logger::info("Removing LocalPlayerState due to player death");
+                moe::Logger::info("Invalidating LocalPlayerState due to player death");
 
                 if (m_localPlayerState) {
-                    // this is too violent, but for simplicity we just remove the state
-                    // ! fixme: removing LocalPlayerState and the event queue will soon be full
-                    // ! add a flag rather than removing the state
-                    this->removeChildState(m_localPlayerState);
-                    m_localPlayerState.reset();
+                    m_localPlayerState->setValid(false);// mark as invalid
                 } else {
                     // somehow after player is dead, his rivals still kill him again
                     // this is about server logic, but we just log a warning here
