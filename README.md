@@ -1,9 +1,8 @@
 # NWPU GameDev 2025 Autumn
 
-<div style="text-align: center;">
-    <b style="font-size: 24px">With Moe Graphics Engine</b>
-    <br/>
-    <img src="./img/moe-graphics-logo.png" width="480" />
+<div align="center">
+  <h3>With Moe Graphics Engine</h3>
+  <img src="./img/moe-graphics-logo.png" width="480" />
 </div>
 
 ## Basic Info
