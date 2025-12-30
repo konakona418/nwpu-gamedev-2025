@@ -9,6 +9,14 @@
 
 #include "State/GamePlayData.hpp"
 
+#include "Core/Resource/Preload.hpp"
+#include "Core/Resource/Secure.hpp"
+
+#include "AnimationFSM.hpp"
+#include "AnyCache.hpp"
+#include "ModelLoader.hpp"
+
+
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 
 namespace game::State {
@@ -48,9 +56,38 @@ namespace game::State {
 
         moe::DBuffer<glm::vec3> m_realPosition;
         moe::DBuffer<glm::vec3> m_realHeading;
+        moe::DBuffer<glm::vec3> m_realVelocity;
         moe::Deferred<JPH::Ref<JPH::CharacterVirtual>> m_character;
 
         moe::UniquePtr<InterpolationBuffer<RemotePlayerMotionInterpolationData>> m_motionInterpolationBuffer =
                 std::make_unique<InterpolationBuffer<RemotePlayerMotionInterpolationData>>();
+
+        // todo: distinguish CT and T models
+        moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>> m_terroristModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/Terrorist-Model.glb")}};
+        moe::RenderableId m_terroristModel{moe::NULL_RENDERABLE_ID};
+        moe::UnorderedMap<moe::String, moe::AnimationId> m_terroristAnimationIds;
+
+        enum class PlayerAnimations {
+            TPose,
+
+            Idle,
+
+            RifleIdle,
+            RifleIdleHit,
+            RifleIdleJump,
+
+            RifleRun,
+            RifleRunHit,
+            RifleRunJump,
+
+            RifleRunBack,
+        };
+
+        AnimationFSM<PlayerAnimations> m_animationFSM{PlayerAnimations::TPose};
+
+        void updateAnimationFSM(GameManager& ctx, float deltaTime);
+
+        void initAnimationFSM();
     };
 }// namespace game::State
