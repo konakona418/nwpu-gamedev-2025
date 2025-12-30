@@ -1,5 +1,9 @@
 #pragma once
 
+#include "Core/Common.hpp"
+#include "Math/Common.hpp"
+
+
 namespace game::State {
     enum class WeaponItems {
         None,
@@ -13,6 +17,13 @@ namespace game::State {
     enum class BombSite {
         A = 0,
         B = 1,
+    };
+
+    struct BombSiteInfo {
+        moe::String name;
+        BombSite site;
+        glm::vec3 position;
+        float radius;
     };
 
     enum class WeaponSlot {

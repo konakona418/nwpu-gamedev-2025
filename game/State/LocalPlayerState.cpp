@@ -10,8 +10,11 @@
 #include "NetworkDispatcher.hpp"
 #include "Param.hpp"
 #include "Registry.hpp"
+#include "TomlImpl.hpp"
 
 #include "Physics/TypeUtils.hpp"
+
+#include "Core/FileReader.hpp"
 
 #include "Jolt/Physics/Character/CharacterVirtual.h"
 #include "Jolt/Physics/Collision/Shape/CapsuleShape.h"
@@ -30,6 +33,76 @@ namespace game::State {
     X(right, GLFW_KEY_D);        \
     X(up, GLFW_KEY_SPACE);       \
     X(down, GLFW_KEY_LEFT_SHIFT);
+
+    static moe::UnorderedMap<BombSite, BombSiteInfo> loadBombsiteInfoFromConfig(moe::StringView configPath) {
+        toml::table bombsiteTable;
+
+        size_t outFileSize = 0;
+        auto fileContent_ = moe::FileReader::s_instance->readFile(configPath, outFileSize);
+        if (!fileContent_) {
+            moe::Logger::error(
+                    "Failed to read bombsite config file {}",
+                    configPath);
+            return {};
+        }
+
+        auto fileContent = fileContent_.value();
+        auto table_ = toml::parse(moe::StringView((const char*) fileContent.data(), outFileSize));
+        if (table_.failed()) {
+            moe::Logger::error(
+                    "Failed to parse bombsite config file {}: {}",
+                    configPath,
+                    table_.error().description());
+            return {};
+        }
+
+        bombsiteTable = table_.table();
+        auto siteA = bombsiteTable["site_a"].as_table();
+        auto siteB = bombsiteTable["site_b"].as_table();
+
+        BombSiteInfo siteAInfo;
+        siteAInfo.site = BombSite::A;
+
+        BombSiteInfo info{};
+        for (const auto& [key, value]: *siteA) {
+            if (key == "name") {
+                info.name = value.value_or(moe::String{});
+            } else if (key == "position") {
+                auto positionArray = value.as_array();
+                if (positionArray && positionArray->size() == 3) {
+                    info.position.x = positionArray->at(0).value_or(0.0);
+                    info.position.y = positionArray->at(1).value_or(0.0);
+                    info.position.z = positionArray->at(2).value_or(0.0);
+                }
+            } else if (key == "radius") {
+                info.radius = value.value_or(0.0);
+            }
+        }
+        siteAInfo = info;
+
+        BombSiteInfo siteBInfo;
+        siteBInfo.site = BombSite::B;
+        for (const auto& [key, value]: *siteB) {
+            if (key == "name") {
+                info.name = value.value_or(moe::String{});
+            } else if (key == "position") {
+                auto positionArray = value.as_array();
+                if (positionArray && positionArray->size() == 3) {
+                    info.position.x = positionArray->at(0).value_or(0.0);
+                    info.position.y = positionArray->at(1).value_or(0.0);
+                    info.position.z = positionArray->at(2).value_or(0.0);
+                }
+            } else if (key == "radius") {
+                info.radius = value.value_or(0.0);
+            }
+        }
+        siteBInfo = info;
+
+        return {
+                {BombSite::A, siteAInfo},
+                {BombSite::B, siteBInfo},
+        };
+    }
 
     void LocalPlayerState::onEnter(GameManager& ctx) {
         auto& input = ctx.input();
@@ -50,6 +123,7 @@ namespace game::State {
 
         m_bombPlantState = moe::Ref(new BombPlantState());
         this->addChildState(m_bombPlantState);
+        m_bombsiteInfoMap = loadBombsiteInfoFromConfig(moe::asset("assets/data/bombsites.toml"));
 
         ctx.addDebugDrawFunction(
                 "LocalPlayerState Debug",
@@ -98,6 +172,8 @@ namespace game::State {
                             ImGui::Text("You are not in any team, cannot plant or defuse bomb.");
                         }
                     }
+
+                    ImGui::Checkbox("Show Bombsite Radius", &state->m_debugShowBombsiteRadius);
 
                     ImGui::End();
                 });
@@ -314,7 +390,28 @@ namespace game::State {
         }
     }
 
+    void LocalPlayerState::renderDebugBombsiteRadius(GameManager& ctx) {
+        if (!m_debugShowBombsiteRadius) {
+            return;
+        }
+
+        auto& renderer = ctx.renderer();
+
+        for (const auto& [site, info]: m_bombsiteInfoMap) {
+            renderer.addIm3dDrawCommand([position = info.position, radius = info.radius]() {
+                Im3d::PushDrawState();
+                Im3d::SetColor(Im3d::Color{1.0f, 0.0f, 0.0f, 1.0f});
+                Im3d::SetSize(2.0f);
+                Im3d::DrawSphere(Im3d::Vec3{position.x, position.y, position.z}, radius);
+                Im3d::PopDrawState();
+            });
+        }
+    }
+
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
+        // render debug bombsite radius
+        renderDebugBombsiteRadius(ctx);
+
         if (m_valid) {
             // update motion state
             handleMotionStateUpdate(ctx, deltaTime);

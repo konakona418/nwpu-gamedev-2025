@@ -72,6 +72,8 @@ namespace game::State {
         moe::DBuffer<float> m_healthBuffer;
 
         moe::Ref<BombPlantState> m_bombPlantState{nullptr};
+        moe::UnorderedMap<BombSite, BombSiteInfo> m_bombsiteInfoMap;
+        bool m_debugShowBombsiteRadius{false};
 
         // by default, the local player state is invalid until set otherwise
         bool m_valid{false};
@@ -93,6 +95,7 @@ namespace game::State {
         void handleHudUpdate(GameManager& ctx);
         void handleMotionStateUpdate(GameManager& ctx, float deltaTime);
         void handleInputStateUpdate(GameManager& ctx, float deltaTime);
+        void renderDebugBombsiteRadius(GameManager& ctx);
 
         // physics
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
