@@ -168,14 +168,17 @@ namespace game::State {
             return;
         }
 
-        // todo: weapon slot id later
-        // !!
+        // select weapon slot
+        auto slot = m_currentWeaponSlot == WeaponSlot::Primary
+                            ? myu::net::WeaponSlot::SLOT_PRIMARY
+                            : myu::net::WeaponSlot::SLOT_SECONDARY;
+
         auto firePkt = myu::net::CreateFirePacket(
                 fbb,
                 sharedData->playerTempId,
                 position.x, position.y, position.z,
                 direction.x, direction.y, direction.z,
-                myu::net::WeaponSlot::SLOT_SECONDARY,
+                slot,
                 sharedData->playerFireSequence++);
 
         auto timePack = game::Util::getTimePack();
