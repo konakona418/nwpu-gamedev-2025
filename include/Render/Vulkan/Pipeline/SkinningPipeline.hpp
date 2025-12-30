@@ -32,7 +32,7 @@ namespace moe {
             void destroy();
 
         private:
-            static constexpr uint32_t MAX_JOINT_MATRIX_COUNT = 1024;
+            static constexpr uint32_t MAX_JOINT_MATRIX_COUNT = 10240;// max 10k joint matrices
 
             struct PushConstants {
                 VkDeviceAddress vertexBufferAddr;
