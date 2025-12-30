@@ -94,42 +94,24 @@ namespace game::State {
         return "N/A";
     }
 
-    void HudState::updateWeapon(WeaponSlot weapon) {
-        if (m_currentWeapon == weapon) {
-            return;
-        }
-
+    void HudState::updateWeapon(WeaponSlot weaponSlot) {
         auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
         if (!sharedData) {
             moe::Logger::error("HudState::updateWeapon: GamePlaySharedData not found");
             return;
         }
 
-        if (weapon == WeaponSlot::None) {
-            if (m_currentWeapon != WeaponSlot::None) {
-                m_weaponTextWidget->setText(
-                        Util::formatU32(HUD_WEAPON_TEXT.get(), "N/A"));
-                m_rootWidget->layout();
-            }
-            return;
-        }
-
+        // default to secondary weapon
         State::WeaponItems item =
-                (weapon == WeaponSlot::Primary)
+                (weaponSlot == WeaponSlot::Primary)
                         ? sharedData->playerPrimaryWeapon
                         : sharedData->playerSecondaryWeapon;
 
-        if (item == State::WeaponItems::None) {
-            if (m_currentWeapon != WeaponSlot::None) {
-                m_weaponTextWidget->setText(
-                        Util::formatU32(HUD_WEAPON_TEXT.get(), "N/A"));
-                m_rootWidget->layout();
-            }
+        if (m_currentWeaponItem == item) {
             return;
         }
 
-        m_currentWeapon = weapon;
-
+        m_currentWeaponItem = item;
         m_weaponTextWidget->setText(
                 Util::formatU32(
                         HUD_WEAPON_TEXT.get(),

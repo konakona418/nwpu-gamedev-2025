@@ -30,14 +30,14 @@ namespace game::State {
         void onUpdate(GameManager& ctx, float deltaTime) override;
 
         void updateHealth(float health);
-        void updateWeapon(WeaponSlot weapon);
+        void updateWeapon(WeaponSlot weaponSlot);
 
     private:
         using FontLoaderT = moe::Secure<game::AnyCacheLoader<game::FontLoader<
                 moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>;
 
         float m_health{0.0f};
-        WeaponSlot m_currentWeapon{WeaponSlot::None};
+        WeaponItems m_currentWeaponItem{WeaponItems::None};
 
         FontLoaderT m_fontLoader{
                 FontLoaderParam{24.0f, Util::glyphRangeChinese()},
