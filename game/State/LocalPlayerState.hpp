@@ -4,6 +4,7 @@
 #include "Input.hpp"
 #include "RingBuffer.hpp"
 
+#include "State/BombPlantState.hpp"
 #include "State/GameCommon.hpp"
 #include "State/HudState.hpp"
 
@@ -69,6 +70,8 @@ namespace game::State {
 
         moe::Ref<HudState> m_hudState{nullptr};
         moe::DBuffer<float> m_healthBuffer;
+
+        moe::Ref<BombPlantState> m_bombPlantState{nullptr};
 
         // by default, the local player state is invalid until set otherwise
         bool m_valid{false};

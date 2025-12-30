@@ -48,6 +48,9 @@ namespace game::State {
         m_hudState = moe::Ref(new HudState());
         this->addChildState(m_hudState);
 
+        m_bombPlantState = moe::Ref(new BombPlantState());
+        this->addChildState(m_bombPlantState);
+
         ctx.addDebugDrawFunction(
                 "LocalPlayerState Debug",
                 [state = this->asRef<LocalPlayerState>(), &ctx]() mutable {
@@ -150,6 +153,10 @@ namespace game::State {
         // cleanup HUD
         this->removeChildState(m_hudState);
         m_hudState.reset();
+
+        // cleanup BombPlantState
+        this->removeChildState(m_bombPlantState);
+        m_bombPlantState.reset();
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<LocalPlayerState>()](moe::PhysicsEngine& physics) mutable {
