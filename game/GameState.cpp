@@ -11,6 +11,10 @@ namespace game {
     void GameState::_onEnter(GameManager& ctx) {
         onEnter(ctx);
 
+        // this must be called after onEnter to avoid any changes
+        // not being processed
+        processPendingChildStateChanges(ctx);
+
         // create snapshot for the first time
         if (!m_childStateSnapShot.load(std::memory_order_relaxed)) {
             std::lock_guard<std::mutex> lock(m_childStateMutex);
@@ -52,10 +56,15 @@ namespace game {
     }
 
     void GameState::_onExit(GameManager& ctx) {
+        // sync pending changes
+        // to prevent orphan child states
+        processPendingChildStateChanges(ctx);
+
         // ! watch out for this
         for (auto& child: m_childStates) {
             child->_onExit(ctx);
         }
+
         onExit(ctx);
     }
 
