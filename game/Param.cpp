@@ -1,6 +1,8 @@
 #include "Param.hpp"
 
+#include "Core/FileReader.hpp"
 #include "Core/FileWriter.hpp"
+
 
 #include <sstream>
 
@@ -25,7 +27,18 @@ namespace game {
     void BaseParamManager::loadFromFile(const moe::StringView filepath) {
         m_filepath = filepath.data();
 
-        auto table_ = toml::parse_file(filepath.data());
+        size_t outFileSize = 0;
+        auto fileContent_ = moe::FileReader::s_instance->readFile(filepath, outFileSize);
+        if (!fileContent_) {
+            moe::Logger::error(
+                    "ParamManager::loadFromFile: failed to read param file {}",
+                    filepath);
+            return;
+        }
+
+        auto fileContent = fileContent_.value();
+
+        auto table_ = toml::parse(moe::StringView((const char*) fileContent.data(), outFileSize));
         if (table_.failed()) {
             moe::Logger::error(
                     "ParamManager::loadFromFile: failed to parse param file {}: {}",
