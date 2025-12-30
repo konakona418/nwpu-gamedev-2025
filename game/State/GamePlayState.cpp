@@ -6,6 +6,8 @@
 #include "State/PlaygroundState.hpp"
 #include "State/RemotePlayerState.hpp"
 
+#include "State/HudState.hpp"
+
 
 #include "State/GamePlayData.hpp"
 
@@ -135,6 +137,9 @@ namespace game::State {
 
         m_chatboxState = moe::Ref(new ChatboxState());
         this->addChildState(m_chatboxState);
+
+        auto hud = moe::Ref(new HudState());
+        this->addChildState(hud);
     }
 
     void GamePlayState::onExit(GameManager& ctx) {
@@ -480,6 +485,35 @@ namespace game::State {
         return true;
     }
 
+    static WeaponItems weaponNetEnumToItem(::moe::net::Weapon weapon) {
+#define X(_1, enumVal, _2, moeEnum) \
+    case moeEnum:                   \
+        return enumVal;
+
+        switch (weapon) {
+            _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()
+            case moe::net::Weapon::WEAPON_NONE:
+                break;
+        }
+#undef X
+        return WeaponItems::None;
+    }
+
+    static moe::StringView weaponNetEnumToStringName(::moe::net::Weapon weapon) {
+#define X(name, _1, _2, moeEnum) \
+    case moeEnum:                \
+        return name;
+
+        switch (weapon) {
+            _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()
+            case moe::net::Weapon::WEAPON_NONE:
+                break;
+        }
+#undef X
+        return "N/A";
+    }
+
+
     void GamePlayState::handlePurchaseResponse(GameManager& ctx) {
         auto& purchaseResponseQueue = m_networkDispatcher->getQueues().queuePurchaseEvent;
         while (!purchaseResponseQueue.empty()) {
@@ -500,6 +534,13 @@ namespace game::State {
                 auto gamePlaySharedData =
                         Registry::getInstance().get<GamePlaySharedData>();
                 gamePlaySharedData->playerBalance = event.balance;// update balance
+                gamePlaySharedData->playerPrimaryWeapon = weaponNetEnumToItem(event.primaryWeapon);
+                gamePlaySharedData->playerSecondaryWeapon = weaponNetEnumToItem(event.secondaryWeapon);
+
+                moe::Logger::info(
+                        "Updated player weapons: primary: {}, secondary: {}",
+                        weaponNetEnumToStringName(event.primaryWeapon),
+                        weaponNetEnumToStringName(event.secondaryWeapon));
             } else {
                 moe::Logger::info("Purchase failed");
                 displaySystemError(ctx, PURCHASE_RESULT_FAILURE_PROMPT.get());

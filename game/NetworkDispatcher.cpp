@@ -77,6 +77,7 @@ namespace game {
                             glm::vec3(vel->x(), vel->y(), vel->z()),
                             glm::vec3(head->x(), head->y(), head->z()),
                             deserializedPacket->header()->serverTick(),
+                            playerUpdate->health(),
                     });
         }
     }

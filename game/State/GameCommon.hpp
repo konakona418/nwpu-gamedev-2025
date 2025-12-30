@@ -15,6 +15,12 @@ namespace game::State {
         B = 1,
     };
 
+    enum class WeaponSlot {
+        None,
+        Primary,
+        Secondary,
+    };
+
 #define _GAME_STATE_WEAPON_ITEM_NAME_ENUM_MAP_XXX()                                                                    \
     X("Glock", ::game::State::WeaponItems::Glock, ::myu::net::Weapon::GLOCK, ::moe::net::Weapon::GLOCK)                \
     X("USP", ::game::State::WeaponItems::USP, ::myu::net::Weapon::USP, ::moe::net::Weapon::USP)                        \

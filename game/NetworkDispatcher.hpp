@@ -50,15 +50,18 @@ namespace game {
             glm::vec3 heading;
             uint64_t physicsTick;
 
+            float health{0.0f};
+
             PlayerUpdateData(
                     const glm::vec3& pos,
                     const glm::vec3& vel,
                     const glm::vec3& head,
-                    uint64_t tick)
+                    uint64_t tick, float health)
                 : position(pos),
                   velocity(vel),
                   heading(head),
-                  physicsTick(tick) {}
+                  physicsTick(tick),
+                  health(health) {}
 
             PlayerUpdateData() = default;
         };

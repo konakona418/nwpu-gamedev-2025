@@ -4,6 +4,8 @@
 #include "Core/Meta/Feature.hpp"
 #include "Core/RefCounted.hpp"
 
+#include "State/GameCommon.hpp"
+
 namespace game {
     constexpr uint16_t INVALID_PLAYER_TEMP_ID = 0xFFFF;
 
@@ -14,6 +16,7 @@ namespace game {
         T,
         CT,
     };
+
     struct GamePlayer {
         uint16_t tempId{INVALID_PLAYER_TEMP_ID};
         moe::U32String name;
@@ -28,6 +31,8 @@ namespace game {
         uint16_t playerTempId{INVALID_PLAYER_TEMP_ID};
         uint32_t playerBalance{0};
         GamePlayerTeam playerTeam{GamePlayerTeam::None};
+        State::WeaponItems playerPrimaryWeapon{State::WeaponItems::None};
+        State::WeaponItems playerSecondaryWeapon{State::WeaponItems::None};
 
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
 

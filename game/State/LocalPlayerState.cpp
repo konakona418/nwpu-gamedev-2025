@@ -40,7 +40,13 @@ namespace game::State {
 #undef X
 
         input.addKeyEventMapping("escape_player", GLFW_KEY_ESCAPE);
+        input.addKeyEventMapping("player_switch_to_primary_weapon", GLFW_KEY_1);
+        input.addKeyEventMapping("player_switch_to_secondary_weapon", GLFW_KEY_2);
+
         m_inputProxy.setMouseState(false);// disable mouse cursor
+
+        m_hudState = moe::Ref(new HudState());
+        this->addChildState(m_hudState);
 
         ctx.addDebugDrawFunction(
                 "LocalPlayerState Debug",
@@ -131,7 +137,17 @@ namespace game::State {
         PLAYER_KEY_MAPPING_XXX()
 #undef X
 
+        input.removeKeyEventMapping("escape_player");
+        input.removeKeyEventMapping("player_switch_to_primary_weapon");
+        input.removeKeyEventMapping("player_switch_to_secondary_weapon");
+
         input.removeProxy(&m_inputProxy);
+
+        ctx.removeDebugDrawFunction("LocalPlayerState Debug");
+
+        // cleanup HUD
+        this->removeChildState(m_hudState);
+        m_hudState.reset();
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<LocalPlayerState>()](moe::PhysicsEngine& physics) mutable {
@@ -177,6 +193,22 @@ namespace game::State {
 
         auto dataSpan = fbb.GetBufferSpan();
         ctx.network().sendData(dataSpan, true);//reliable
+    }
+
+    void LocalPlayerState::handleHudUpdate(GameManager& ctx) {
+        if (!m_hudState) {
+            return;
+        }
+
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            return;
+        }
+
+        float health = m_healthBuffer.get();
+        m_hudState->updateHealth(health);
+
+        m_hudState->updateWeapon(m_currentWeaponSlot);
     }
 
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
@@ -258,6 +290,19 @@ namespace game::State {
         m_movingDirection.publish(std::move(dir));
         m_lookingYawDegrees.publish(newYaw);
         m_lookingPitchDegrees.publish(newPitch);
+
+        // handle weapon switch
+        {
+            if (m_inputProxy.isKeyJustReleased("player_switch_to_primary_weapon")) {
+                m_currentWeaponSlot = WeaponSlot::Primary;
+                moe::Logger::info("Player switched to Primary Weapon");
+            } else if (m_inputProxy.isKeyJustReleased("player_switch_to_secondary_weapon")) {
+                m_currentWeaponSlot = WeaponSlot::Secondary;
+                moe::Logger::info("Player switched to Secondary Weapon");
+            }
+        }
+
+        handleHudUpdate(ctx);// update HUD info
     }
 
     void LocalPlayerState::handleCharacterUpdate(
@@ -545,6 +590,10 @@ namespace game::State {
 
         outPositionShouldUpdate = true;
         outServerPhysicsTick = lastPlayerUpdate->physicsTick;
+
+        // fill in health buffer
+        m_healthBuffer.publish(lastPlayerUpdate->health);
+
         return moe::Physics::toJoltType<JPH::Vec3>(lastPlayerUpdate->position);
     }
 

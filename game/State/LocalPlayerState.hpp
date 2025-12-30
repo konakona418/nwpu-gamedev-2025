@@ -5,6 +5,7 @@
 #include "RingBuffer.hpp"
 
 #include "State/GameCommon.hpp"
+#include "State/HudState.hpp"
 
 #include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
@@ -56,23 +57,37 @@ namespace game::State {
         size_t m_localPlayerSyncCounter{0};
 
         float m_openFireCooldownTimer{0.0f};
+        WeaponSlot m_currentWeaponSlot{WeaponSlot::Secondary};
 
+        moe::Ref<HudState> m_hudState{nullptr};
+        moe::DBuffer<float> m_healthBuffer;
+
+        // physics
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
 
+        // physics
         JPH::Vec3 syncPositionWithServer(GameManager& ctx, JPH::Vec3 currentPos, bool& outPositionShouldUpdate, uint64_t& outServerPhysicsTick);
 
+        // physics
         void handleCharacterUpdate(
                 JPH::Ref<JPH::CharacterVirtual> character,
                 const glm::vec3& inputIntention, bool jumpRequested,
                 float deltaTime,
                 GameManager& ctx);
 
+        // render
+        void handleHudUpdate(GameManager& ctx);
+
+        // physics
         void replayPositionUpdatesUpToTick(GameManager& ctx, JPH::Ref<JPH::CharacterVirtual> character);
 
+        // render
         void constructOpenFireEventAndSend(GameManager& ctx, const glm::vec3& position, const glm::vec3& direction);
 
+        // render
         void plantBombAtBombsite(GameManager& ctx, BombSite site);
 
+        // render
         void defuseBomb(GameManager& ctx);
     };
 }// namespace game::State
