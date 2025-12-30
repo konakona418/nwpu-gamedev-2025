@@ -9,8 +9,8 @@ struct VkImageWidget : public SpriteWidget, public VkWidget {
 public:
     VkImageWidget() = default;
 
-    explicit VkImageWidget(ImageId imageId, Color tintColor = Colors::White)
-        : m_imageId(imageId), m_tintColor(tintColor) {}
+    explicit VkImageWidget(ImageId imageId, LayoutSize spriteSize, Color tintColor = Colors::White)
+        : SpriteWidget(spriteSize), m_imageId(imageId), m_tintColor(tintColor) {}
 
     void render(VulkanRenderObjectBus& renderer) override;
 

@@ -4,6 +4,7 @@
 
 namespace game::State {
     static ParamF4 CROSSHAIR_COLOR("crosshair.color", {1.0f, 1.0f, 1.0f, 1.0f}, ParamScope::UserConfig);
+    static ParamI CROSSHAIR_SIZE("crosshair.size", 64, ParamScope::UserConfig);
 
     void CrossHairState::onEnter(GameManager& ctx) {
         m_crossHairNormalImageId = m_crossHairImageLoader.generate().value_or(moe::NULL_IMAGE_ID);
@@ -28,7 +29,13 @@ namespace game::State {
         // init color
         auto color_ = CROSSHAIR_COLOR.get();
         moe::Color crosshairColor = {color_.x, color_.y, color_.z, color_.w};
-        m_crossHairImageWidget = moe::Ref(new moe::VkImageWidget(m_crossHairNormalImageId, crosshairColor));
+        m_crossHairImageWidget = moe::Ref(
+                new moe::VkImageWidget(m_crossHairNormalImageId,
+                                       moe::LayoutSize{
+                                               (float) CROSSHAIR_SIZE.get(),
+                                               (float) CROSSHAIR_SIZE.get(),
+                                       },
+                                       crosshairColor));
         container->addChild(m_crossHairImageWidget);
 
         m_rootWidget->addChild(container);
