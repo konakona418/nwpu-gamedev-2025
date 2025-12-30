@@ -55,8 +55,16 @@ namespace game::State {
         m_containerWidget->setBackgroundColor(moe::Color{0.f, 0.f, 0.f, 0.75f});
         m_containerWidget->setPadding({10.f, 10.f, 10.f, 10.f});
 
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("BombPlantState::onEnter: GamePlaySharedData not found");
+        }
+        auto team = sharedData ? sharedData->playerTeam : GamePlayerTeam::None;
+
         m_plantingTextWidget = moe::makeRef<moe::VkTextWidget>(
-                BOMB_PLANTING_TEXT_PROMPT.get(),
+                team == GamePlayerTeam::T
+                        ? BOMB_PLANTING_TEXT_PROMPT.get()
+                        : BOMB_DEFUSING_TEXT_PROMPT.get(),
                 m_fontId,
                 24.f,
                 moe::Colors::Yellow);
