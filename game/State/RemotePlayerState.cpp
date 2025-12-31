@@ -45,7 +45,14 @@ namespace game::State {
             moe::Logger::error("Failed to load terrorist model");
             return;
         }
-        m_terroristAnimationIds = getAnimationsFromRenderable(ctx, m_terroristModel);
+
+        m_counterTerroristModel = m_counterTerroristModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_counterTerroristModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("Failed to load counter-terrorist model");
+            return;
+        }
+
+        m_animationIds = getAnimationsFromRenderable(ctx, m_terroristModel);
 
         m_weaponModel = m_weaponModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
         if (m_weaponModel == moe::NULL_RENDERABLE_ID) {
@@ -116,15 +123,24 @@ namespace game::State {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         auto computeHandle = renderctx.submitComputeSkin(
                 m_terroristModel,
-                m_terroristAnimationIds[animationSample.animation.name],
+                m_animationIds[animationSample.animation.name],
                 animationSample.timeInAnimation);
 
         auto rotation = std::atan2(heading.x, heading.z);
         auto realPosition = m_realPosition.get();
         realPosition.y -= (PlayerConfig::PLAYER_HALF_HEIGHT + PlayerConfig::PLAYER_RADIUS);// offset to feet position
 
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("RemotePlayerState::updateAnimationFSM: GamePlaySharedData not found");
+            return;
+        }
+
+        bool isCounterTerrorist =
+                sharedData->playersByTempId.at(m_playerTempId).team == GamePlayerTeam::CT;
+
         renderctx.submitRender(
-                m_terroristModel,
+                isCounterTerrorist ? m_counterTerroristModel : m_terroristModel,
                 moe::Transform{}
                         .setPosition(realPosition)
                         .setRotation(glm::vec3(0.0f, rotation, 0.0f)),
