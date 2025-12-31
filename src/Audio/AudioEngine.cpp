@@ -6,6 +6,8 @@ MOE_BEGIN_NAMESPACE
 
 static const char* OPENAL_SOFT_DEVICE_NAME = "OpenAL Soft";
 
+std::thread::id AudioEngine::s_audioThreadId;
+
 void AudioEngine::handleCommands() {
     std::scoped_lock lk(m_mutex);
     while (!m_commandQueue.empty()) {
@@ -25,6 +27,7 @@ void AudioEngine::mainAudioLoop() {
     while (m_running.load()) {
         // process audio commands
         handleCommands();
+        m_bufferPool.handleDeletes();
 
         // update audio sources
         for (auto& source: m_sources) {
@@ -42,12 +45,14 @@ void AudioEngine::mainAudioLoop() {
     }
 
     handleCommands();// final command handling before exit
+    m_bufferPool.handleDeletes();
 }
 
 void AudioEngine::initAndLaunchMainAudioLoop() {
     m_running.store(true);
     m_audioThread = std::thread([this]() {
         Logger::setThreadName("Audio");
+        s_audioThreadId = std::this_thread::get_id();
         Logger::info("Audio engine main loop started");
 
         static std::once_flag initFlag;
@@ -177,6 +182,12 @@ void AudioEngineInterface::stopAudioSource(Ref<AudioSource> source) {
     submitCommand(
             std::make_unique<SourceStopCommand>(
                     std::move(source)));
+}
+
+void AudioEngineInterface::setAudioSourcePosition(Ref<AudioSource> source, float x, float y, float z) {
+    submitCommand(
+            std::make_unique<SourcePositionUpdateCommand>(
+                    std::move(source), x, y, z));
 }
 
 void AudioEngineInterface::setListenerPosition(const glm::vec3& position) {

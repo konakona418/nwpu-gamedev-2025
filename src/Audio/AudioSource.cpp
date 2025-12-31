@@ -178,4 +178,9 @@ void SourceDisableAttenuationCommand::execute(AudioEngine& engine) {
     source->disableAttenuation();
 }
 
+void SourcePositionUpdateCommand::execute(AudioEngine& engine) {
+    Logger::debug("Update position for audio source {}", source->sourceId());
+    source->setPosition(x, y, z);
+}
+
 MOE_END_NAMESPACE

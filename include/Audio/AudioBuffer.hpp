@@ -33,10 +33,25 @@ public:
 
     Ref<AudioBuffer> acquireBuffer();
 
+    void handleDeletes() {
+        moe::Vector<AudioBuffer*> toDelete;
+        {
+            std::scoped_lock lk(m_deleteMutex);
+            toDelete.swap(m_pendingDeletes);
+        }
+
+        for (auto* buffer: toDelete) {
+            m_freeBuffers.push_back(buffer);
+        }
+    }
+
 private:
     Vector<Pinned<AudioBuffer>> m_buffers;
     Deque<AudioBuffer*> m_freeBuffers;
     bool m_initialized{false};
+
+    std::mutex m_deleteMutex;
+    Vector<AudioBuffer*> m_pendingDeletes;
 
     static void bufferDeleter(void* ptr);
 

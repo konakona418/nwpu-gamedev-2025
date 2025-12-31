@@ -35,7 +35,13 @@ public:
 
     AudioBufferPool& getBufferPool() { return m_bufferPool; }
 
+    std::thread::id getAudioThreadId() const {
+        return s_audioThreadId;
+    }
+
 private:
+    static std::thread::id s_audioThreadId;
+
     bool m_initialized{false};
     bool m_eaxSupported{false};
 
@@ -74,6 +80,12 @@ public:
     ~AudioEngineInterface() = default;
 
     void submitCommand(UniquePtr<AudioCommand> command) {
+        if (std::this_thread::get_id() == AudioEngine::s_audioThreadId) {
+            // direct execute
+            // to prevent lock recursion
+            command->execute(*m_engine);
+            return;
+        }
         std::lock_guard<std::mutex> lock(m_engine->m_mutex);
         m_engine->m_commandQueue.push_back(std::move(command));
     }
@@ -83,6 +95,7 @@ public:
     void playAudioSource(Ref<AudioSource> source);
     void pauseAudioSource(Ref<AudioSource> source);
     void stopAudioSource(Ref<AudioSource> source);
+    void setAudioSourcePosition(Ref<AudioSource> source, float x, float y, float z);
 
     void setListenerPosition(const glm::vec3& position);
     void setListenerVelocity(const glm::vec3& velocity);

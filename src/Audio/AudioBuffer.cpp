@@ -66,10 +66,25 @@ Ref<AudioBuffer> AudioBufferPool::acquireBuffer() {
 
 void AudioBufferPool::bufferDeleter(void* ptr) {
     // Rc reached zero, return to pool
-    AudioEngine::getInstance()
-            .getBufferPool()
-            .m_freeBuffers
-            .push_back(static_cast<AudioBuffer*>(ptr));
+    if (std::this_thread::get_id() == AudioEngine::getInstance().getAudioThreadId()) {
+        // on audio thread, can push directly
+        moe::Logger::debug("AudioBufferPool::bufferDeleter: called from audio thread, "
+                           "recycling buffer {}",
+                           static_cast<AudioBuffer*>(ptr)->bufferId);
+        AudioEngine::getInstance()
+                .getBufferPool()
+                .m_freeBuffers
+                .push_back(static_cast<AudioBuffer*>(ptr));
+        return;
+    }
+
+    moe::Logger::debug("AudioBufferPool::bufferDeleter: called from non-audio thread, "
+                       "deferring buffer recycling of buffer {}",
+                       static_cast<AudioBuffer*>(ptr)->bufferId);
+
+    auto& bufferPool = AudioEngine::getInstance().getBufferPool();
+    std::lock_guard<std::mutex> lock(bufferPool.m_deleteMutex);
+    bufferPool.m_pendingDeletes.push_back(static_cast<AudioBuffer*>(ptr));
 }
 
 void AudioBufferPool::allocBuffer() {

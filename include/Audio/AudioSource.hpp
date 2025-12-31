@@ -28,6 +28,10 @@ public:
 
     void disableAttenuation();
 
+    void setPosition(float x, float y, float z) {
+        alSource3f(m_sourceId, AL_POSITION, x, y, z);
+    }
+
     void update();
 
     ALuint sourceId() const {
@@ -108,6 +112,16 @@ struct SourceDisableAttenuationCommand : public AudioCommand {
 
     explicit SourceDisableAttenuationCommand(Ref<AudioSource> src)
         : source(std::move(src)) {}
+
+    void execute(AudioEngine& engine) override;
+};
+
+struct SourcePositionUpdateCommand : public AudioCommand {
+    Ref<AudioSource> source;
+    float x, y, z;
+
+    explicit SourcePositionUpdateCommand(Ref<AudioSource> src, float x, float y, float z)
+        : source(std::move(src)), x(x), y(y), z(z) {}
 
     void execute(AudioEngine& engine) override;
 };
