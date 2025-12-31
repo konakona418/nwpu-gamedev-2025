@@ -36,6 +36,8 @@ namespace game {
 
         bool isBombPlanted{false};
 
+        bool debugShowPlayerHitboxes{false};
+
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
 
         uint32_t playerFireSequence{0};

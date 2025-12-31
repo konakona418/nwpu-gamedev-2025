@@ -66,7 +66,7 @@ namespace game {
                 .viewportWidth = static_cast<int>(WINDOW_WIDTH.get()),
                 .viewportHeight = static_cast<int>(WINDOW_HEIGHT.get()),
                 .fovDeg = FOV_DEGREES.get(),
-                .csmCameraScale = {3.0f, 3.0f, 3.0f},
+                .csmCameraScale = {5.0f, 5.0f, 3.0f},// adjust as needed
                 .imGuiFontPath = moe::asset(IMGUI_FONT_PATH.get()),
         });
 

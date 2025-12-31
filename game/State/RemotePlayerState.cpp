@@ -169,6 +169,11 @@ namespace game::State {
     }
 
     void RemotePlayerState::renderWeapon(GameManager& ctx) {
+        auto health = m_realHealth.get();
+        if (health <= 0.1f) {
+            return;// do not render weapon if dead
+        }
+
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
 
         auto pos = m_realPosition.get();
@@ -263,30 +268,35 @@ namespace game::State {
             playRemoteFootstepSoundAtPosition(ctx, pos, deltaTime);
         }
 
-        renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
-            auto cameraOffset = PlayerConfig::PLAYER_CAMERA_OFFSET_Y;
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (sharedData) {
+            if (sharedData->debugShowPlayerHitboxes) {
+                renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
+                    auto cameraOffset = PlayerConfig::PLAYER_CAMERA_OFFSET_Y;
 
-            Im3d::PushDrawState();
-            Im3d::SetColor(Im3d::Color{0.0f, 0.0f, 1.0f, 1.0f});
-            Im3d::SetSize(5.0f);
-            Im3d::DrawCapsule(
-                    Im3d::Vec3{pos.x, pos.y - PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
-                    Im3d::Vec3{pos.x, pos.y + PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
-                    PlayerConfig::PLAYER_RADIUS);
-            Im3d::PopDrawState();
+                    Im3d::PushDrawState();
+                    Im3d::SetColor(Im3d::Color{0.0f, 0.0f, 1.0f, 1.0f});
+                    Im3d::SetSize(5.0f);
+                    Im3d::DrawCapsule(
+                            Im3d::Vec3{pos.x, pos.y - PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
+                            Im3d::Vec3{pos.x, pos.y + PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
+                            PlayerConfig::PLAYER_RADIUS);
+                    Im3d::PopDrawState();
 
-            Im3d::PushDrawState();
-            Im3d::SetColor(Im3d::Color{1.0f, 0.0f, 0.0f, 1.0f});
-            Im3d::SetSize(5.0f);
-            Im3d::DrawArrow(
-                    Im3d::Vec3{pos.x, pos.y + cameraOffset, pos.z},
-                    Im3d::Vec3{
-                            pos.x + heading.x,
-                            pos.y + cameraOffset,
-                            pos.z + heading.z,
-                    });
-            Im3d::PopDrawState();
-        });
+                    Im3d::PushDrawState();
+                    Im3d::SetColor(Im3d::Color{1.0f, 0.0f, 0.0f, 1.0f});
+                    Im3d::SetSize(5.0f);
+                    Im3d::DrawArrow(
+                            Im3d::Vec3{pos.x, pos.y + cameraOffset, pos.z},
+                            Im3d::Vec3{
+                                    pos.x + heading.x,
+                                    pos.y + cameraOffset,
+                                    pos.z + heading.z,
+                            });
+                    Im3d::PopDrawState();
+                });
+            }
+        }
     }
 
     void RemotePlayerState::onPhysicsUpdate(GameManager& ctx, float deltaTime) {
@@ -399,7 +409,7 @@ namespace game::State {
                 PlayerAnimations::RifleRun, nullptr);
         m_animationFSM.addState(
                 PlayerAnimations::Dying,
-                Animation{"Dying", 30},
+                Animation{"Dying", 65535},// let it stay at last frame
                 [](AnimationFSM<PlayerAnimations>& fsm) {
                     if (!fsm.getStateArg<bool>("dying", false)) {
                         fsm.transitionTo(PlayerAnimations::RifleIdle);

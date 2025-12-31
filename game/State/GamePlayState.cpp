@@ -160,6 +160,25 @@ namespace game::State {
 
         m_localPlayerState = moe::Ref(new LocalPlayerState());
         this->addChildState(m_localPlayerState);
+
+        ctx.addDebugDrawFunction(
+                "GamePlayState Debug",
+                [this]() {
+                    ImGui::Begin("GamePlayState Debug");
+
+                    auto gamePlaySharedData = Registry::getInstance().get<GamePlaySharedData>();
+                    if (gamePlaySharedData) {
+                        ImGui::Checkbox(
+                                "Debug Show Player Hitboxes",
+                                &gamePlaySharedData->debugShowPlayerHitboxes);
+                    } else {
+                        ImGui::TextColored(
+                                ImVec4(1.0f, 0.0f, 0.0f, 1.0f),
+                                "GamePlaySharedData not found in registry!");
+                    }
+
+                    ImGui::End();
+                });
     }
 
     void GamePlayState::onExit(GameManager& ctx) {
