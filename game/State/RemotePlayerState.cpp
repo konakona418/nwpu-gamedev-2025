@@ -14,6 +14,22 @@
 #include "imgui.h"
 
 namespace game::State {
+    static ParamF WEAPON_MODEL_M4_SCALE("weapon.m4a1.scale", 0.075f);
+    static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_XZ("weapon.m4a1.remote.stance_offset_xz", 0.25f);
+    static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_Y("weapon.m4a1.remote.stance_offset_y", 0.45f);
+    static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_Y_RUN("weapon.m4a1.remote.stance_offset_y_run", 0.30f);
+    static ParamF4 WEAPON_M4_ATTACH_POINT_LOCAL_BIAS(
+            "weapon.m4a1.attach_point_local_bias",
+            ParamFloat4{
+                    -0.1f,
+                    -0.04f,
+                    0.05f,
+                    0.0f,
+            });
+    static ParamF WEAPON_M4_REMOTE_ATTACH_LOCAL_YAW_DEGREES(
+            "weapon.m4a1.remote.attach_local_yaw_degrees",
+            3.0f);
+
     static moe::UnorderedMap<moe::String, moe::AnimationId> getAnimationsFromRenderable(GameManager& ctx, moe::RenderableId renderableId) {
         auto scene = ctx.renderer().m_caches.objectCache.get(renderableId).value();
         auto* animatableRenderable = scene->checkedAs<moe::VulkanSkeletalAnimation>(moe::VulkanRenderableFeature::HasSkeletalAnimation).value();
@@ -30,6 +46,12 @@ namespace game::State {
             return;
         }
         m_terroristAnimationIds = getAnimationsFromRenderable(ctx, m_terroristModel);
+
+        m_weaponModel = m_weaponModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_weaponModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("Failed to load weapon model");
+            return;
+        }
 
         initAnimationFSM();
 
@@ -109,6 +131,61 @@ namespace game::State {
                 computeHandle);
     }
 
+    void RemotePlayerState::renderWeapon(GameManager& ctx) {
+        auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
+
+        auto pos = m_realPosition.get();
+        auto heading = m_realHeading.get();
+        auto velocity = m_realVelocity.get();
+
+        float bodyRotation = std::atan2(heading.x, heading.z);
+        float localYawBias = glm::radians(WEAPON_M4_REMOTE_ATTACH_LOCAL_YAW_DEGREES.get());
+        float finalWeaponRotation = bodyRotation + localYawBias;
+
+        auto stanceOffsetXZ = WEAPON_M4_REMOTE_STANCE_OFFSET_XZ.get();
+        float stanceOffsetY;
+        if (glm::length(glm::vec3(velocity.x, 0.0f, velocity.z)) > 0.1f) {
+            stanceOffsetY = WEAPON_M4_REMOTE_STANCE_OFFSET_Y_RUN.get();
+        } else {
+            stanceOffsetY = WEAPON_M4_REMOTE_STANCE_OFFSET_Y.get();
+        }
+
+        glm::vec3 weaponOffset{
+                stanceOffsetXZ * heading.x,
+                stanceOffsetY,
+                stanceOffsetXZ * heading.z,
+        };
+
+        auto localBias_ = WEAPON_M4_ATTACH_POINT_LOCAL_BIAS.get();
+        glm::vec3 localBias{
+                localBias_.x,
+                localBias_.y,
+                localBias_.z,
+        };
+
+        auto bodyRotationMat = glm::rotate(
+                glm::mat4(1.0f),
+                bodyRotation,
+                glm::vec3(0.0f, 1.0f, 0.0f));
+
+        auto rotatedLocalBias = glm::vec3(
+                bodyRotationMat * glm::vec4(localBias, 1.0f));
+
+        auto renderPos = pos + weaponOffset + rotatedLocalBias;
+
+        auto finalRotationMat = glm::rotate(
+                glm::mat4(1.0f),
+                finalWeaponRotation,
+                glm::vec3(0.0f, 1.0f, 0.0f));
+
+        renderctx.submitRender(
+                m_weaponModel,
+                moe::Transform{}
+                        .setPosition(renderPos)
+                        .setRotation(finalRotationMat)
+                        .setScale(glm::vec3(WEAPON_MODEL_M4_SCALE.get())));
+    }
+
     void RemotePlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderer = ctx.renderer();
 
@@ -116,6 +193,7 @@ namespace game::State {
         auto heading = m_realHeading.get();
 
         updateAnimationFSM(ctx, deltaTime);
+        renderWeapon(ctx);
 
         renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
             auto cameraOffset = PlayerConfig::PLAYER_CAMERA_OFFSET_Y;

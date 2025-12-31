@@ -52,6 +52,8 @@ namespace game::State {
         void onExit(GameManager& ctx) override;
 
     private:
+        using ModelLoader = moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>>;
+
         uint16_t m_playerTempId{INVALID_PLAYER_TEMP_ID};
 
         moe::DBuffer<glm::vec3> m_realPosition;
@@ -63,10 +65,17 @@ namespace game::State {
                 std::make_unique<InterpolationBuffer<RemotePlayerMotionInterpolationData>>();
 
         // todo: distinguish CT and T models
-        moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>> m_terroristModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/Terrorist-Model.glb")}};
+        ModelLoader m_terroristModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/Terrorist-Model.glb")},
+        };
         moe::RenderableId m_terroristModel{moe::NULL_RENDERABLE_ID};
         moe::UnorderedMap<moe::String, moe::AnimationId> m_terroristAnimationIds;
+
+        // todo: currently only M4
+        ModelLoader m_weaponModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/M4A1.glb")},
+        };
+        moe::RenderableId m_weaponModel{moe::NULL_RENDERABLE_ID};
 
         enum class PlayerAnimations {
             TPose,
@@ -87,6 +96,7 @@ namespace game::State {
         AnimationFSM<PlayerAnimations> m_animationFSM{PlayerAnimations::TPose};
 
         void updateAnimationFSM(GameManager& ctx, float deltaTime);
+        void renderWeapon(GameManager& ctx);
 
         void initAnimationFSM();
     };
