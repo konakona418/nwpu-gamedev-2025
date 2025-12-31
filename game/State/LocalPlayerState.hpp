@@ -66,6 +66,7 @@ namespace game::State {
         size_t m_localPlayerSyncCounter{0};
 
         float m_openFireCooldownTimer{0.0f};
+        bool m_wasOpenFirePressedLastFrame{false};
         WeaponSlot m_currentWeaponSlot{WeaponSlot::Secondary};
 
         moe::Ref<HudState> m_hudState{nullptr};

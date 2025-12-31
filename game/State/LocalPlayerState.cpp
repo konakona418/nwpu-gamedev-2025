@@ -406,26 +406,43 @@ namespace game::State {
             return;
         }
 
-        auto weapon = m_currentWeaponSlot == WeaponSlot::Primary
+        bool isPrimaryWeapon = m_currentWeaponSlot == WeaponSlot::Primary;
+        auto weapon = isPrimaryWeapon
                               ? sharedData->playerPrimaryWeapon
                               : sharedData->playerSecondaryWeapon;
 
-        if (m_inputProxy.getMouseButtonState().pressedLMB) {
-            float weaponCooldown = fromWeaponToCooldownSecs(weapon);
-            if (m_openFireCooldownTimer <= 0.0f) {
-                // can open fire
-                auto camPos = cam.getPosition();
-                auto camFront = cam.getFront();
-
-                constructOpenFireEventAndSend(ctx, camPos, camFront);
-
-                moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
-                                   camPos.x, camPos.y, camPos.z,
-                                   camFront.x, camFront.y, camFront.z);
-
-                m_openFireCooldownTimer = weaponCooldown;
-            }
+        // not firing
+        if (!m_inputProxy.getMouseButtonState().pressedLMB) {
+            // reset flag
+            m_wasOpenFirePressedLastFrame = false;
+            return;
         }
+
+        if (!isPrimaryWeapon && m_wasOpenFirePressedLastFrame) {
+            // secondary weapon is semi-auto, only allow one shot per click
+            return;
+        }
+
+        // set flag
+        m_wasOpenFirePressedLastFrame = true;
+
+        float weaponCooldown = fromWeaponToCooldownSecs(weapon);
+        if (m_openFireCooldownTimer > 0.0f) {
+            // still in cooldown
+            return;
+        }
+
+        // can open fire
+        auto camPos = cam.getPosition();
+        auto camFront = cam.getFront();
+
+        constructOpenFireEventAndSend(ctx, camPos, camFront);
+
+        moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
+                           camPos.x, camPos.y, camPos.z,
+                           camFront.x, camFront.y, camFront.z);
+
+        m_openFireCooldownTimer = weaponCooldown;
     }
 
     void LocalPlayerState::renderDebugBombsiteRadius(GameManager& ctx) {
