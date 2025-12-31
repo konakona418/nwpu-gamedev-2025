@@ -126,6 +126,7 @@ namespace game::State {
         void handleInputStateUpdate(GameManager& ctx, float deltaTime);
         void renderDebugBombsiteRadius(GameManager& ctx);
         void handlePlayerPlantDefuseInput(GameManager& ctx, float deltaTime);
+        void handlePlayerAudioListenerPositionUpdate(GameManager& ctx);
 
         BombSite testInWhichBombsite(const glm::vec3& position) const;
 

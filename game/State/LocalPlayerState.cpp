@@ -656,12 +656,24 @@ namespace game::State {
                         .setScale(glm::vec3(weaponScale)));
     }
 
+    void LocalPlayerState::handlePlayerAudioListenerPositionUpdate(GameManager& ctx) {
+        auto& audioInterface = ctx.audio();
+
+        auto camPos = ctx.renderer().getDefaultCamera().getPosition();
+        auto camFront = ctx.renderer().getDefaultCamera().getFront();
+        auto camUp = ctx.renderer().getDefaultCamera().getUp();
+
+        audioInterface.setListenerPosition(camPos);
+        audioInterface.setListenerOrientation(camFront, camUp);
+    }
 
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         // render debug bombsite radius
         renderDebugBombsiteRadius(ctx);
         // render player weapon model
         renderPlayerWeaponModel(ctx);
+        // update audio listener position
+        handlePlayerAudioListenerPositionUpdate(ctx);
 
         if (m_valid) {
             // update motion state

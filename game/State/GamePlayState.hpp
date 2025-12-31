@@ -10,6 +10,12 @@
 #include "State/LocalPlayerState.hpp"
 #include "State/PurchaseState.hpp"
 
+#include "Core/Resource/BinaryLoader.hpp"
+#include "Core/Resource/Launch.hpp"
+#include "Core/Resource/Preload.hpp"
+
+#include "Audio/StaticOggProvider.hpp"
+
 namespace game::State {
     enum class MatchPhase {
         Initializing,
@@ -36,6 +42,11 @@ namespace game::State {
         void onExit(GameManager& ctx) override;
 
     private:
+        moe::Preload<moe::Launch<moe::BinaryLoader>> m_gunshotSoundLoader{
+                moe::BinaryFilePath(moe::asset("assets/audio/gunshot.ogg")),
+        };
+        moe::Ref<moe::StaticOggProvider> m_gunshotSoundProvider{nullptr};
+
         moe::UniquePtr<NetworkDispatcher> m_networkDispatcher{nullptr};
         game::SimpleFSM<MatchPhase, MatchPhase::Initializing> m_fsm{};
 
@@ -44,6 +55,8 @@ namespace game::State {
         // temporary purchase state
         moe::Ref<State::PurchaseState> m_purchaseState{nullptr};
         moe::Ref<State::LocalPlayerState> m_localPlayerState{nullptr};
+
+        moe::Deque<moe::Ref<moe::AudioSource>> m_activeGunshots;
 
         void initFSM(GameManager& ctx);
 
@@ -62,6 +75,7 @@ namespace game::State {
         void handlePlayerDeaths(GameManager& ctx);
         void handleBombEvents(GameManager& ctx);
         bool tryWaitForRoundEnd(GameManager& ctx);
+        void handleGunshotEvents(GameManager& ctx, float deltaTime);
 
         bool tryWaitForGameEnd(GameManager& ctx);
     };

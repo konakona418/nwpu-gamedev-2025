@@ -16,6 +16,7 @@
 #include "FlatBuffers/Generated/Sent/receiveGamingPacket_generated.h"
 
 #include "Localization.hpp"
+#include "imgui.h"
 
 
 namespace game::State {
@@ -23,6 +24,12 @@ namespace game::State {
     static ParamF GAME_EXIT_TO_MAIN_MENU_DELAY(
             "gameplay.game_exit_to_main_menu_delay",
             5.0f, ParamScope::System);
+    static ParamF GUNSHOT_SOUND_DURATION(
+            "gameplay.gunshot_sound_duration",
+            2.0f, ParamScope::System);
+    static ParamI MAX_SIMULTANEOUS_GUNSHOTS(
+            "gameplay.max_simultaneous_gunshots",
+            32, ParamScope::System);
 
     static I18N WAITING_FOR_CONNECTION_PROMPT(
             "gameplay.waiting_for_connection",
@@ -120,6 +127,21 @@ namespace game::State {
         moe::Logger::info("Setting up network adaptor and dispatcher...");
         ctx.network().connect();
         m_networkDispatcher = std::make_unique<game::NetworkDispatcher>(&ctx.network());
+
+        auto gunshotData = m_gunshotSoundLoader.generate();
+        if (gunshotData) {
+            m_gunshotSoundProvider = moe::makeRef<moe::StaticOggProvider>(gunshotData.value());
+        } else {
+            moe::Logger::error("GamePlayState::onEnter: failed to load gunshot sound data");
+        }
+
+        // preload audio sources for gunshots
+        for (int i = 0; i < MAX_SIMULTANEOUS_GUNSHOTS.get(); i++) {
+            auto audioInterface = ctx.audio();
+            auto audioSource = audioInterface.createAudioSource();
+            audioInterface.loadAudioSource(audioSource, m_gunshotSoundProvider, false);
+            m_activeGunshots.push_back(audioSource);
+        }
 
         moe::Logger::debug("Setting up gameplay shared data");
         Registry::getInstance().emplace<GamePlaySharedData>();
@@ -266,12 +288,13 @@ namespace game::State {
 
         m_fsm.state(
                 MatchPhase::RoundInProgress,
-                [this](game::SimpleFSM<MatchPhase>& fsm, float) {
+                [this](game::SimpleFSM<MatchPhase>& fsm, float deltaTime) {
                     auto& ctx = fsm.getContext();
 
                     // handle in-round events
                     handlePlayerDeaths(ctx);
                     handleBombEvents(ctx);
+                    handleGunshotEvents(ctx, deltaTime);
 
                     if (!tryWaitForRoundEnd(ctx)) {
                         return;
@@ -651,6 +674,40 @@ namespace game::State {
             sharedData->isBombPlanted = false;// mark bomb as defused
 
             bombDefusedQueue.pop_front();
+        }
+    }
+
+    void GamePlayState::handleGunshotEvents(GameManager& ctx, float deltaTime) {
+        auto& gunshotQueue = m_networkDispatcher->getQueues().queuePlayerOpenFireEvent;
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("GamePlayState::handleGunshotEvents: GamePlaySharedData not found");
+            return;
+        }
+
+        while (!gunshotQueue.empty()) {
+            const auto& event = gunshotQueue.front();
+
+            // play gunshot sound
+            if (m_gunshotSoundProvider) {
+                moe::Logger::debug("Playing gunshot sound at position ({}, {}, {})",
+                                   event.posX, event.posY, event.posZ);
+
+                auto audioInterface = ctx.audio();
+                auto audioSource = m_activeGunshots.front();
+                m_activeGunshots.pop_front();
+
+                audioInterface.setAudioSourcePosition(
+                        audioSource,
+                        event.posX, event.posY, event.posZ);
+                audioInterface.playAudioSource(audioSource);
+
+                m_activeGunshots.push_back(audioSource);
+            } else {
+                moe::Logger::warn("GamePlayState::handleGunshotEvents: gunshot sound provider is null");
+            }
+
+            gunshotQueue.pop_front();
         }
     }
 
