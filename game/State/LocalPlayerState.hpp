@@ -15,6 +15,8 @@
 
 #include "Math/Common.hpp"
 
+#include "Audio/AudioSource.hpp"
+#include "Audio/StaticOggProvider.hpp"
 
 #include "Physics/JoltIncludes.hpp"
 
@@ -101,11 +103,20 @@ namespace game::State {
         moe::RenderableId m_ak47Model{moe::NULL_RENDERABLE_ID};
         moe::RenderableId m_m4a1Model{moe::NULL_RENDERABLE_ID};
 
+        moe::Preload<moe::Launch<moe::BinaryLoader>> m_gunshotSoundLoader{
+                moe::BinaryFilePath(moe::asset("assets/audio/gunshot.ogg")),
+        };
+        moe::Ref<moe::StaticOggProvider> m_gunshotSoundProvider{nullptr};
+        moe::Deque<moe::Ref<moe::AudioSource>> m_activeLocalGunshots;
+
         // by default, the local player state is invalid until set otherwise
         bool m_valid{false};
 
         void loadPlayerWeaponModels(GameManager& ctx);
+        void loadAudioSourcesForLocalGunshots(GameManager& ctx);
+
         void renderPlayerWeaponModel(GameManager& ctx);
+        void playLocalGunshotSoundAtPosition(GameManager& ctx, const glm::vec3& position);
 
         // physics
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);

@@ -31,6 +31,7 @@ namespace game::State {
                 break;
         }
         MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
+        return {};
     }
 
     PurchaseState::Items purchaseStateStringToItemEnum(moe::StringView itemName) {
@@ -132,6 +133,7 @@ namespace game::State {
                 break;
         }
         MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
+        return myu::net::Weapon::WEAPON_NONE;
     }
 
     void constructSendPurchaseReq(GameManager& ctx, PurchaseState::Items item) {

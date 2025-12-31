@@ -29,7 +29,7 @@ namespace game::State {
             2.0f, ParamScope::System);
     static ParamI MAX_SIMULTANEOUS_GUNSHOTS(
             "gameplay.max_simultaneous_gunshots",
-            32, ParamScope::System);
+            64, ParamScope::System);
 
     static I18N WAITING_FOR_CONNECTION_PROMPT(
             "gameplay.waiting_for_connection",
@@ -687,6 +687,11 @@ namespace game::State {
 
         while (!gunshotQueue.empty()) {
             const auto& event = gunshotQueue.front();
+            if (event.shooterTempId == sharedData->playerTempId) {
+                // skip local player gunshot event
+                gunshotQueue.pop_front();
+                continue;
+            }
 
             // play gunshot sound
             if (m_gunshotSoundProvider) {

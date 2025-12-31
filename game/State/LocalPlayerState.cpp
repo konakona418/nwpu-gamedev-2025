@@ -49,6 +49,10 @@ namespace game::State {
             "weapon.local.attach_local_yaw_degrees",
             3.0f);
 
+    static ParamI MAX_SIMULTANEOUS_LOCAL_GUNSHOTS(
+            "gameplay.max_simultaneous_local_gunshots",
+            24, ParamScope::System);
+
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
     X(backward, GLFW_KEY_S);     \
@@ -150,11 +154,29 @@ namespace game::State {
         }
     }
 
+    void LocalPlayerState::loadAudioSourcesForLocalGunshots(GameManager& ctx) {
+        auto gunshotData = m_gunshotSoundLoader.generate();
+        if (gunshotData) {
+            m_gunshotSoundProvider = moe::makeRef<moe::StaticOggProvider>(gunshotData.value());
+        } else {
+            moe::Logger::error("LocalPlayerState::loadAudioSourcesForLocalGunshots: failed to load gunshot sound data");
+        }
+
+        // preload audio sources for gunshots
+        for (int i = 0; i < MAX_SIMULTANEOUS_LOCAL_GUNSHOTS.get(); i++) {
+            auto audioInterface = ctx.audio();
+            auto audioSource = audioInterface.createAudioSource();
+            audioInterface.loadAudioSource(audioSource, m_gunshotSoundProvider, false);
+            m_activeLocalGunshots.push_back(std::move(audioSource));
+        }
+    }
+
     void LocalPlayerState::onEnter(GameManager& ctx) {
         auto& input = ctx.input();
         input.addProxy(&m_inputProxy);
 
         loadPlayerWeaponModels(ctx);
+        loadAudioSourcesForLocalGunshots(ctx);
 
 #define X(name, key) input.addKeyMapping(#name, key);
         PLAYER_KEY_MAPPING_XXX()
@@ -480,6 +502,7 @@ namespace game::State {
         auto camFront = cam.getFront();
 
         constructOpenFireEventAndSend(ctx, camPos, camFront);
+        playLocalGunshotSoundAtPosition(ctx, camPos);
 
         moe::Logger::debug("LocalPlayerState: Open fire event sent, pos=({}, {}, {}), dir=({}, {}, {})",
                            camPos.x, camPos.y, camPos.z,
@@ -656,6 +679,22 @@ namespace game::State {
                         .setScale(glm::vec3(weaponScale)));
     }
 
+    void LocalPlayerState::playLocalGunshotSoundAtPosition(GameManager& ctx, const glm::vec3& position) {
+        if (m_activeLocalGunshots.empty() || !m_gunshotSoundProvider) {
+            return;
+        }
+
+        auto& audioInterface = ctx.audio();
+
+        auto source = m_activeLocalGunshots.front();
+        m_activeLocalGunshots.pop_front();
+
+        audioInterface.setAudioSourcePosition(source, position.x, position.y, position.z);
+        audioInterface.playAudioSource(source);
+
+        m_activeLocalGunshots.push_back(std::move(source));
+    }
+
     void LocalPlayerState::handlePlayerAudioListenerPositionUpdate(GameManager& ctx) {
         auto& audioInterface = ctx.audio();
 
@@ -672,8 +711,6 @@ namespace game::State {
         renderDebugBombsiteRadius(ctx);
         // render player weapon model
         renderPlayerWeaponModel(ctx);
-        // update audio listener position
-        handlePlayerAudioListenerPositionUpdate(ctx);
 
         if (m_valid) {
             // update motion state
@@ -696,6 +733,10 @@ namespace game::State {
 
             handleHudUpdate(ctx);// update HUD info
         }
+
+
+        // update audio listener position
+        handlePlayerAudioListenerPositionUpdate(ctx);
     }
 
     void LocalPlayerState::handleCharacterUpdate(
