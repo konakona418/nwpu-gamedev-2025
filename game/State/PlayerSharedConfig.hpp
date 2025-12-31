@@ -21,5 +21,8 @@ namespace game {
 
         static ParamF PLAYER_STICK_TO_FLOOR_STEP_DOWN;
         static ParamF PLAYER_WALK_STAIRS_STEP_UP;
+
+        static ParamF PLAYER_FOOTSTEP_SOUND_COOLDOWN;
+        static ParamI MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS;
     };
 }// namespace game

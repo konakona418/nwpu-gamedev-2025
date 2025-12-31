@@ -18,4 +18,11 @@ namespace game {
 
     ParamF PlayerConfig::PLAYER_STICK_TO_FLOOR_STEP_DOWN("player.stick_to_floor_step_down", -0.4f);
     ParamF PlayerConfig::PLAYER_WALK_STAIRS_STEP_UP("player.walk_stairs_step_up", 0.4f);
+
+    ParamI PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS(
+            "gameplay.max_simultaneous_local_footsteps",
+            4, ParamScope::System);
+    ParamF PlayerConfig::PLAYER_FOOTSTEP_SOUND_COOLDOWN(
+            "gameplay.player_footstep_sound_cooldown",
+            0.5f, ParamScope::System);
 }// namespace game

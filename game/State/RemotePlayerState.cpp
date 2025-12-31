@@ -38,6 +38,24 @@ namespace game::State {
         return animations;
     }
 
+    void RemotePlayerState::loadAudioSourcesForRemoteFootsteps(GameManager& ctx) {
+        auto footstepSoundData = m_playerFootstepSoundLoader.generate();
+        if (!footstepSoundData) {
+            moe::Logger::error("RemotePlayerState::loadAudioSourcesForRemoteFootsteps: failed to load footstep sound data");
+            return;
+        }
+
+        m_playerFootstepSoundProvider = moe::makeRef<moe::StaticOggProvider>(footstepSoundData.value());
+
+        // preload audio sources for footsteps
+        for (int i = 0; i < PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS.get(); i++) {
+            auto audioInterface = ctx.audio();
+            auto audioSource = audioInterface.createAudioSource();
+            audioInterface.loadAudioSource(audioSource, m_playerFootstepSoundProvider, false);
+            m_activeLocalFootsteps.push_back(std::move(audioSource));
+        }
+    }
+
     void RemotePlayerState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering RemotePlayerState, id={}", m_playerTempId);
         m_terroristModel = m_terroristModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
@@ -60,6 +78,7 @@ namespace game::State {
             return;
         }
 
+        loadAudioSourcesForRemoteFootsteps(ctx);
         initAnimationFSM();
 
         ctx.physics().dispatchOnPhysicsThread(
@@ -112,9 +131,11 @@ namespace game::State {
                                glm::dot(glm::normalize(flatVelocity), glm::normalize(heading)) > 0.1f;
         bool isMovingBackward = glm::length(flatVelocity) > 0.1f &&
                                 glm::dot(glm::normalize(flatVelocity), glm::normalize(heading)) < -0.1f;
+        bool isDying = m_realHealth.get() <= 0.1f;
 
         m_animationFSM.setStateArg("move_forward", isMovingForward);
         m_animationFSM.setStateArg("move_backward", isMovingBackward);
+        m_animationFSM.setStateArg("dying", isDying);
         // todo: set hit and jump args later
 
         m_animationFSM.update(deltaTime);
@@ -202,6 +223,30 @@ namespace game::State {
                         .setScale(glm::vec3(WEAPON_MODEL_M4_SCALE.get())));
     }
 
+    void RemotePlayerState::playRemoteFootstepSoundAtPosition(GameManager& ctx, const glm::vec3& position, float deltaTime) {
+        if (m_activeLocalFootsteps.empty() || !m_playerFootstepSoundProvider) {
+            return;
+        }
+
+        m_footstepSoundCooldownTimer -= deltaTime;
+        if (m_footstepSoundCooldownTimer > 0.0f) {
+            return;
+        }
+
+        auto& audioInterface = ctx.audio();
+
+        auto source = m_activeLocalFootsteps.front();
+        m_activeLocalFootsteps.pop_front();
+
+        audioInterface.setAudioSourcePosition(source, position.x, position.y, position.z);
+        audioInterface.playAudioSource(source);
+
+        m_activeLocalFootsteps.push_back(std::move(source));
+
+        // reset cooldown timer
+        m_footstepSoundCooldownTimer = PlayerConfig::PLAYER_FOOTSTEP_SOUND_COOLDOWN.get();
+    }
+
     void RemotePlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderer = ctx.renderer();
 
@@ -210,6 +255,13 @@ namespace game::State {
 
         updateAnimationFSM(ctx, deltaTime);
         renderWeapon(ctx);
+
+        // play footstep sound if moving
+        auto velocity = m_realVelocity.get();
+        glm::vec3 flatVelocity = glm::vec3(velocity.x, 0.0f, velocity.z);
+        if (glm::length2(flatVelocity) > 0.01f) {
+            playRemoteFootstepSoundAtPosition(ctx, pos, deltaTime);
+        }
 
         renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
             auto cameraOffset = PlayerConfig::PLAYER_CAMERA_OFFSET_Y;
@@ -257,6 +309,7 @@ namespace game::State {
             motionData.position = update->position;
             motionData.velocity = update->velocity;
             motionData.heading = update->heading;
+            motionData.health = update->health;
 
             m_motionInterpolationBuffer->pushBack(motionData, ctx.physics().getCurrentTickIndex());
         }
@@ -277,6 +330,7 @@ namespace game::State {
         m_realPosition.publish(interpData.position);
         m_realHeading.publish(interpData.heading);
         m_realVelocity.publish(interpData.velocity);
+        m_realHealth.publish(interpData.health);
     }
 
     void RemotePlayerState::initAnimationFSM() {
@@ -298,6 +352,8 @@ namespace game::State {
                         fsm.transitionTo(PlayerAnimations::RifleRun);
                     } else if (fsm.getStateArg<bool>("move_backward", false)) {
                         fsm.transitionTo(PlayerAnimations::RifleRunBack);
+                    } else if (fsm.getStateArg<bool>("dying", false)) {
+                        fsm.transitionTo(PlayerAnimations::Dying);
                     }
                 });
         m_animationFSM.addStateNoLoop(
@@ -318,6 +374,8 @@ namespace game::State {
                         fsm.transitionTo(PlayerAnimations::RifleRunJump);
                     } else if (!fsm.getStateArg<bool>("move_forward", false)) {
                         fsm.transitionTo(PlayerAnimations::RifleIdle);
+                    } else if (fsm.getStateArg<bool>("dying", false)) {
+                        fsm.transitionTo(PlayerAnimations::Dying);
                     }
                 });
         m_animationFSM.addState(
@@ -326,6 +384,8 @@ namespace game::State {
                 [](AnimationFSM<PlayerAnimations>& fsm) {
                     if (!fsm.getStateArg<bool>("move_backward", false)) {
                         fsm.transitionTo(PlayerAnimations::RifleIdle);
+                    } else if (fsm.getStateArg<bool>("dying", false)) {
+                        fsm.transitionTo(PlayerAnimations::Dying);
                     }
                     // todo: add hit and jump transitions
                 });
@@ -337,6 +397,14 @@ namespace game::State {
                 PlayerAnimations::RifleRunJump,
                 Animation{"RifleRunJump", 28},
                 PlayerAnimations::RifleRun, nullptr);
+        m_animationFSM.addState(
+                PlayerAnimations::Dying,
+                Animation{"Dying", 30},
+                [](AnimationFSM<PlayerAnimations>& fsm) {
+                    if (!fsm.getStateArg<bool>("dying", false)) {
+                        fsm.transitionTo(PlayerAnimations::RifleIdle);
+                    }
+                });
     }
 
 }// namespace game::State

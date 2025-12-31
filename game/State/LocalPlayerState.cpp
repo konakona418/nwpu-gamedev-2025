@@ -154,7 +154,7 @@ namespace game::State {
         }
     }
 
-    void LocalPlayerState::loadAudioSourcesForLocalGunshots(GameManager& ctx) {
+    void LocalPlayerState::loadLocalAudioSources(GameManager& ctx) {
         auto gunshotData = m_gunshotSoundLoader.generate();
         if (gunshotData) {
             m_gunshotSoundProvider = moe::makeRef<moe::StaticOggProvider>(gunshotData.value());
@@ -169,6 +169,21 @@ namespace game::State {
             audioInterface.loadAudioSource(audioSource, m_gunshotSoundProvider, false);
             m_activeLocalGunshots.push_back(std::move(audioSource));
         }
+
+        auto footstepData = m_playerFootstepSoundLoader.generate();
+        if (footstepData) {
+            m_playerFootstepSoundProvider = moe::makeRef<moe::StaticOggProvider>(footstepData.value());
+        } else {
+            moe::Logger::error("LocalPlayerState::loadAudioSourcesForLocalGunshots: failed to load footstep sound data");
+        }
+
+        // preload audio sources for footsteps
+        for (int i = 0; i < PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS.get(); i++) {
+            auto audioInterface = ctx.audio();
+            auto audioSource = audioInterface.createAudioSource();
+            audioInterface.loadAudioSource(audioSource, m_playerFootstepSoundProvider, false);
+            m_activeLocalFootsteps.push_back(std::move(audioSource));
+        }
     }
 
     void LocalPlayerState::onEnter(GameManager& ctx) {
@@ -176,7 +191,7 @@ namespace game::State {
         input.addProxy(&m_inputProxy);
 
         loadPlayerWeaponModels(ctx);
-        loadAudioSourcesForLocalGunshots(ctx);
+        loadLocalAudioSources(ctx);
 
 #define X(name, key) input.addKeyMapping(#name, key);
         PLAYER_KEY_MAPPING_XXX()
@@ -695,6 +710,30 @@ namespace game::State {
         m_activeLocalGunshots.push_back(std::move(source));
     }
 
+    void LocalPlayerState::playLocalFootstepSoundAtPosition(GameManager& ctx, const glm::vec3& position, float deltaTime) {
+        if (m_activeLocalFootsteps.empty() || !m_playerFootstepSoundProvider) {
+            return;
+        }
+
+        m_footstepSoundCooldownTimer -= deltaTime;
+        if (m_footstepSoundCooldownTimer > 0.0f) {
+            return;
+        }
+
+        auto& audioInterface = ctx.audio();
+
+        auto source = m_activeLocalFootsteps.front();
+        m_activeLocalFootsteps.pop_front();
+
+        audioInterface.setAudioSourcePosition(source, position.x, position.y, position.z);
+        audioInterface.playAudioSource(source);
+
+        m_activeLocalFootsteps.push_back(std::move(source));
+
+        // reset cooldown timer
+        m_footstepSoundCooldownTimer = PlayerConfig::PLAYER_FOOTSTEP_SOUND_COOLDOWN.get();
+    }
+
     void LocalPlayerState::handlePlayerAudioListenerPositionUpdate(GameManager& ctx) {
         auto& audioInterface = ctx.audio();
 
@@ -720,6 +759,14 @@ namespace game::State {
             // handle plant/defuse input
             handlePlayerPlantDefuseInput(ctx, deltaTime);
 
+            // play footstep sound if moving
+            auto movingDir = m_movingDirection.get();
+            auto flatMovingDir = glm::vec3(movingDir.x, 0.0f, movingDir.z);
+            if (glm::length2(flatMovingDir) > 0.001f) {
+                auto camPos = ctx.renderer().getDefaultCamera().getPosition();
+                playLocalFootstepSoundAtPosition(ctx, camPos, deltaTime);
+            }
+
             // handle weapon switch
             {
                 if (m_inputProxy.isKeyJustReleased("player_switch_to_primary_weapon")) {
@@ -733,7 +780,6 @@ namespace game::State {
 
             handleHudUpdate(ctx);// update HUD info
         }
-
 
         // update audio listener position
         handlePlayerAudioListenerPositionUpdate(ctx);

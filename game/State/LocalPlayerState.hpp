@@ -109,14 +109,23 @@ namespace game::State {
         moe::Ref<moe::StaticOggProvider> m_gunshotSoundProvider{nullptr};
         moe::Deque<moe::Ref<moe::AudioSource>> m_activeLocalGunshots;
 
+        moe::Preload<moe::Launch<moe::BinaryLoader>> m_playerFootstepSoundLoader{
+                moe::BinaryFilePath(moe::asset("assets/audio/footstep.ogg")),
+        };
+        moe::Ref<moe::StaticOggProvider> m_playerFootstepSoundProvider{nullptr};
+        moe::Deque<moe::Ref<moe::AudioSource>> m_activeLocalFootsteps;
+        float m_footstepSoundCooldownTimer{0.0f};
+
         // by default, the local player state is invalid until set otherwise
         bool m_valid{false};
 
         void loadPlayerWeaponModels(GameManager& ctx);
-        void loadAudioSourcesForLocalGunshots(GameManager& ctx);
+        void loadLocalAudioSources(GameManager& ctx);
 
         void renderPlayerWeaponModel(GameManager& ctx);
         void playLocalGunshotSoundAtPosition(GameManager& ctx, const glm::vec3& position);
+
+        void playLocalFootstepSoundAtPosition(GameManager& ctx, const glm::vec3& position, float deltaTime);
 
         // physics
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);
