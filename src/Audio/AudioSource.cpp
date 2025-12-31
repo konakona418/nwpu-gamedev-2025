@@ -114,6 +114,7 @@ void AudioSource::loadStaticBuffer() {
         return;
     }
 
+    m_queuedBuffers.push(buffer);
     alSourcei(m_sourceId, AL_BUFFER, static_cast<ALint>(buffer->bufferId));
 }
 
