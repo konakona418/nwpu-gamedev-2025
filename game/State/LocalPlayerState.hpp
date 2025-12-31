@@ -2,6 +2,7 @@
 
 #include "GameState.hpp"
 #include "Input.hpp"
+#include "ModelLoader.hpp"
 #include "RingBuffer.hpp"
 
 #include "State/BombPlantState.hpp"
@@ -49,6 +50,8 @@ namespace game::State {
         }
 
     private:
+        using ModelLoader = moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>>;
+
         moe::DBuffer<glm::vec3> m_movingDirection;
         moe::DBuffer<float> m_lookingYawDegrees;
         moe::DBuffer<float> m_lookingPitchDegrees;
@@ -77,8 +80,32 @@ namespace game::State {
         bool m_debugShowBombsiteRadius{false};
         float m_bombPlantingOrDefuseProgressSecs{0.0f};
 
+        ModelLoader m_glockModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/G17.glb")},
+        };
+        ModelLoader m_uspModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/USP.glb")},
+        };
+        ModelLoader m_desertEagleModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/DesertEagle.glb")},
+        };
+        ModelLoader m_ak47ModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/AK47.glb")},
+        };
+        ModelLoader m_m4a1ModelLoader{
+                ModelLoaderParam{moe::asset("assets/models/M4A1Local.glb")},
+        };
+        moe::RenderableId m_glockModel{moe::NULL_RENDERABLE_ID};
+        moe::RenderableId m_uspModel{moe::NULL_RENDERABLE_ID};
+        moe::RenderableId m_desertEagleModel{moe::NULL_RENDERABLE_ID};
+        moe::RenderableId m_ak47Model{moe::NULL_RENDERABLE_ID};
+        moe::RenderableId m_m4a1Model{moe::NULL_RENDERABLE_ID};
+
         // by default, the local player state is invalid until set otherwise
         bool m_valid{false};
+
+        void loadPlayerWeaponModels(GameManager& ctx);
+        void renderPlayerWeaponModel(GameManager& ctx);
 
         // physics
         void constructMovementUpdateAndSend(GameManager& ctx, const glm::vec3& dir, float yawDeg, float pitchDeg);

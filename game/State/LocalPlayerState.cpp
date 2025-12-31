@@ -31,6 +31,24 @@ namespace game::State {
             3.5f,
             ParamScope::System);
 
+    static ParamF WEAPON_GLOCK_SCALE("weapon.glock.scale", 0.05f);
+    static ParamF WEAPON_USP_SCALE("weapon.usp.scale", 0.05f);
+    static ParamF WEAPON_DESERT_EAGLE_SCALE("weapon.desert_eagle.scale", 0.06f);
+    static ParamF WEAPON_AK47_SCALE("weapon.ak47.scale", 0.05f);
+    static ParamF WEAPON_M4A1_SCALE("weapon.m4a1.scale", 0.05f);
+
+    static ParamF4 WEAPON_ATTACH_POINT_LOCAL_BIAS(
+            "weapon.local.attach_point_local_bias",
+            ParamFloat4{
+                    0.07f,
+                    -0.07f,
+                    0.15f,
+                    0.0f,
+            });
+    static ParamF WEAPON_ATTACH_LOCAL_YAW_DEGREES(
+            "weapon.local.attach_local_yaw_degrees",
+            3.0f);
+
 #define PLAYER_KEY_MAPPING_XXX() \
     X(forward, GLFW_KEY_W);      \
     X(backward, GLFW_KEY_S);     \
@@ -109,9 +127,34 @@ namespace game::State {
         };
     }
 
+    void LocalPlayerState::loadPlayerWeaponModels(GameManager& ctx) {
+        m_glockModel = m_glockModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_glockModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("LocalPlayerState::loadPlayerWeaponModels: failed to load Glock model");
+        }
+        m_uspModel = m_uspModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_uspModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("LocalPlayerState::loadPlayerWeaponModels: failed to load USP model");
+        }
+        m_desertEagleModel = m_desertEagleModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_desertEagleModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("LocalPlayerState::loadPlayerWeaponModels: failed to load Desert Eagle model");
+        }
+        m_ak47Model = m_ak47ModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_ak47Model == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("LocalPlayerState::loadPlayerWeaponModels: failed to load AK47 model");
+        }
+        m_m4a1Model = m_m4a1ModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+        if (m_m4a1Model == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("LocalPlayerState::loadPlayerWeaponModels: failed to load M4A1 model");
+        }
+    }
+
     void LocalPlayerState::onEnter(GameManager& ctx) {
         auto& input = ctx.input();
         input.addProxy(&m_inputProxy);
+
+        loadPlayerWeaponModels(ctx);
 
 #define X(name, key) input.addKeyMapping(#name, key);
         PLAYER_KEY_MAPPING_XXX()
@@ -534,10 +577,91 @@ namespace game::State {
         return BombSite::Neither;
     }
 
+    void LocalPlayerState::renderPlayerWeaponModel(GameManager& ctx) {
+        auto& renderer = ctx.renderer();
+        auto& cam = renderer.getDefaultCamera();
+
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            return;
+        }
+
+        float weaponScale = 1.0f;
+        moe::RenderableId weaponModel = moe::NULL_RENDERABLE_ID;
+        if (m_currentWeaponSlot == WeaponSlot::Primary) {
+            switch (sharedData->playerPrimaryWeapon) {
+                case WeaponItems::AK47:
+                    weaponModel = m_ak47Model;
+                    weaponScale = WEAPON_AK47_SCALE.get();
+                    break;
+                case WeaponItems::M4A1:
+                    weaponModel = m_m4a1Model;
+                    weaponScale = WEAPON_M4A1_SCALE.get();
+                    break;
+                default:
+                    break;
+            }
+        } else if (m_currentWeaponSlot == WeaponSlot::Secondary) {
+            switch (sharedData->playerSecondaryWeapon) {
+                case WeaponItems::Glock:
+                    weaponModel = m_glockModel;
+                    weaponScale = WEAPON_GLOCK_SCALE.get();
+                    break;
+                case WeaponItems::USP:
+                    weaponModel = m_uspModel;
+                    weaponScale = WEAPON_USP_SCALE.get();
+                    break;
+                case WeaponItems::DesertEagle:
+                    weaponModel = m_desertEagleModel;
+                    weaponScale = WEAPON_DESERT_EAGLE_SCALE.get();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        if (weaponModel == moe::NULL_RENDERABLE_ID) {
+            return;
+        }
+
+        auto localBias = WEAPON_ATTACH_POINT_LOCAL_BIAS.get();
+        float safeDistance = cam.getNearZ() + 0.1f;
+        float originalDistance = std::abs(localBias.z);
+        float scaleFactor = safeDistance / originalDistance;
+
+        glm::vec3 weaponOffsetLocal{
+                localBias.x * scaleFactor,
+                localBias.y * scaleFactor,
+                -safeDistance,
+        };
+
+        float finalScale = weaponScale * scaleFactor;
+
+        auto invViewMat = glm::inverse(cam.viewMatrix());
+
+        glm::vec3 weaponWorldPos = glm::vec3(invViewMat * glm::vec4(weaponOffsetLocal, 1.0f));
+
+        float localYawRad = glm::radians(WEAPON_ATTACH_LOCAL_YAW_DEGREES.get());
+        glm::mat4 localRot = glm::rotate(glm::mat4(1.0f), localYawRad, glm::vec3(0, 1, 0));
+
+        glm::mat4 worldRotMat = invViewMat;
+        worldRotMat[3] = glm::vec4(0, 0, 0, 1);//remove translation
+        glm::mat4 finalRotMat = worldRotMat * localRot;
+
+        ctx.renderer().getBus<moe::VulkanRenderObjectBus>().submitRender(
+                weaponModel,
+                moe::Transform{}
+                        .setPosition(weaponWorldPos)
+                        .setRotation(finalRotMat)
+                        .setScale(glm::vec3(weaponScale)));
+    }
+
 
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         // render debug bombsite radius
         renderDebugBombsiteRadius(ctx);
+        // render player weapon model
+        renderPlayerWeaponModel(ctx);
 
         if (m_valid) {
             // update motion state

@@ -14,7 +14,7 @@
 #include "imgui.h"
 
 namespace game::State {
-    static ParamF WEAPON_MODEL_M4_SCALE("weapon.m4a1.scale", 0.075f);
+    static ParamF WEAPON_MODEL_M4_SCALE("weapon.m4a1.remote.scale", 0.075f);
     static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_XZ("weapon.m4a1.remote.stance_offset_xz", 0.25f);
     static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_Y("weapon.m4a1.remote.stance_offset_y", 0.45f);
     static ParamF WEAPON_M4_REMOTE_STANCE_OFFSET_Y_RUN("weapon.m4a1.remote.stance_offset_y_run", 0.30f);
