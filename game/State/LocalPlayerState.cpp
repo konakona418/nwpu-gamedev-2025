@@ -3,6 +3,7 @@
 #include "State/GamePlayData.hpp"
 #include "State/PauseUIState.hpp"
 #include "State/PlayerSharedConfig.hpp"
+#include "State/WeaponConfig.hpp"
 
 #include "GameManager.hpp"
 #include "InputUtil.hpp"
@@ -190,8 +191,8 @@ namespace game::State {
 
                     auto capsuleShape =
                             JPH::CapsuleShapeSettings(
-                                    Config::PLAYER_HALF_HEIGHT,
-                                    Config::PLAYER_RADIUS)
+                                    PlayerConfig::PLAYER_HALF_HEIGHT,
+                                    PlayerConfig::PLAYER_RADIUS)
                                     .Create()
                                     .Get();
                     auto characterSettings = JPH::CharacterVirtualSettings();
@@ -200,9 +201,9 @@ namespace game::State {
                     characterSettings.mSupportingVolume =
                             JPH::Plane(
                                     JPH::Vec3::sAxisY(),
-                                    Config::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
+                                    PlayerConfig::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
                     characterSettings.mMaxSlopeAngle =
-                            JPH::DegreesToRadians(Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
+                            JPH::DegreesToRadians(PlayerConfig::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
 
                     auto character =
                             new JPH::CharacterVirtual(
@@ -330,19 +331,19 @@ namespace game::State {
             dir = movementHelper.realMovementVecFPS(front, cam.getRight(), cam.getUp());
 
             auto [mouseX, mouseY] = m_inputProxy.getMouseDelta();
-            yawDelta = mouseX * Config::PLAYER_MOUSE_SENSITIVITY;
-            pitchDelta = -mouseY * Config::PLAYER_MOUSE_SENSITIVITY;// invert Y axis
+            yawDelta = mouseX * PlayerConfig::PLAYER_MOUSE_SENSITIVITY;
+            pitchDelta = -mouseY * PlayerConfig::PLAYER_MOUSE_SENSITIVITY;// invert Y axis
         }
 
         auto pos = m_realPosition.get();
 
         // offset camera position from mass center to eye level
-        pos.y += Config::PLAYER_CAMERA_OFFSET_Y;
+        pos.y += PlayerConfig::PLAYER_CAMERA_OFFSET_Y;
 
         // lerp
         {
             auto currentCamPos = cam.getPosition();
-            float lerpFactor = Config::PLAYER_CAMERA_LERP_FACTOR;
+            float lerpFactor = PlayerConfig::PLAYER_CAMERA_LERP_FACTOR;
             pos = glm::mix(currentCamPos, pos, lerpFactor);
         }
 
@@ -364,6 +365,27 @@ namespace game::State {
         m_lookingPitchDegrees.publish(newPitch);
     }
 
+    static float fromWeaponToCooldownSecs(WeaponItems weapon) {
+        switch (weapon) {
+            case game::State::WeaponItems::Glock:
+                return WeaponConfig::GLOCK_CYCLE_TIME.get();
+            case game::State::WeaponItems::USP:
+                return WeaponConfig::USP_CYCLE_TIME.get();
+            case game::State::WeaponItems::DesertEagle:
+                return WeaponConfig::DEAGLE_CYCLE_TIME.get();
+            case game::State::WeaponItems::AK47:
+                return WeaponConfig::AK47_CYCLE_TIME.get();
+            case game::State::WeaponItems::M4A1:
+                return WeaponConfig::M4A1_CYCLE_TIME.get();
+            default:
+                break;
+        }
+        moe::Logger::error(
+                "LocalPlayerState::fromWeaponToCooldownSecs: "
+                "unknown weapon item, returning default cooldown");
+        return 0.2f;// default
+    }
+
     void LocalPlayerState::handleInputStateUpdate(GameManager& ctx, float deltaTime) {
         if (!m_inputProxy.isValid()) {
             return;
@@ -379,8 +401,17 @@ namespace game::State {
             this->addChildState(moe::Ref(new State::PauseUIState()));
         }
 
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            return;
+        }
+
+        auto weapon = m_currentWeaponSlot == WeaponSlot::Primary
+                              ? sharedData->playerPrimaryWeapon
+                              : sharedData->playerSecondaryWeapon;
+
         if (m_inputProxy.getMouseButtonState().pressedLMB) {
-            constexpr float PLAYER_OPEN_FIRE_COOLDOWN = 0.5f;// secs
+            float weaponCooldown = fromWeaponToCooldownSecs(weapon);
             if (m_openFireCooldownTimer <= 0.0f) {
                 // can open fire
                 auto camPos = cam.getPosition();
@@ -392,7 +423,7 @@ namespace game::State {
                                    camPos.x, camPos.y, camPos.z,
                                    camFront.x, camFront.y, camFront.z);
 
-                m_openFireCooldownTimer = PLAYER_OPEN_FIRE_COOLDOWN;
+                m_openFireCooldownTimer = weaponCooldown;
             }
         }
     }
@@ -523,7 +554,7 @@ namespace game::State {
 
         auto& physicsSystem = ctx.physics().getPhysicsSystem();
 
-        auto velocity = dir * Config::PLAYER_SPEED.get();
+        auto velocity = dir * PlayerConfig::PLAYER_SPEED.get();
 
         auto lastVel = character->GetLinearVelocity();
 
@@ -541,7 +572,7 @@ namespace game::State {
             if (jumpRequested) {
                 // apply jump impulse
                 moe::Logger::debug("LocalPlayerState: Jump requested");
-                velY = Config::PLAYER_JUMP_VELOCITY.get();
+                velY = PlayerConfig::PLAYER_JUMP_VELOCITY.get();
             } else {
                 // on ground, preserve horizontal velocity, reset vertical velocity
                 velY = 0.0f;
@@ -581,13 +612,13 @@ namespace game::State {
             settings.mStickToFloorStepDown =
                     JPH::Vec3(
                             0,
-                            Config::PLAYER_STICK_TO_FLOOR_STEP_DOWN.get(),
+                            PlayerConfig::PLAYER_STICK_TO_FLOOR_STEP_DOWN.get(),
                             0);
 
             settings.mWalkStairsStepUp =
                     JPH::Vec3(
                             0,
-                            Config::PLAYER_WALK_STAIRS_STEP_UP.get(),
+                            PlayerConfig::PLAYER_WALK_STAIRS_STEP_UP.get(),
                             0);
         }
 

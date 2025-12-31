@@ -1,21 +1,21 @@
 #include "PlayerSharedConfig.hpp"
 
 namespace game {
-    ParamF Config::PLAYER_SPEED("player.speed", 6.0f);
-    ParamF Config::PLAYER_JUMP_VELOCITY("player.jump_velocity", 3.0f);
+    ParamF PlayerConfig::PLAYER_SPEED("player.speed", 6.0f);
+    ParamF PlayerConfig::PLAYER_JUMP_VELOCITY("player.jump_velocity", 3.0f);
 
-    ParamF Config::PLAYER_MOUSE_SENSITIVITY("player.rotation_speed", 0.1f, ParamScope::UserConfig);
+    ParamF PlayerConfig::PLAYER_MOUSE_SENSITIVITY("player.rotation_speed", 0.1f, ParamScope::UserConfig);
 
-    ParamF Config::PLAYER_HALF_HEIGHT("player.half_height", 0.5f);
-    ParamF Config::PLAYER_RADIUS("player.radius", 0.3f);
+    ParamF PlayerConfig::PLAYER_HALF_HEIGHT("player.half_height", 0.5f);
+    ParamF PlayerConfig::PLAYER_RADIUS("player.radius", 0.3f);
 
     // offset from mass center (half height) to camera position (eye level)
-    ParamF Config::PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
-    ParamF Config::PLAYER_CAMERA_LERP_FACTOR("player.camera_lerp_factor", 0.1f);
+    ParamF PlayerConfig::PLAYER_CAMERA_OFFSET_Y("player.camera_offset_y", 0.6f);
+    ParamF PlayerConfig::PLAYER_CAMERA_LERP_FACTOR("player.camera_lerp_factor", 0.1f);
 
-    ParamF Config::PLAYER_SUPPORTING_VOLUME_CONSTANT("player.supporting_volume_constant", -0.5f);
-    ParamF Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES("player.max_slope_angle_degrees", 45.0f);
+    ParamF PlayerConfig::PLAYER_SUPPORTING_VOLUME_CONSTANT("player.supporting_volume_constant", -0.5f);
+    ParamF PlayerConfig::PLAYER_MAX_SLOPE_ANGLE_DEGREES("player.max_slope_angle_degrees", 45.0f);
 
-    ParamF Config::PLAYER_STICK_TO_FLOOR_STEP_DOWN("player.stick_to_floor_step_down", -0.4f);
-    ParamF Config::PLAYER_WALK_STAIRS_STEP_UP("player.walk_stairs_step_up", 0.4f);
+    ParamF PlayerConfig::PLAYER_STICK_TO_FLOOR_STEP_DOWN("player.stick_to_floor_step_down", -0.4f);
+    ParamF PlayerConfig::PLAYER_WALK_STAIRS_STEP_UP("player.walk_stairs_step_up", 0.4f);
 }// namespace game

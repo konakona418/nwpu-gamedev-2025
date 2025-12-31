@@ -3,7 +3,7 @@
 #include "Param.hpp"
 
 namespace game {
-    struct Config {
+    struct PlayerConfig {
         static ParamF PLAYER_SPEED;
         static ParamF PLAYER_JUMP_VELOCITY;
 

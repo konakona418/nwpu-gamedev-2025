@@ -39,8 +39,8 @@ namespace game::State {
 
                     auto capsuleShape =
                             JPH::CapsuleShapeSettings(
-                                    Config::PLAYER_HALF_HEIGHT,
-                                    Config::PLAYER_RADIUS)
+                                    PlayerConfig::PLAYER_HALF_HEIGHT,
+                                    PlayerConfig::PLAYER_RADIUS)
                                     .Create()
                                     .Get();
                     auto characterSettings = JPH::CharacterVirtualSettings();
@@ -49,9 +49,9 @@ namespace game::State {
                     characterSettings.mSupportingVolume =
                             JPH::Plane(
                                     JPH::Vec3::sAxisY(),
-                                    Config::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
+                                    PlayerConfig::PLAYER_SUPPORTING_VOLUME_CONSTANT.get());
                     characterSettings.mMaxSlopeAngle =
-                            JPH::DegreesToRadians(Config::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
+                            JPH::DegreesToRadians(PlayerConfig::PLAYER_MAX_SLOPE_ANGLE_DEGREES.get());
 
                     auto character =
                             new JPH::CharacterVirtual(
@@ -99,7 +99,7 @@ namespace game::State {
 
         auto rotation = std::atan2(heading.x, heading.z);
         auto realPosition = m_realPosition.get();
-        realPosition.y -= (Config::PLAYER_HALF_HEIGHT + Config::PLAYER_RADIUS);// offset to feet position
+        realPosition.y -= (PlayerConfig::PLAYER_HALF_HEIGHT + PlayerConfig::PLAYER_RADIUS);// offset to feet position
 
         renderctx.submitRender(
                 m_terroristModel,
@@ -118,15 +118,15 @@ namespace game::State {
         updateAnimationFSM(ctx, deltaTime);
 
         renderer.addIm3dDrawCommand([state = this->asRef<RemotePlayerState>(), pos, heading]() {
-            auto cameraOffset = Config::PLAYER_CAMERA_OFFSET_Y;
+            auto cameraOffset = PlayerConfig::PLAYER_CAMERA_OFFSET_Y;
 
             Im3d::PushDrawState();
             Im3d::SetColor(Im3d::Color{0.0f, 0.0f, 1.0f, 1.0f});
             Im3d::SetSize(5.0f);
             Im3d::DrawCapsule(
-                    Im3d::Vec3{pos.x, pos.y - Config::PLAYER_HALF_HEIGHT, pos.z},
-                    Im3d::Vec3{pos.x, pos.y + Config::PLAYER_HALF_HEIGHT, pos.z},
-                    Config::PLAYER_RADIUS);
+                    Im3d::Vec3{pos.x, pos.y - PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
+                    Im3d::Vec3{pos.x, pos.y + PlayerConfig::PLAYER_HALF_HEIGHT, pos.z},
+                    PlayerConfig::PLAYER_RADIUS);
             Im3d::PopDrawState();
 
             Im3d::PushDrawState();
