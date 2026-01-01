@@ -69,14 +69,7 @@ namespace game::State {
         moe::UniquePtr<InterpolationBuffer<RemotePlayerMotionInterpolationData>> m_motionInterpolationBuffer =
                 std::make_unique<InterpolationBuffer<RemotePlayerMotionInterpolationData>>();
 
-        ModelLoader m_terroristModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/T-Model.glb")},
-        };
-        ModelLoader m_counterTerroristModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/CT-Model.glb")},
-        };
-        moe::RenderableId m_terroristModel{moe::NULL_RENDERABLE_ID};
-        moe::RenderableId m_counterTerroristModel{moe::NULL_RENDERABLE_ID};
+        moe::RenderableId m_playerModel{moe::NULL_RENDERABLE_ID};
 
         // this assumes all animations are the same across all remote players
         moe::UnorderedMap<moe::String, moe::AnimationId> m_animationIds;

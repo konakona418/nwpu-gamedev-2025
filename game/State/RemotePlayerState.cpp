@@ -59,19 +59,44 @@ namespace game::State {
 
     void RemotePlayerState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering RemotePlayerState, id={}", m_playerTempId);
-        m_terroristModel = m_terroristModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
-        if (m_terroristModel == moe::NULL_RENDERABLE_ID) {
-            moe::Logger::error("Failed to load terrorist model");
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("RemotePlayerState::onEnter: GamePlaySharedData not found in registry");
             return;
         }
 
-        m_counterTerroristModel = m_counterTerroristModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
-        if (m_counterTerroristModel == moe::NULL_RENDERABLE_ID) {
-            moe::Logger::error("Failed to load counter-terrorist model");
+        auto playerInfoIt = sharedData->playersByTempId.find(m_playerTempId);
+        if (playerInfoIt == sharedData->playersByTempId.end()) {
+            moe::Logger::error(
+                    "RemotePlayerState::onEnter: "
+                    "player info not found for temp id={}",
+                    m_playerTempId);
             return;
         }
 
-        m_animationIds = getAnimationsFromRenderable(ctx, m_terroristModel);
+        moe::Logger::info(
+                "RemotePlayerState::onEnter: "
+                "player name='{}', team={}",
+                utf8::utf32to8(playerInfoIt->second.name),
+                playerInfoIt->second.team == GamePlayerTeam::CT ? "CT" : "T");
+
+        // ! fixme: this is extremely slow,
+        // ! 1. maybe use a pool for this, or
+        // ! 2. allow cloning of Gltf models.
+        // ! however the latter is extremely challenging with the current resource management design.
+        // ! so maybe put a loading screen and load all the resources at once?
+        if (playerInfoIt->second.team == GamePlayerTeam::T) {
+            m_playerModel = ctx.renderer().getResourceLoader().load(moe::Loader::Gltf, moe::asset("assets/models/T-Model.glb"));
+        } else {
+            m_playerModel = ctx.renderer().getResourceLoader().load(moe::Loader::Gltf, moe::asset("assets/models/CT-Model.glb"));
+        }
+
+        if (m_playerModel == moe::NULL_RENDERABLE_ID) {
+            moe::Logger::error("Failed to load player model");
+            return;
+        }
+
+        m_animationIds = getAnimationsFromRenderable(ctx, m_playerModel);
 
         m_weaponModel = m_weaponModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
         if (m_weaponModel == moe::NULL_RENDERABLE_ID) {
@@ -81,6 +106,36 @@ namespace game::State {
 
         loadAudioSourcesForRemoteFootsteps(ctx);
         initAnimationFSM();
+
+        ctx.addDebugDrawFunction(
+                fmt::format("RemotePlayerState id={}", m_playerTempId),
+                [this]() {
+                    ImGui::Begin(fmt::format("RemotePlayerState id={}", m_playerTempId).c_str());
+                    auto pos = m_realPosition.get();
+                    auto heading = m_realHeading.get();
+                    auto velocity = m_realVelocity.get();
+
+                    ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "Remote Player State, id=%d", m_playerTempId);
+                    ImGui::Text("Position: (%f, %f, %f)", pos.x, pos.y, pos.z);
+                    ImGui::Text("Heading: (%f, %f, %f)", heading.x, heading.y, heading.z);
+                    ImGui::Text("Velocity: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+                    ImGui::Text("Health: %f", m_realHealth.get());
+
+                    auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+                    if (sharedData) {
+                        auto playerInfoIt = sharedData->playersByTempId.find(m_playerTempId);
+                        if (playerInfoIt != sharedData->playersByTempId.end()) {
+                            ImGui::Text("Player Name: %s", utf8::utf32to8(playerInfoIt->second.name).c_str());
+                            ImGui::Text("Player Team: %s", playerInfoIt->second.team == GamePlayerTeam::CT ? "CT" : "T");
+                        } else {
+                            ImGui::Text("Player Info: Not Found");
+                        }
+                    } else {
+                        ImGui::Text("GamePlaySharedData not found in registry!");
+                    }
+
+                    ImGui::End();
+                });
 
         ctx.physics().dispatchOnPhysicsThread(
                 [state = this->asRef<RemotePlayerState>()](moe::PhysicsEngine& physics) mutable {
@@ -144,7 +199,7 @@ namespace game::State {
 
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         auto computeHandle = renderctx.submitComputeSkin(
-                m_terroristModel,
+                m_playerModel,
                 m_animationIds[animationSample.animation.name],
                 animationSample.timeInAnimation);
 
@@ -158,11 +213,8 @@ namespace game::State {
             return;
         }
 
-        bool isCounterTerrorist =
-                sharedData->playersByTempId.at(m_playerTempId).team == GamePlayerTeam::CT;
-
         renderctx.submitRender(
-                isCounterTerrorist ? m_counterTerroristModel : m_terroristModel,
+                m_playerModel,
                 moe::Transform{}
                         .setPosition(realPosition)
                         .setRotation(glm::vec3(0.0f, rotation, 0.0f)),
