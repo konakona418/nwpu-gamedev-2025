@@ -21,7 +21,7 @@ namespace game::State {
     static I18N CREDITS_ROLE_SOUND_EFFECTS("credits.role.sound_effects", U"Sound Effects");
 
     static I18N CREDITS_TITLE_DOCUMENTATION("credits.role.documentation", U"Documentation");
-    static I18N CREDITS_ROLE_DOCUMENTATION("credits.role.documentation", U"Documentation And Report Writing");
+    static I18N CREDITS_ROLE_DOCUMENTATION("credits.role.documentation_and_report_writing", U"Documentation And Report Writing");
 
     static I18N CREDITS_TITLE_TESTING("credits.role.testing", U"Testing");
 
