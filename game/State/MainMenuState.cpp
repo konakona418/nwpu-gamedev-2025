@@ -3,6 +3,7 @@
 #include "App.hpp"
 #include "GameManager.hpp"
 #include "Localization.hpp"
+#include "Param.hpp"
 
 #include "UI/BoxWidget.hpp"
 
@@ -17,6 +18,47 @@ namespace game::State {
     static I18N MAINMENU_CREDITS_BUTTON("mainmenu.credits_button", U"Credits");
     static I18N MAINMENU_EXIT_BUTTON("mainmenu.exit_button", U"Exit");
 
+    static ParamF4 MAINMENU_CAMERA_POSITION(
+            "mainmenu.camera.position",
+            ParamFloat4{
+                    23.0f,
+                    -2.0f,
+                    36.0f,
+                    0.0f,
+            });
+    static ParamF MAINMENU_CAMERA_YAW_DEGREES("mainmenu.camera.yaw_degrees", -50.0f);
+    static ParamF MAINMENU_CAMERA_PITCH_DEGREES("mainmenu.camera.pitch_degrees", 0.0f);
+
+    static ParamF4 MAINMENU_COUNTERTERRORIST_POSITION(
+            "mainmenu.counter_terrorist.position",
+            ParamFloat4{
+                    28.0f,
+                    -4.0f,
+                    30.0f,
+                    0.0f,
+            });
+    static ParamF MAINMENU_COUNTERTERRORIST_PITCH_DEGREES("mainmenu.counter_terrorist.pitch_degrees", 0.0f);
+
+    void MainMenuState::initModels(GameManager& ctx) {
+        auto playgroundModel = m_playgroundModelLoader.generate();
+        if (!playgroundModel) {
+            moe::Logger::error("Failed to load playground model in MainMenuState");
+            return;
+        }
+        m_playgroundRenderable = playgroundModel.value();
+
+        auto ctModel = m_counterTerroristModelLoader.generate();
+        if (!ctModel) {
+            moe::Logger::error("Failed to load counter-terrorist model in MainMenuState");
+            return;
+        }
+        m_counterTerroristRenderable = ctModel.value();
+
+        auto ctScene = ctx.renderer().m_caches.objectCache.get(m_counterTerroristRenderable).value();
+        auto* animatableRenderable = ctScene->checkedAs<moe::VulkanSkeletalAnimation>(moe::VulkanRenderableFeature::HasSkeletalAnimation).value();
+        m_counterTerroristIdleAnimation = animatableRenderable->getAnimations().at("Idle");
+    }
+
     void MainMenuState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering MainMenuState");
 
@@ -24,6 +66,8 @@ namespace game::State {
         input.addProxy(&m_inputProxy);
 
         m_inputProxy.setMouseState(true);
+
+        initModels(ctx);
 
         auto canvas = ctx.renderer().getCanvasSize();
         m_rootWidget = moe::makeRef<moe::RootWidget>(canvas.first, canvas.second);
@@ -123,12 +167,51 @@ namespace game::State {
 
     void MainMenuState::onUpdate(GameManager& ctx, float deltaTime) {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
+        auto& renderCamera = ctx.renderer().getDefaultCamera();
 
         m_titleTextWidget->render(renderctx);
 
         auto mousePos = m_inputProxy.getMousePosition();
         bool isLMBPressed = m_inputProxy.getMouseButtonState().pressedLMB;
 
+        // force 3d camera position
+        auto cameraPos = MAINMENU_CAMERA_POSITION.get();
+        renderCamera.setPosition(
+                glm::vec3{
+                        cameraPos.x,
+                        cameraPos.y,
+                        cameraPos.z,
+                });
+        renderCamera.setYaw(MAINMENU_CAMERA_YAW_DEGREES.get());
+        renderCamera.setPitch(MAINMENU_CAMERA_PITCH_DEGREES.get());
+
+        // render playground model
+        renderctx.submitRender(
+                m_playgroundRenderable,
+                moe::Transform{});
+
+        // update and render counter-terrorist model
+        m_counterTerroristIdleAnimationProgressSecs += deltaTime;
+        if (m_counterTerroristIdleAnimationProgressSecs >= c_counterTerroristIdleAnimationDurationSecs) {
+            m_counterTerroristIdleAnimationProgressSecs = 0;
+        }
+        auto computeHandle = renderctx.submitComputeSkin(
+                m_counterTerroristRenderable,
+                m_counterTerroristIdleAnimation,
+                m_counterTerroristIdleAnimationProgressSecs);
+        auto ctPos = MAINMENU_COUNTERTERRORIST_POSITION.get();
+        renderctx.submitRender(
+                m_counterTerroristRenderable,
+                moe::Transform{}
+                        .setPosition({ctPos.x, ctPos.y, ctPos.z})
+                        .setRotation(glm::vec3{
+                                0.0f,
+                                glm::radians(MAINMENU_CAMERA_PITCH_DEGREES.get()),
+                                0.0f,
+                        }),
+                computeHandle);
+
+        // render ui
         m_multiPlayerButtonWidget->render(renderctx);
         if (m_multiPlayerButtonWidget->checkButtonState(mousePos, isLMBPressed)) {
             moe::Logger::info("Multiplayer button clicked");
