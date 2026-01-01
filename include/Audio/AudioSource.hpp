@@ -16,6 +16,8 @@ public:
     AudioSource();
     ~AudioSource() = default;
 
+    AudioSource(ALuint sourceId) : m_sourceId(sourceId) {}
+
     void manualDestroy() {
         alDeleteSources(1, &m_sourceId);
     }
@@ -56,6 +58,16 @@ struct CreateSourceCommand : public BlockingAudioCommand {
 
     explicit CreateSourceCommand(Ref<AudioSource>* outSrc, std::promise<void>&& promise)
         : BlockingAudioCommand(std::move(promise)), outSource(outSrc) {}
+
+    void execute(AudioEngine& engine) override;
+};
+
+struct CreateSourcesCommand : public BlockingAudioCommand {
+    Vector<Ref<AudioSource>>* outSources;
+    size_t count;
+
+    CreateSourcesCommand(Vector<Ref<AudioSource>>* outSrcs, size_t cnt, std::promise<void>&& promise)
+        : BlockingAudioCommand(std::move(promise)), outSources(outSrcs), count(cnt) {}
 
     void execute(AudioEngine& engine) override;
 };

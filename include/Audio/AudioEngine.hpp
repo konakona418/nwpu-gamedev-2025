@@ -91,6 +91,7 @@ public:
     }
 
     Ref<AudioSource> createAudioSource();
+    Vector<Ref<AudioSource>> createAudioSources(size_t count);
     void loadAudioSource(Ref<AudioSource> source, Ref<AudioDataProvider> provider, bool loop);
     void playAudioSource(Ref<AudioSource> source);
     void pauseAudioSource(Ref<AudioSource> source);

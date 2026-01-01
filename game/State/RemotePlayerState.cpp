@@ -48,11 +48,12 @@ namespace game::State {
         m_playerFootstepSoundProvider = moe::makeRef<moe::StaticOggProvider>(footstepSoundData.value());
 
         // preload audio sources for footsteps
-        for (int i = 0; i < PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS.get(); i++) {
-            auto audioInterface = ctx.audio();
-            auto audioSource = audioInterface.createAudioSource();
-            audioInterface.loadAudioSource(audioSource, m_playerFootstepSoundProvider, false);
-            m_activeLocalFootsteps.push_back(std::move(audioSource));
+        {
+            auto sources = ctx.audio().createAudioSources(PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS.get());
+            for (auto& source: sources) {
+                ctx.audio().loadAudioSource(source, m_playerFootstepSoundProvider, false);
+                m_activeLocalFootsteps.push_back(source);
+            }
         }
     }
 

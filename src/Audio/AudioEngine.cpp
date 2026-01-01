@@ -156,6 +156,22 @@ Ref<AudioSource> AudioEngineInterface::createAudioSource() {
     return source;
 }
 
+Vector<Ref<AudioSource>> AudioEngineInterface::createAudioSources(size_t count) {
+    Vector<Ref<AudioSource>> sources;
+
+    std::promise<void> promise;
+    auto future = promise.get_future();
+
+    submitCommand(
+            std::make_unique<CreateSourcesCommand>(
+                    &sources, count, std::move(promise)));
+    future.get();
+
+    Logger::debug("{} audio sources created", count);
+
+    return sources;
+}
+
 void AudioEngineInterface::loadAudioSource(
         Ref<AudioSource> source,
         Ref<AudioDataProvider> provider, bool loop) {

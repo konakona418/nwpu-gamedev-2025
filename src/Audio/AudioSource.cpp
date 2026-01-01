@@ -136,6 +136,26 @@ void CreateSourceCommand::execute(AudioEngine& engine) {
     *outSource = source;
 }
 
+void CreateSourcesCommand::execute(AudioEngine& engine) {
+    Vector<Ref<AudioSource>> sources;
+    sources.reserve(count);
+
+    Vector<ALuint> rawSources(count);
+    alGenSources(static_cast<ALsizei>(count), rawSources.data());
+
+    for (size_t i = 0; i < count; ++i) {
+        Pinned<AudioSource> sourcePinned = makePinned<AudioSource>(rawSources[i]);
+
+        auto source = Ref<AudioSource>(sourcePinned.get());
+        source->setDeleter(sourceDeleter);
+
+        engine.getSources().push_back(std::move(sourcePinned));
+        sources.push_back(source);
+    }
+
+    *outSources = std::move(sources);
+}
+
 void DestroySourceCommand::execute(AudioEngine& engine) {
     auto id = source->sourceId();
 

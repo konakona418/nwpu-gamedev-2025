@@ -163,11 +163,12 @@ namespace game::State {
         }
 
         // preload audio sources for gunshots
-        for (int i = 0; i < MAX_SIMULTANEOUS_LOCAL_GUNSHOTS.get(); i++) {
-            auto audioInterface = ctx.audio();
-            auto audioSource = audioInterface.createAudioSource();
-            audioInterface.loadAudioSource(audioSource, m_gunshotSoundProvider, false);
-            m_activeLocalGunshots.push_back(std::move(audioSource));
+        {
+            auto sources = ctx.audio().createAudioSources(MAX_SIMULTANEOUS_LOCAL_GUNSHOTS.get());
+            for (auto& source: sources) {
+                ctx.audio().loadAudioSource(source, m_gunshotSoundProvider, false);
+                m_activeLocalGunshots.push_back(source);
+            }
         }
 
         auto footstepData = m_playerFootstepSoundLoader.generate();
@@ -178,11 +179,12 @@ namespace game::State {
         }
 
         // preload audio sources for footsteps
-        for (int i = 0; i < PlayerConfig::MAX_SIMULTANEOUS_PLAYER_FOOTSTEPS.get(); i++) {
-            auto audioInterface = ctx.audio();
-            auto audioSource = audioInterface.createAudioSource();
-            audioInterface.loadAudioSource(audioSource, m_playerFootstepSoundProvider, false);
-            m_activeLocalFootsteps.push_back(std::move(audioSource));
+        {
+            auto sources = ctx.audio().createAudioSources(MAX_SIMULTANEOUS_LOCAL_GUNSHOTS.get());
+            for (auto& source: sources) {
+                ctx.audio().loadAudioSource(source, m_playerFootstepSoundProvider, false);
+                m_activeLocalFootsteps.push_back(source);
+            }
         }
     }
 

@@ -136,11 +136,10 @@ namespace game::State {
         }
 
         // preload audio sources for gunshots
-        for (int i = 0; i < MAX_SIMULTANEOUS_GUNSHOTS.get(); i++) {
-            auto audioInterface = ctx.audio();
-            auto audioSource = audioInterface.createAudioSource();
-            audioInterface.loadAudioSource(audioSource, m_gunshotSoundProvider, false);
-            m_activeGunshots.push_back(audioSource);
+        auto sources = ctx.audio().createAudioSources(MAX_SIMULTANEOUS_GUNSHOTS.get());
+        for (auto& source: sources) {
+            ctx.audio().loadAudioSource(source, m_gunshotSoundProvider, false);
+            m_activeGunshots.push_back(source);
         }
 
         moe::Logger::debug("Setting up gameplay shared data");
