@@ -37,37 +37,54 @@ namespace game::State {
         moe::Vector<CreditEntry> entries;
     };
 
-    static const moe::Vector<CreditGroup> s_creditGroups = {
-            {
-                    CREDITS_TITLE_PROGRAMMING.get(),
-                    {
-                            {U"李梓萌，冯于洋", CREDITS_ROLE_ENGINE_ARCHITECTURE.get()},
-                            {U"冯于洋", CREDITS_ROLE_NETWORKING.get()},
-                            {U"李佳睿", CREDITS_ROLE_GAME_DESIGN.get()},
-                            {U"吴焕石，李梓萌", CREDITS_ROLE_TECHNICAL_ART.get()},
-                    },
-            },
-            {
-                    CREDITS_TITLE_ART_DESIGN.get(),
-                    {
-                            {U"吴焕石", CREDITS_ROLE_MODELING.get()},
-                            {U"吴焕石", CREDITS_ROLE_UI_UX.get()},
-                    },
-            },
-            {
-                    CREDITS_TITLE_MUSIC_SOUND.get(),
-                    {
-                            {U"吴焕石", CREDITS_ROLE_MUSIC_COMPOSITION.get()},
-                            {U"滕艺斐", CREDITS_ROLE_SOUND_EFFECTS.get()},
-                    },
-            },
-            {
-                    CREDITS_TITLE_DOCUMENTATION.get(),
-                    {
-                            {U"滕艺斐", CREDITS_ROLE_DOCUMENTATION.get()},
-                    },
-            },
-    };
+    static moe::Vector<CreditGroup> getCredits() {
+        return {
+                {
+                        CREDITS_TITLE_PROGRAMMING.get(),
+                        {
+                                {U"李梓萌，冯于洋", CREDITS_ROLE_ENGINE_ARCHITECTURE.get()},
+                                {U"冯于洋", CREDITS_ROLE_NETWORKING.get()},
+                                {U"李佳睿，滕艺斐", CREDITS_ROLE_GAME_DESIGN.get()},
+                                {U"吴焕石，李梓萌", CREDITS_ROLE_TECHNICAL_ART.get()},
+                        },
+                },
+                {
+                        CREDITS_TITLE_ART_DESIGN.get(),
+                        {
+                                {U"吴焕石", CREDITS_ROLE_MODELING.get()},
+                                {U"吴焕石", CREDITS_ROLE_UI_UX.get()},
+                        },
+                },
+                {
+                        CREDITS_TITLE_MUSIC_SOUND.get(),
+                        {
+                                {U"滕艺斐", CREDITS_ROLE_SOUND_EFFECTS.get()},
+                        },
+                },
+                {
+                        CREDITS_TITLE_DOCUMENTATION.get(),
+                        {
+                                {U"滕艺斐", CREDITS_ROLE_DOCUMENTATION.get()},
+                        },
+                },
+                {
+                        CREDITS_TITLE_TESTING.get(),
+                        {
+                                {U"李佳睿", CREDITS_ROLE_DOCUMENTATION.get()},
+                        },
+                },
+                {
+                        CREDITS_TITLE_THANKS.get(),
+                        {
+                                {
+                                        {U"参与本项目测试与反馈的同学们", U""},
+                                        {U"JetBrains CLion 提供的免费许可证支持", U""},
+                                        {U"Khronos Group 提供的 Vulkan SDK 支持", U""},
+                                },
+                        },
+                },
+        };
+    }
 
     void CreditsState::onEnter(GameManager& ctx) {
         moe::Logger::info("Entering CreditsState");
@@ -97,7 +114,7 @@ namespace game::State {
         m_containerWidget->setAlign(moe::BoxAlign::Center);
         m_containerWidget->setJustify(moe::BoxJustify::Center);
 
-        for (const auto& group: s_creditGroups) {
+        for (const auto& group: getCredits()) {
             auto titleWidget = moe::makeRef<moe::VkTextWidget>(
                     group.title,
                     m_fontId,
@@ -109,14 +126,23 @@ namespace game::State {
             m_creditsTextWidgets.push_back(titleWidget);
 
             for (const auto& entry: group.entries) {
-                auto entryWidget = moe::makeRef<moe::VkTextWidget>(
-                        Util::formatU32(
-                                U"{} - {}",
-                                utf8::utf32to8(entry.name),
-                                utf8::utf32to8(entry.role)),
-                        m_fontId,
-                        20.f,
-                        moe::Colors::White);
+                moe::Ref<moe::VkTextWidget> entryWidget{nullptr};
+                if (entry.role.empty()) {
+                    entryWidget = moe::makeRef<moe::VkTextWidget>(
+                            entry.name,
+                            m_fontId,
+                            20.f,
+                            moe::Colors::White);
+                } else {
+                    entryWidget = moe::makeRef<moe::VkTextWidget>(
+                            Util::formatU32(
+                                    U"{} - {}",
+                                    utf8::utf32to8(entry.name),
+                                    utf8::utf32to8(entry.role)),
+                            m_fontId,
+                            20.f,
+                            moe::Colors::White);
+                }
                 entryWidget->setMargin({5.f, 0.f, 5.f, 5.f});
                 m_containerWidget->addChild(entryWidget);
 
