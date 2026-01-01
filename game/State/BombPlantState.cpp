@@ -11,6 +11,7 @@
 #include "imgui.h"
 
 namespace game::State {
+    static I18N BOMB_PLANTING_OR_DEFUSING_TEXT("bomb_planting_or_defusing.text", U"Press [E] to Plant/Defuse the Bomb");
     static I18N BOMB_PLANTING_TEXT_PROMPT("bomb_planting.text", U"Press [E] to Plant the Bomb");
     static I18N BOMB_DEFUSING_TEXT_PROMPT("bomb_defusing.text", U"Press [E] to Defuse the Bomb");
     static I18N BOMB_PLANTING_TEXT("bomb_planting.planting", U"Planting... {}/100%");
@@ -64,7 +65,9 @@ namespace game::State {
         m_plantingTextWidget = moe::makeRef<moe::VkTextWidget>(
                 team == GamePlayerTeam::T
                         ? BOMB_PLANTING_TEXT_PROMPT.get()
-                        : BOMB_DEFUSING_TEXT_PROMPT.get(),
+                : team == GamePlayerTeam::CT
+                        ? BOMB_DEFUSING_TEXT_PROMPT.get()
+                        : BOMB_PLANTING_OR_DEFUSING_TEXT.get(),
                 m_fontId,
                 24.f,
                 moe::Colors::Yellow);
