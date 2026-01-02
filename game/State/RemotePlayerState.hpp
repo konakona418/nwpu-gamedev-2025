@@ -16,6 +16,7 @@
 #include "AnimationFSM.hpp"
 #include "AnyCache.hpp"
 #include "ModelLoader.hpp"
+#include "ObjectPool.hpp"
 
 #include "Audio/StaticOggProvider.hpp"
 
@@ -69,6 +70,7 @@ namespace game::State {
         moe::UniquePtr<InterpolationBuffer<RemotePlayerMotionInterpolationData>> m_motionInterpolationBuffer =
                 std::make_unique<InterpolationBuffer<RemotePlayerMotionInterpolationData>>();
 
+        moe::UniquePtr<game::ObjectPoolGuard> m_playerModelGuard;
         moe::RenderableId m_playerModel{moe::NULL_RENDERABLE_ID};
 
         // this assumes all animations are the same across all remote players

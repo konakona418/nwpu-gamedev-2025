@@ -35,14 +35,29 @@ namespace game::State {
         using FontLoaderT =
                 moe::Secure<game::AnyCacheLoader<game::FontLoader<
                         moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>;
+        FontLoaderT m_fontLoader{
+                FontLoaderParam{48.0f, Util::glyphRangeChinese()},
+                moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
 
         float m_elapsedTimeSecs{0.0f};
 
         moe::Ref<moe::RootWidget> m_rootWidget{nullptr};
         moe::Ref<moe::VkBoxWidget> m_containerWidget{nullptr};
         moe::Ref<moe::VkImageWidget> m_logoImageWidget{nullptr};
+        moe::Ref<moe::VkTextWidget> m_loadingTextWidget{nullptr};
         moe::ImageId m_logoImageId{moe::NULL_IMAGE_ID};
 
-        Tween<QuadraticProvider, QuadraticProvider> m_fadeTween{0.2f, 0.8f};
+        Tween<QuadraticProvider, QuadraticProvider> m_fadeInTween{1.0f, 0.0f};
+        Tween<QuadraticProvider, QuadraticProvider> m_fadeOutTween{0.0f, 1.0f};
+
+        enum class SplashPhase {
+            FadeIn,
+            Display,
+            FadeOut,
+        };
+        SplashPhase m_currentPhase{SplashPhase::FadeIn};
+
+        size_t m_totalObjectsToLoad{0};
+        size_t m_loadedObjectsCount{0};
     };
 }// namespace game::State

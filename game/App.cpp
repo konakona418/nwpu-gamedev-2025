@@ -87,6 +87,8 @@ namespace game {
 
         m_networkAdaptor = std::make_unique<NetworkAdaptor>();
         m_networkAdaptor->init(SERVER_ADDRESS.get(), static_cast<uint16_t>(SERVER_PORT.get()));
+
+        moe::Logger::info("Application initialization complete");
     }
 
     void App::shutdown() {
