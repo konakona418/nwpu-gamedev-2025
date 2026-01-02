@@ -576,6 +576,15 @@ namespace game::State {
             return;
         }
 
+        if (sharedData->isBombPlanted &&
+            sharedData->bombPlantedSite != currentSite &&
+            sharedData->playerTeam == GamePlayerTeam::CT) {
+            // bomb is planted at another site, cannot defuse here
+            m_bombPlantingOrDefuseProgressSecs = 0.0f;
+            m_bombPlantState->setVisible(false);
+            return;
+        }
+
         m_bombPlantState->setVisible(true);
 
         float requiredTime = BOMB_PLANT_DEFUSE_TIME.get();

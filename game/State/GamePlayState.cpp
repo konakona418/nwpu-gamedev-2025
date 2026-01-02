@@ -332,6 +332,7 @@ namespace game::State {
                     auto gamePlaySharedData = Registry::getInstance().get<GamePlaySharedData>();
                     if (gamePlaySharedData) {
                         gamePlaySharedData->isBombPlanted = false;// reset bomb planted state
+                        gamePlaySharedData->bombPlantedSite = BombSite::Neither;
                     }
                 });
 
@@ -673,6 +674,7 @@ namespace game::State {
                     moe::Colors::Yellow);
 
             sharedData->isBombPlanted = true;// mark bomb as planted
+            sharedData->bombPlantedSite = event.bombSite == 0 ? BombSite::A : BombSite::B;
 
             bombPlantedQueue.pop_front();
         }
@@ -690,6 +692,7 @@ namespace game::State {
                     moe::Colors::Yellow);
 
             sharedData->isBombPlanted = false;// mark bomb as defused
+            sharedData->bombPlantedSite = BombSite::Neither;
 
             bombDefusedQueue.pop_front();
         }

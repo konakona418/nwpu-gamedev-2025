@@ -35,6 +35,7 @@ namespace game {
         State::WeaponItems playerSecondaryWeapon{State::WeaponItems::None};
 
         bool isBombPlanted{false};
+        State::BombSite bombPlantedSite{State::BombSite::Neither};
 
         bool debugShowPlayerHitboxes{false};
 
