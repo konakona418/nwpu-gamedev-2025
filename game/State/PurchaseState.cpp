@@ -114,6 +114,8 @@ namespace game::State {
                 m_fontId,
                 24.f,
                 moe::Colors::Cyan);
+        m_weaponTextWidget->setMargin({10.f, 10.f, 10.f, 10.f});
+        m_containerWidget->addChild(m_weaponTextWidget);
 
         m_rootWidget->addChild(m_containerWidget);
 

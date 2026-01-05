@@ -11,8 +11,6 @@
 #include "State/GamePlayState.hpp"
 
 namespace game::State {
-    static I18N MAINMENU_TITLE("mainmenu.title", U"Game Title");
-
     static I18N MAINMENU_MULTIPLAYER_BUTTON("mainmenu.multiplayer_button", U"Multiplayer");
     static I18N MAINMENU_SETTINGS_BUTTON("mainmenu.settings_button", U"Settings");
     static I18N MAINMENU_CREDITS_BUTTON("mainmenu.credits_button", U"Credits");
@@ -40,19 +38,22 @@ namespace game::State {
     static ParamF MAINMENU_COUNTERTERRORIST_PITCH_DEGREES("mainmenu.counter_terrorist.pitch_degrees", 0.0f);
 
     void MainMenuState::initModels(GameManager& ctx) {
-        auto playgroundModel = m_playgroundModelLoader.generate();
-        if (!playgroundModel) {
+        m_playgroundModelGuard = std::make_unique<game::ObjectPoolGuard>(moe::asset("assets/models/playground.glb"));
+        auto playgroundModel = m_playgroundModelGuard->getRenderableId();
+        if (playgroundModel == moe::NULL_RENDERABLE_ID) {
             moe::Logger::error("Failed to load playground model in MainMenuState");
+
             return;
         }
-        m_playgroundRenderable = playgroundModel.value();
+        m_playgroundRenderable = playgroundModel;
 
-        auto ctModel = m_counterTerroristModelLoader.generate();
-        if (!ctModel) {
+        m_counterTerroristModelGuard = std::make_unique<game::ObjectPoolGuard>(moe::asset("assets/models/CT-Model.glb"));
+        auto ctModel = m_counterTerroristModelGuard->getRenderableId();
+        if (ctModel == moe::NULL_RENDERABLE_ID) {
             moe::Logger::error("Failed to load counter-terrorist model in MainMenuState");
             return;
         }
-        m_counterTerroristRenderable = ctModel.value();
+        m_counterTerroristRenderable = ctModel;
 
         auto ctScene = ctx.renderer().m_caches.objectCache.get(m_counterTerroristRenderable).value();
         auto* animatableRenderable = ctScene->checkedAs<moe::VulkanSkeletalAnimation>(moe::VulkanRenderableFeature::HasSkeletalAnimation).value();
@@ -69,6 +70,8 @@ namespace game::State {
 
         initModels(ctx);
 
+        m_logoImageId = ctx.renderer().getResourceLoader().load(moe::Loader::Image, moe::asset("assets/images/game-logo.png"));
+
         auto canvas = ctx.renderer().getCanvasSize();
         m_rootWidget = moe::makeRef<moe::RootWidget>(canvas.first, canvas.second);
 
@@ -76,13 +79,12 @@ namespace game::State {
                 moe::makeRef<moe::BoxWidget>(moe::BoxLayoutDirection::Vertical);
         mainBoxWidget->setJustify(moe::BoxJustify::SpaceBetween);
 
-        m_titleTextWidget = moe::makeRef<moe::VkTextWidget>(
-                MAINMENU_TITLE.get(),
-                m_fontId.generate().value_or(moe::NULL_FONT_ID),
-                48.f,
-                moe::Color::fromNormalized(255, 255, 255, 255));
-        m_titleTextWidget->setMargin({50.f, 50.f, 0.f, 0.f});
-        mainBoxWidget->addChild(m_titleTextWidget);
+        m_logoImageWidget = moe::makeRef<moe::VkImageWidget>(
+                m_logoImageId,
+                moe::LayoutSize{670, 160},
+                moe::Colors::White);
+        m_logoImageWidget->setMargin({50.f, 50.f, 0.f, 0.f});
+        mainBoxWidget->addChild(m_logoImageWidget);
 
         auto boxWidget = moe::makeRef<moe::BoxWidget>(
                 moe::BoxLayoutDirection::Vertical);
@@ -153,7 +155,7 @@ namespace game::State {
         moe::Logger::info("Exiting MainMenuState");
 
         m_rootWidget.reset();
-        m_titleTextWidget.reset();
+        m_logoImageWidget.reset();
         m_multiPlayerButtonWidget.reset();
         m_settingsButtonWidget.reset();
         m_creditsButtonWidget.reset();
@@ -169,7 +171,7 @@ namespace game::State {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         auto& renderCamera = ctx.renderer().getDefaultCamera();
 
-        m_titleTextWidget->render(renderctx);
+        m_logoImageWidget->render(renderctx);
 
         auto mousePos = m_inputProxy.getMousePosition();
         bool isLMBPressed = m_inputProxy.getMouseButtonState().pressedLMB;

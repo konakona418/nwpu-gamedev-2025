@@ -5,10 +5,12 @@
 #include "GameState.hpp"
 #include "Input.hpp"
 #include "ModelLoader.hpp"
+#include "ObjectPool.hpp"
 #include "Util.hpp"
 
 #include "UI/RootWidget.hpp"
 #include "UI/Vulkan/VkButtonWidget.hpp"
+#include "UI/Vulkan/VkImageWidget.hpp"
 
 #include "Core/Resource/BinaryLoader.hpp"
 #include "Core/Resource/Launch.hpp"
@@ -39,14 +41,12 @@ namespace game::State {
                 moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf")),
         };
 
-        ModelLoaderT m_playgroundModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/playground.glb")},
-        };
+        moe::ImageId m_logoImageId{moe::NULL_IMAGE_ID};
+
+        moe::UniquePtr<game::ObjectPoolGuard> m_playgroundModelGuard;
         moe::RenderableId m_playgroundRenderable{moe::NULL_RENDERABLE_ID};
 
-        ModelLoaderT m_counterTerroristModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/CT-Model.glb")},
-        };
+        moe::UniquePtr<game::ObjectPoolGuard> m_counterTerroristModelGuard;
         moe::RenderableId m_counterTerroristRenderable{moe::NULL_RENDERABLE_ID};
         moe::AnimationId m_counterTerroristIdleAnimation{moe::NULL_ANIMATION_ID};
         static constexpr float c_counterTerroristIdleAnimationDurationSecs{10};
@@ -55,7 +55,7 @@ namespace game::State {
         InputProxy m_inputProxy{InputProxy::PRIORITY_UI_LOCK};
 
         moe::Ref<moe::RootWidget> m_rootWidget{nullptr};
-        moe::Ref<moe::VkTextWidget> m_titleTextWidget{nullptr};
+        moe::Ref<moe::VkImageWidget> m_logoImageWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_multiPlayerButtonWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_settingsButtonWidget{nullptr};
         moe::Ref<moe::VkButtonWidget> m_creditsButtonWidget{nullptr};

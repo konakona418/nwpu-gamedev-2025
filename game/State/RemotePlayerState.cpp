@@ -30,13 +30,6 @@ namespace game::State {
             "weapon.m4a1.remote.attach_local_yaw_degrees",
             3.0f);
 
-    static ObjectPoolRegister PLAYER_T_MODEL_REGISTER(
-            moe::asset("assets/models/T-Model.glb"),
-            3);
-    static ObjectPoolRegister PLAYER_CT_MODEL_REGISTER(
-            moe::asset("assets/models/CT-Model.glb"),
-            3);
-
     static moe::UnorderedMap<moe::String, moe::AnimationId> getAnimationsFromRenderable(GameManager& ctx, moe::RenderableId renderableId) {
         auto scene = ctx.renderer().m_caches.objectCache.get(renderableId).value();
         auto* animatableRenderable = scene->checkedAs<moe::VulkanSkeletalAnimation>(moe::VulkanRenderableFeature::HasSkeletalAnimation).value();
@@ -89,10 +82,10 @@ namespace game::State {
 
         // acquire player model from object pool
         if (playerInfoIt->second.team == GamePlayerTeam::T) {
-            m_playerModelGuard = std::make_unique<game::ObjectPoolGuard>("assets/models/T-Model.glb");
+            m_playerModelGuard = std::make_unique<game::ObjectPoolGuard>(moe::asset("assets/models/T-Model.glb"));
             m_playerModel = m_playerModelGuard->getRenderableId();
         } else {
-            m_playerModelGuard = std::make_unique<game::ObjectPoolGuard>("assets/models/CT-Model.glb");
+            m_playerModelGuard = std::make_unique<game::ObjectPoolGuard>(moe::asset("assets/models/CT-Model.glb"));
             m_playerModel = m_playerModelGuard->getRenderableId();
         }
 
