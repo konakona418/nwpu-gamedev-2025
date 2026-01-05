@@ -45,6 +45,7 @@ namespace moe {
                 m_swapData[i].jointMatrixBufferSize = 0;
 
                 // initialize dynamic vertex buffer
+                m_swapData[i].dynamicVertexBuffer.bufferIdx = i;
                 m_swapData[i].dynamicVertexBuffer.size = 0;
                 m_swapData[i].dynamicVertexBuffer.capacity = 0;
                 ensureDynamicVertexBufferSize(MIN_DYNAMIC_VERTEX_BUFFER_SIZE, i);
@@ -106,6 +107,18 @@ namespace moe {
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 
             VkDeviceSize requiredDynamicVertexBufferSize = 0;
+            // required size
+            for (auto& packet: drawCommands) {
+                if (packet.skinned) {
+                    auto mesh = meshCache.getMesh(packet.meshId).value();
+                    requiredDynamicVertexBufferSize += mesh.gpuBuffer.vertexCount;
+                }
+            }
+
+            // ensure dynamic vertex buffer is large enough for this frame
+            // note that we do this before processing the draw commands, to avoid providing invalid addresses to the GPU
+            ensureDynamicVertexBufferSize(requiredDynamicVertexBufferSize, frameIndex);
+
             for (auto& packet: drawCommands) {
                 if (!packet.skinned) {
                     packet.skinnedVertexBufferAddr = 0;
@@ -124,8 +137,8 @@ namespace moe {
                 VkDeviceSize offset = dynamicVertexBuffer.size * sizeof(Vertex);// current offset in bytes
                 dynamicVertexBuffer.size += mesh.gpuBuffer.vertexCount;         // increase size
 
-                requiredDynamicVertexBufferSize += mesh.gpuBuffer.vertexCount;// for ensuring buffer size later
-
+                // ! dynamicVertexBuffer.bufferAddr is the base address of the dynamic vertex buffer,
+                // ! may be different each frame due to resizing
                 VkDeviceAddress skinnedBufferAddress = dynamicVertexBuffer.bufferAddr + offset;// address of the skinned vertex buffer
 
                 // store the skinned vertex buffer address in the render packet for later use
@@ -146,10 +159,6 @@ namespace moe {
                 const auto groupCount = (uint32_t) std::ceil(mesh.gpuBuffer.vertexCount / (float) workGroupSize);
                 vkCmdDispatch(cmdBuffer, groupCount, 1, 1);
             }
-
-            // ensure dynamic vertex buffer is large enough for this frame
-            // we don't need to realloc 'before' the loop or what, as the command will only be executed after submission
-            ensureDynamicVertexBufferSize(requiredDynamicVertexBufferSize, frameIndex);
         }
 
         void SkinningPipeline::ensureDynamicVertexBufferSize(size_t requiredVertexCount, size_t frameIndex) {
