@@ -109,7 +109,7 @@ namespace moe {
                         .transform = cmd.transform,
                         .vertexBufferAddr =
                                 cmd.skinned
-                                        ? meshAsset.gpuBuffer.skinnedVertexBufferAddr
+                                        ? cmd.skinnedVertexBufferAddr
                                         : meshAsset.gpuBuffer.vertexBufferAddr,
                         .sceneDataAddress = sceneDataBuffer.address,
                         .materialId = cmd.materialId,

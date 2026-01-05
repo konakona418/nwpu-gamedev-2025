@@ -34,6 +34,8 @@ namespace moe {
 
             vkDestroyShaderModule(engine.m_device, shader, nullptr);
 
+            m_initialized = true;
+
             for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
                 m_swapData[i].jointMatrixBuffer =
                         engine.allocateBuffer(
@@ -41,9 +43,12 @@ namespace moe {
                                 VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
                                 VMA_MEMORY_USAGE_AUTO);
                 m_swapData[i].jointMatrixBufferSize = 0;
-            }
 
-            m_initialized = true;
+                // initialize dynamic vertex buffer
+                m_swapData[i].dynamicVertexBuffer.size = 0;
+                m_swapData[i].dynamicVertexBuffer.capacity = 0;
+                ensureDynamicVertexBufferSize(MIN_DYNAMIC_VERTEX_BUFFER_SIZE, i);
+            }
         }
 
         void SkinningPipeline::destroy() {
@@ -51,6 +56,7 @@ namespace moe {
 
             for (size_t i = 0; i < FRAMES_IN_FLIGHT; i++) {
                 m_engine->destroyBuffer(m_swapData[i].jointMatrixBuffer);
+                m_engine->destroyBuffer(m_swapData[i].dynamicVertexBuffer.buffer);
             }
 
             vkDestroyPipeline(m_engine->m_device, m_pipeline, nullptr);
@@ -99,23 +105,37 @@ namespace moe {
             auto& swapData = m_swapData[frameIndex];
             vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_pipeline);
 
+            VkDeviceSize requiredDynamicVertexBufferSize = 0;
             for (auto& packet: drawCommands) {
                 if (!packet.skinned) {
+                    packet.skinnedVertexBufferAddr = 0;
                     continue;
                 }
 
                 if (packet.jointMatrixStartIndex == INVALID_JOINT_MATRIX_START_INDEX) {
                     Logger::warn("Skinned mesh draw command has invalid joint matrix start index, skipping. Note that the matrices must be uploaded before calling this function");
+                    packet.skinnedVertexBufferAddr = 0;
                     continue;
                 }
 
                 auto mesh = meshCache.getMesh(packet.meshId).value();
 
+                auto& dynamicVertexBuffer = swapData.dynamicVertexBuffer;
+                VkDeviceSize offset = dynamicVertexBuffer.size * sizeof(Vertex);// current offset in bytes
+                dynamicVertexBuffer.size += mesh.gpuBuffer.vertexCount;         // increase size
+
+                requiredDynamicVertexBufferSize += mesh.gpuBuffer.vertexCount;// for ensuring buffer size later
+
+                VkDeviceAddress skinnedBufferAddress = dynamicVertexBuffer.bufferAddr + offset;// address of the skinned vertex buffer
+
+                // store the skinned vertex buffer address in the render packet for later use
+                packet.skinnedVertexBufferAddr = skinnedBufferAddress;
+
                 auto pushConstants = PushConstants{
                         .vertexBufferAddr = mesh.gpuBuffer.vertexBufferAddr,
                         .skinningDataBufferAddr = mesh.gpuBuffer.skinningDataBufferAddr,
                         .jointMatrixBufferAddr = swapData.jointMatrixBuffer.address,
-                        .outputVertexBufferAddr = mesh.gpuBuffer.skinnedVertexBufferAddr,
+                        .outputVertexBufferAddr = skinnedBufferAddress,
                         .jointMatrixStartIndex = (uint32_t) packet.jointMatrixStartIndex,
                         .vertexCount = mesh.gpuBuffer.vertexCount,
                 };
@@ -126,6 +146,50 @@ namespace moe {
                 const auto groupCount = (uint32_t) std::ceil(mesh.gpuBuffer.vertexCount / (float) workGroupSize);
                 vkCmdDispatch(cmdBuffer, groupCount, 1, 1);
             }
+
+            // ensure dynamic vertex buffer is large enough for this frame
+            // we don't need to realloc 'before' the loop or what, as the command will only be executed after submission
+            ensureDynamicVertexBufferSize(requiredDynamicVertexBufferSize, frameIndex);
+        }
+
+        void SkinningPipeline::ensureDynamicVertexBufferSize(size_t requiredVertexCount, size_t frameIndex) {
+            MOE_ASSERT(m_initialized, "SkinningPipeline not initialized");
+
+            auto& swapData = m_swapData[frameIndex];
+            if (swapData.dynamicVertexBuffer.capacity >= requiredVertexCount) {
+                return;
+            }
+
+            auto newCapacity = swapData.dynamicVertexBuffer.capacity;
+            if (newCapacity == 0) {
+                newCapacity = MIN_DYNAMIC_VERTEX_BUFFER_SIZE;
+            }
+
+            while (newCapacity < requiredVertexCount) {
+                newCapacity *= DYNAMIC_VERTEX_BUFFER_GROWTH_FACTOR;
+            }
+
+            if (swapData.dynamicVertexBuffer.buffer.buffer != VK_NULL_HANDLE) {
+                m_engine->destroyBuffer(swapData.dynamicVertexBuffer.buffer);
+            }
+
+            swapData.dynamicVertexBuffer.buffer = m_engine->allocateBuffer(
+                    newCapacity * sizeof(Vertex),
+                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                    VMA_MEMORY_USAGE_GPU_ONLY);
+
+            swapData.dynamicVertexBuffer.bufferAddr = swapData.dynamicVertexBuffer.buffer.address;
+            swapData.dynamicVertexBuffer.capacity = newCapacity;
+
+            moe::Logger::info("Resized skinning dynamic vertex buffer to {} vertices, frame index {}", newCapacity, frameIndex);
+        }
+
+        void SkinningPipeline::resetDynamicVertexBuffer(size_t frameIndex) {
+            MOE_ASSERT(m_initialized, "SkinningPipeline not initialized");
+
+            auto& swapData = m_swapData[frameIndex];
+            swapData.dynamicVertexBuffer.size = 0;
         }
     }// namespace Pipeline
 }// namespace moe

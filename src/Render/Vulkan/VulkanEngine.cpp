@@ -581,27 +581,11 @@ namespace moe {
                 deviceAddrInfo.buffer = surface.skinningDataBuffer.buffer;
                 surface.skinningDataBufferAddr = vkGetBufferDeviceAddress(m_device, &deviceAddrInfo);
             }
-
-            surface.skinnedVertexBuffer = allocateBuffer(
-                    vertBufferSize,
-                    VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
-                    VMA_MEMORY_USAGE_GPU_ONLY);
-            {
-                VkBufferDeviceAddressInfo deviceAddrInfo{};
-                deviceAddrInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
-                deviceAddrInfo.buffer = surface.skinnedVertexBuffer.buffer;
-                surface.skinnedVertexBufferAddr = vkGetBufferDeviceAddress(m_device, &deviceAddrInfo);
-            }
         } else {
             stagingBufferSize = indexBufferSize + vertBufferSize;
 
             surface.skinningDataBuffer = {};
             surface.skinningDataBufferAddr = 0;
-
-            surface.skinnedVertexBuffer = {};
-            surface.skinnedVertexBufferAddr = 0;
         }
 
         VulkanAllocatedBuffer stagingBuffer = allocateBuffer(
@@ -816,7 +800,10 @@ namespace moe {
             vkCmdPipelineBarrier2(commandBuffer, &dependencyInfo);
         }
 
-        // ! todo: load skinning matrices from cpu to gpu
+        // reset dynamic vertex buffer for skinning pipeline
+        m_pipelines.skinningPipeline.resetDynamicVertexBuffer(currentFrameIndex);
+
+        // record compute commands
         m_pipelines.skinningPipeline.compute(commandBuffer, m_caches.meshCache, packets, currentFrameIndex);
 
         {

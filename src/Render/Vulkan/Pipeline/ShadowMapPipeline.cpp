@@ -143,7 +143,7 @@ namespace moe {
                         .mvp = m_shadowMapLightTransform * drawCommand.transform,
                         .vertexBufferAddr =
                                 drawCommand.skinned
-                                        ? mesh.gpuBuffer.skinnedVertexBufferAddr
+                                        ? drawCommand.skinnedVertexBufferAddr
                                         : mesh.gpuBuffer.vertexBufferAddr,
                 };
 

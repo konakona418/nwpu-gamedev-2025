@@ -189,7 +189,7 @@ namespace moe {
                             .mvp = m_cascadeLightTransforms[i] * drawCommand.transform,
                             .vertexBufferAddr =
                                     drawCommand.skinned
-                                            ? mesh.gpuBuffer.skinnedVertexBufferAddr
+                                            ? drawCommand.skinnedVertexBufferAddr
                                             : mesh.gpuBuffer.vertexBufferAddr,
                     };
 

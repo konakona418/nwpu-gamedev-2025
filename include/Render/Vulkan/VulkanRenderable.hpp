@@ -19,6 +19,8 @@ namespace moe {
 
         bool skinned{false};
         size_t jointMatrixStartIndex{INVALID_JOINT_MATRIX_START_INDEX};// for skinned meshes
+
+        VkDeviceAddress skinnedVertexBufferAddr{0};// for skinned meshes
     };
 
     struct VulkanDrawContext {

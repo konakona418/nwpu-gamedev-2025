@@ -43,7 +43,6 @@ namespace moe {
             m_engine->destroyBuffer(mesh.gpuBuffer.indexBuffer);
             if (mesh.gpuBuffer.hasSkinningData) {
                 m_engine->destroyBuffer(mesh.gpuBuffer.skinningDataBuffer);
-                m_engine->destroyBuffer(mesh.gpuBuffer.skinnedVertexBuffer);
             }
         }
 

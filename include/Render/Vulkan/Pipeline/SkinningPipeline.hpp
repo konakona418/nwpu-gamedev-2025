@@ -31,8 +31,13 @@ namespace moe {
 
             void destroy();
 
+            // this should be called by VulkanEngine before using the pipeline each frame
+            void resetDynamicVertexBuffer(size_t frameIndex);
+
         private:
-            static constexpr uint32_t MAX_JOINT_MATRIX_COUNT = 10240;// max 10k joint matrices
+            static constexpr uint32_t MAX_JOINT_MATRIX_COUNT = 10240;       // max 10k joint matrices
+            static constexpr uint32_t MIN_DYNAMIC_VERTEX_BUFFER_SIZE = 1024;// 1024 vertices
+            static constexpr uint32_t DYNAMIC_VERTEX_BUFFER_GROWTH_FACTOR = 2;
 
             struct PushConstants {
                 VkDeviceAddress vertexBufferAddr;
@@ -43,9 +48,22 @@ namespace moe {
                 uint32_t vertexCount;
             };
 
+            struct DynamicVertexBuffer {
+                size_t bufferIdx;
+                VkDeviceSize size;
+                VkDeviceSize capacity;
+
+                VulkanAllocatedBuffer buffer{};
+                VkDeviceAddress bufferAddr{};
+            };
+
+            void ensureDynamicVertexBufferSize(size_t requiredVertexCount, size_t frameIndex);
+
             struct SwapData {
                 VulkanAllocatedBuffer jointMatrixBuffer;
                 size_t jointMatrixBufferSize;
+
+                DynamicVertexBuffer dynamicVertexBuffer;
             };
 
             Array<SwapData, Constants::FRAMES_IN_FLIGHT> m_swapData;

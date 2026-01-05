@@ -14,11 +14,9 @@ namespace moe {
         VulkanAllocatedBuffer vertexBuffer;
         VulkanAllocatedBuffer indexBuffer;
         VulkanAllocatedBuffer skinningDataBuffer;
-        VulkanAllocatedBuffer skinnedVertexBuffer;
 
         VkDeviceAddress vertexBufferAddr;
         VkDeviceAddress skinningDataBufferAddr;
-        VkDeviceAddress skinnedVertexBufferAddr;
 
         uint32_t indexCount;
         uint32_t vertexCount;

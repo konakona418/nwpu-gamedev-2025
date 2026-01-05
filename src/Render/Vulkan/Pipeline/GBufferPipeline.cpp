@@ -155,7 +155,7 @@ namespace moe {
 
                 auto vertexBufferAddr =
                         cmd.skinned
-                                ? meshAsset.gpuBuffer.skinnedVertexBufferAddr
+                                ? cmd.skinnedVertexBufferAddr
                                 : meshAsset.gpuBuffer.vertexBufferAddr;
 
                 const auto pushConstants = PushConstants{
