@@ -10,7 +10,7 @@
 namespace game::State {
     static ParamF SPLASHSCREEN_DURATION(
             "splashscreen.duration",
-            0.25f, ParamScope::System);
+            0.75f, ParamScope::System);
 
     static I18N SPLASH_LOADING_TEXT(
             "splashscreen.loading_text",
