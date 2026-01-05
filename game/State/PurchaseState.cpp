@@ -33,8 +33,7 @@ namespace game::State {
             case PurchaseState::Items::None:
                 break;
         }
-        MOE_ASSERT(false, "Invalid PurchaseState::Items enum value");
-        return {};
+        return "N/A";
     }
 
     PurchaseState::Items purchaseStateStringToItemEnum(moe::StringView itemName) {
