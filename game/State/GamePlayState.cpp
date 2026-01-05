@@ -508,24 +508,6 @@ namespace game::State {
         }
     }
 
-    bool GamePlayState::tryWaitForPurchasePhaseStart(GameManager& ctx) {
-        auto& purchasePhaseStartQueue = m_networkDispatcher->getQueues().queueRoundPurchaseStartedEvent;
-        if (purchasePhaseStartQueue.empty()) {
-            // keep waiting
-            return false;
-        }
-
-        // purchase phase started
-        const auto& event = purchasePhaseStartQueue.front();
-        auto gamePlaySharedData =
-                Registry::getInstance().get<GamePlaySharedData>();
-        gamePlaySharedData->playerBalance = event.balance;
-        moe::Logger::info("Purchase phase player balance: {}", event.balance);
-
-        purchasePhaseStartQueue.pop_front();
-        return true;
-    }
-
     static WeaponItems weaponNetEnumToItem(::moe::net::Weapon weapon) {
 #define X(_1, enumVal, _2, moeEnum) \
     case moeEnum:                   \
@@ -554,6 +536,34 @@ namespace game::State {
         return "N/A";
     }
 
+    bool GamePlayState::tryWaitForPurchasePhaseStart(GameManager& ctx) {
+        auto& purchasePhaseStartQueue = m_networkDispatcher->getQueues().queueRoundPurchaseStartedEvent;
+        if (purchasePhaseStartQueue.empty()) {
+            // keep waiting
+            return false;
+        }
+
+        // purchase phase started
+        const auto& event = purchasePhaseStartQueue.front();
+        auto gamePlaySharedData =
+                Registry::getInstance().get<GamePlaySharedData>();
+        if (!gamePlaySharedData) {
+            moe::Logger::error("GamePlayState::tryWaitForPurchasePhaseStart: GamePlaySharedData not found");
+            return false;
+        }
+
+        gamePlaySharedData->playerPrimaryWeapon = weaponNetEnumToItem(event.primaryWeapon);
+        gamePlaySharedData->playerSecondaryWeapon = weaponNetEnumToItem(event.secondaryWeapon);
+
+        gamePlaySharedData->playerBalance = event.balance;
+        moe::Logger::info("Purchase phase started: primary weapon: {}, secondary weapon: {}, balance: {}",
+                          weaponNetEnumToStringName(event.primaryWeapon),
+                          weaponNetEnumToStringName(event.secondaryWeapon),
+                          event.balance);
+
+        purchasePhaseStartQueue.pop_front();
+        return true;
+    }
 
     void GamePlayState::handlePurchaseResponse(GameManager& ctx) {
         auto& purchaseResponseQueue = m_networkDispatcher->getQueues().queuePurchaseEvent;
@@ -599,7 +609,18 @@ namespace game::State {
 
         // round started
         const auto& event = roundStartQueue.front();
-        // todo: process event data if needed
+        auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
+        if (!sharedData) {
+            moe::Logger::error("GamePlayState::tryWaitForRoundStart: GamePlaySharedData not found");
+            return false;
+        }
+
+        sharedData->playerPrimaryWeapon = weaponNetEnumToItem(event.primaryWeapon);
+        sharedData->playerSecondaryWeapon = weaponNetEnumToItem(event.secondaryWeapon);
+        moe::Logger::info("Round started: round number: {}, primary weapon: {}, secondary weapon: {}",
+                          event.roundNumber,
+                          weaponNetEnumToStringName(event.primaryWeapon),
+                          weaponNetEnumToStringName(event.secondaryWeapon));
 
         roundStartQueue.pop_front();
 

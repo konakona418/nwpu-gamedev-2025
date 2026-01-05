@@ -19,8 +19,11 @@ namespace game::State {
 
     static I18N PURCHASE_MENU_TITLE("purchase_menu.title", U"Purchase Phase");
     static I18N PURCHASE_MENU_BALANCE("purchase_menu.balance", U"Balance: {}");
+    static I18N PURCHASE_MENU_WEAPONS(
+            "purchase_menu.weapons",
+            U"Weapons: Primary - {}, Secondary - {}");
 
-    moe::StringView purchaseStateItemToString(PurchaseState::Items item) {
+    moe::StringView weaponItemToString(PurchaseState::Items item) {
         switch (item) {
 #define X(name, enumVal, _1, _2) \
     case enumVal:                \
@@ -93,6 +96,8 @@ namespace game::State {
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
         m_lastKnownBalance = gamePlaySharedData->playerBalance;
+        m_lastKnownPrimaryWeapon = gamePlaySharedData->playerPrimaryWeapon;
+        m_lastKnownSecondaryWeapon = gamePlaySharedData->playerSecondaryWeapon;
 
         m_balanceTextWidget = moe::makeRef<moe::VkTextWidget>(
                 Util::formatU32(PURCHASE_MENU_BALANCE.get(), gamePlaySharedData->playerBalance),
@@ -101,6 +106,15 @@ namespace game::State {
                 moe::Colors::Yellow);
         m_balanceTextWidget->setMargin({10.f, 10.f, 10.f, 10.f});
         m_containerWidget->addChild(m_balanceTextWidget);
+
+        m_weaponTextWidget = moe::makeRef<moe::VkTextWidget>(
+                Util::formatU32(
+                        PURCHASE_MENU_WEAPONS.get(),
+                        weaponItemToString(gamePlaySharedData->playerPrimaryWeapon),
+                        weaponItemToString(gamePlaySharedData->playerSecondaryWeapon)),
+                m_fontId,
+                24.f,
+                moe::Colors::Cyan);
 
         m_rootWidget->addChild(m_containerWidget);
 
@@ -174,12 +188,39 @@ namespace game::State {
     void PurchaseState::onUpdate(GameManager& ctx, float deltaTime) {
         auto gamePlaySharedData =
                 Registry::getInstance().get<GamePlaySharedData>();
+
+        bool changed = false;
         if (gamePlaySharedData->playerBalance != m_lastKnownBalance) {
             m_lastKnownBalance = gamePlaySharedData->playerBalance;
             m_balanceTextWidget->setText(
                     Util::formatU32(
                             PURCHASE_MENU_BALANCE.get(),
-                            gamePlaySharedData->playerBalance));
+                            m_lastKnownBalance));
+
+            moe::Logger::info("PurchaseState: Updated player balance: {}", m_lastKnownBalance);
+            changed = true;
+        }
+
+        if (gamePlaySharedData->playerPrimaryWeapon != m_lastKnownPrimaryWeapon ||
+            gamePlaySharedData->playerSecondaryWeapon != m_lastKnownSecondaryWeapon) {
+            m_lastKnownPrimaryWeapon = gamePlaySharedData->playerPrimaryWeapon;
+            m_lastKnownSecondaryWeapon = gamePlaySharedData->playerSecondaryWeapon;
+
+            auto primaryWeaponStr = weaponItemToString(m_lastKnownPrimaryWeapon);
+            auto secondaryWeaponStr = weaponItemToString(m_lastKnownSecondaryWeapon);
+            m_weaponTextWidget->setText(
+                    Util::formatU32(
+                            PURCHASE_MENU_WEAPONS.get(),
+                            primaryWeaponStr,
+                            secondaryWeaponStr));
+
+            moe::Logger::info("PurchaseState: Updated player weapons: primary: {}, secondary: {}",
+                              primaryWeaponStr,
+                              secondaryWeaponStr);
+            changed = true;
+        }
+
+        if (changed) {
             m_rootWidget->layout();
         }
 
@@ -197,7 +238,7 @@ namespace game::State {
                 auto item = purchaseStateStringToItemEnum(text);
 
                 moe::Logger::info("Constructing and sending purchase request for item '{}'",
-                                  purchaseStateItemToString(item));
+                                  weaponItemToString(item));
                 constructSendPurchaseReq(ctx, item);
 
                 // we dont handle response here; main gameplay state will handle purchase result
@@ -205,5 +246,6 @@ namespace game::State {
         }
 
         m_balanceTextWidget->render(renderer);
+        m_weaponTextWidget->render(renderer);
     }
 }// namespace game::State

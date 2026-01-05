@@ -49,8 +49,11 @@ namespace game::State {
         moe::Ref<moe::VkBoxWidget> m_containerWidget{nullptr};
         moe::Vector<moe::Ref<moe::VkButtonWidget>> m_itemButtonWidgets;
         moe::Ref<moe::VkTextWidget> m_balanceTextWidget{nullptr};
+        moe::Ref<moe::VkTextWidget> m_weaponTextWidget{nullptr};
 
         uint32_t m_lastKnownBalance{0};
+        WeaponItems m_lastKnownPrimaryWeapon{WeaponItems::None};
+        WeaponItems m_lastKnownSecondaryWeapon{WeaponItems::None};
 
         InputProxy m_inputProxy{InputProxy::PRIORITY_UI_LOCK};
     };
