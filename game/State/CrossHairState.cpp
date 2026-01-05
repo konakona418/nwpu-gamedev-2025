@@ -4,7 +4,7 @@
 
 namespace game::State {
     static ParamF4 CROSSHAIR_COLOR("crosshair.color", {1.0f, 1.0f, 1.0f, 1.0f}, ParamScope::UserConfig);
-    static ParamI CROSSHAIR_SIZE("crosshair.size", 64, ParamScope::UserConfig);
+    static ParamI CROSSHAIR_SIZE("crosshair.size", 32, ParamScope::UserConfig);
 
     void CrossHairState::onEnter(GameManager& ctx) {
         m_crossHairNormalImageId = m_crossHairImageLoader.generate().value_or(moe::NULL_IMAGE_ID);
