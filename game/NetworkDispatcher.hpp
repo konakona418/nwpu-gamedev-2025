@@ -19,7 +19,8 @@
     X(::moe::net::BombPlantedEvent, BombPlantedEvent)                   \
     X(::moe::net::BombDefusedEvent, BombDefusedEvent)                   \
     X(::moe::net::ChatMessageEvent, ChatMessageEvent)                   \
-    X(::moe::net::PurchaseEvent, PurchaseEvent)
+    X(::moe::net::PurchaseEvent, PurchaseEvent)                         \
+    X(::moe::net::CountDownEvent, CountDownEvent)
 
 namespace game {
     struct NetworkDispatcher : public moe::Meta::NonCopyable<NetworkDispatcher> {

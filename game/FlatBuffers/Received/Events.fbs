@@ -88,6 +88,10 @@ table PurchaseEvent {
     balance: uint32;
 }
 
+table CountDownEvent {
+    ms_left: uint16;
+}
+
 union EventData {
     PlayerJoinedEvent,
     PlayerLeftEvent,
@@ -101,7 +105,8 @@ union EventData {
     BombDefusedEvent,
     ChatMessageEvent,
     GameEndedEvent,
-    PurchaseEvent
+    PurchaseEvent,
+    CountDownEvent
 }
 
 // avoid name conflict with CreateEvent macro
