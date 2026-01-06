@@ -2,16 +2,11 @@
 
 #include "GameState.hpp"
 
-#include "Core/Deferred.hpp"
+#include "ObjectPool.hpp"
 #include "Physics/JoltIncludes.hpp"
 #include "Render/Common.hpp"
 
-#include "Core/Resource/Preload.hpp"
-#include "Core/Resource/Secure.hpp"
-
-#include "AnyCache.hpp"
-#include "ModelLoader.hpp"
-
+#include "Core/Deferred.hpp"
 
 namespace game::State {
     struct PlaygroundState : public GameState {
@@ -26,9 +21,7 @@ namespace game::State {
         // void onPhysicsUpdate(GameManager& ctx, float deltaTime) override;
 
     private:
-        moe::Preload<moe::Secure<game::AnyCacheLoader<game::ModelLoader>>> m_playgroundModelLoader{
-                ModelLoaderParam{moe::asset("assets/models/playground.glb")}};
-
+        moe::UniquePtr<game::ObjectPoolGuard> m_playgroundModelGuard;
         moe::RenderableId m_playgroundRenderable{moe::NULL_RENDERABLE_ID};
         moe::Deferred<JPH::BodyID> m_playgroundBody;
     };

@@ -11,6 +11,7 @@
 #include "UI/RootWidget.hpp"
 #include "UI/Vulkan/VkBoxWidget.hpp"
 #include "UI/Vulkan/VkImageWidget.hpp"
+#include "UI/Vulkan/VkProgressBarWidget.hpp"
 #include "UI/Vulkan/VkTextWidget.hpp"
 
 
@@ -45,6 +46,7 @@ namespace game::State {
         moe::Ref<moe::VkBoxWidget> m_containerWidget{nullptr};
         moe::Ref<moe::VkImageWidget> m_logoImageWidget{nullptr};
         moe::Ref<moe::VkTextWidget> m_loadingTextWidget{nullptr};
+        moe::Ref<moe::VkProgressBarWidget> m_progressBarWidget{nullptr};
         moe::ImageId m_logoImageId{moe::NULL_IMAGE_ID};
 
         Tween<QuadraticProvider, QuadraticProvider> m_fadeInTween{1.0f, 0.0f};

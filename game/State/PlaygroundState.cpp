@@ -11,7 +11,9 @@
 namespace game::State {
     void PlaygroundState::onEnter(GameManager& ctx) {
         auto path = moe::asset("assets/models/playground.glb");
-        m_playgroundRenderable = m_playgroundModelLoader.generate().value_or(moe::NULL_RENDERABLE_ID);
+
+        m_playgroundModelGuard = std::make_unique<game::ObjectPoolGuard>(moe::asset("assets/models/playground.glb"));
+        m_playgroundRenderable = m_playgroundModelGuard->getRenderableId();
         if (m_playgroundRenderable == moe::NULL_RENDERABLE_ID) {
             moe::Logger::error("PlaygroundState::onEnter: failed to load playground model");
             return;

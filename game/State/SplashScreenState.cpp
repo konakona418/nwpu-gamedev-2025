@@ -41,9 +41,17 @@ namespace game::State {
                         m_fontLoader.generate().value_or(moe::NULL_FONT_ID),
                         18.0f,
                         moe::Colors::White));
+        m_loadingTextWidget->setMargin({0, 0, 0, 16});
+
+        m_progressBarWidget = moe::Ref(
+                new moe::VkProgressBarWidget(
+                        {400.f, 12.f},
+                        moe::Color::fromNormalized(50, 50, 50, 255),
+                        moe::Colors::White));
 
         m_containerWidget->addChild(m_logoImageWidget);
         m_containerWidget->addChild(m_loadingTextWidget);
+        m_containerWidget->addChild(m_progressBarWidget);
 
         rootWidget->addChild(m_containerWidget);
 
@@ -57,6 +65,8 @@ namespace game::State {
     void SplashScreenState::onUpdate(GameManager& ctx, float deltaTime) {
         m_elapsedTimeSecs += deltaTime;
         float duration = SPLASHSCREEN_DURATION.get();
+
+        float progress = 0.0f;
 
         auto& objectPool = ObjectPool::getInstance();
         switch (m_currentPhase) {
@@ -86,6 +96,9 @@ namespace game::State {
 
                 size_t pendingLoads = objectPool.getPendingLoadCount();
                 size_t totalLoads = objectPool.getPoolSize();
+
+                progress = totalLoads == 0 ? 1.0f : static_cast<float>(totalLoads - pendingLoads) / static_cast<float>(totalLoads);
+                m_progressBarWidget->setProgress(progress);
 
                 if (totalLoads != m_totalObjectsToLoad || totalLoads - pendingLoads != m_loadedObjectsCount) {
                     m_totalObjectsToLoad = totalLoads;
@@ -130,6 +143,10 @@ namespace game::State {
         auto& renderctx = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
         m_containerWidget->render(renderctx);
         m_logoImageWidget->render(renderctx);
-        m_loadingTextWidget->render(renderctx);
+
+        if (m_currentPhase == SplashPhase::Display) {
+            m_loadingTextWidget->render(renderctx);
+            m_progressBarWidget->render(renderctx);
+        }
     }
 }// namespace game::State
