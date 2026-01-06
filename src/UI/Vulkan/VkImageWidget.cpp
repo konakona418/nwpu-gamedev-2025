@@ -13,7 +13,9 @@ void VkImageWidget::render(VulkanRenderObjectBus& renderer) {
             Transform{}
                     .setPosition({rect.x, rect.y, 0}),
             m_tintColor,
-            {rect.width, rect.height});
+            {rect.width, rect.height},
+            {0, 0},
+            {m_textureSize.width, m_textureSize.height});
 }
 
 MOE_END_NAMESPACE
