@@ -2,20 +2,16 @@
 
 #include "GameManager.hpp"
 #include "Localization.hpp"
-#include "Param.hpp"
 #include "Registry.hpp"
 
 #include "State/GamePlayData.hpp"
+#include "State/HudSharedConfig.hpp"
 
 #include "imgui.h"
 
 namespace game::State {
     static I18N HUD_HEALTH_TEXT("hud.health_text", U"Health: {}");
     static I18N HUD_WEAPON_TEXT("hud.weapon_text", U"Weapon: {}");
-
-    static ParamF4 HUD_TERRORIST_TINT_COLOR("hud.tint.terrorist", ParamFloat4{0.88f, 0.70f, 0.30f, 0.80f});
-    static ParamF4 HUD_COUNTERTERRORIST_TINT_COLOR("hud.tint.counterterrorist", ParamFloat4{0.40f, 0.60f, 0.90f, 0.80f});
-    static ParamF HUD_TINT_COLOR_MULTIPLIER("hud.tint.multiplier", 0.5f);
 
     static moe::StringView weaponItemToString(State::WeaponItems item) {
 #define X(name, enumVal, _1, _2) \
@@ -144,8 +140,8 @@ namespace game::State {
         m_playerTeam = team;
 
         moe::Color tintColor = moe::Colors::White;
-        auto terroristTint = HUD_TERRORIST_TINT_COLOR.get();
-        auto counterTerroristTint = HUD_COUNTERTERRORIST_TINT_COLOR.get();
+        auto terroristTint = HudConfig::HUD_TERRORIST_TINT_COLOR.get();
+        auto counterTerroristTint = HudConfig::HUD_COUNTERTERRORIST_TINT_COLOR.get();
 
         if (team == GamePlayerTeam::T) {
             tintColor = {
@@ -175,7 +171,7 @@ namespace game::State {
 
     void HudState::applyTintColorToUIWidgets() {
         auto tintColor = m_currentTintColor;
-        float multiplier = HUD_TINT_COLOR_MULTIPLIER.get();
+        float multiplier = HudConfig::HUD_TINT_COLOR_MULTIPLIER.get();
 
         auto multipliedTint = moe::Color{
                 tintColor.r * multiplier,
