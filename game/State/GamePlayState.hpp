@@ -9,6 +9,7 @@
 #include "State/ChatboxState.hpp"
 #include "State/LocalPlayerState.hpp"
 #include "State/PurchaseState.hpp"
+#include "State/ScoreBoardState.hpp"
 
 #include "Core/Resource/BinaryLoader.hpp"
 #include "Core/Resource/Launch.hpp"
@@ -54,6 +55,7 @@ namespace game::State {
 
         // temporary purchase state
         moe::Ref<State::PurchaseState> m_purchaseState{nullptr};
+        moe::Ref<State::ScoreBoardState> m_scoreBoardState{nullptr};
         moe::Ref<State::LocalPlayerState> m_localPlayerState{nullptr};
 
         moe::Deque<moe::Ref<moe::AudioSource>> m_activeGunshots;

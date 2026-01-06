@@ -160,6 +160,9 @@ namespace game::State {
         m_localPlayerState = moe::Ref(new LocalPlayerState());
         this->addChildState(m_localPlayerState);
 
+        m_scoreBoardState = moe::Ref(new ScoreBoardState());
+        this->addChildState(m_scoreBoardState);
+
         ctx.addDebugDrawFunction(
                 "GamePlayState Debug",
                 [this]() {
@@ -328,6 +331,9 @@ namespace game::State {
                     moe::Logger::info("Round started");
 
                     displaySystemPrompt(ctx, ROUND_STARTED_PROMPT.get());
+
+                    // reset score board state for new round
+                    m_scoreBoardState->resetRound();
 
                     auto gamePlaySharedData = Registry::getInstance().get<GamePlaySharedData>();
                     if (gamePlaySharedData) {
@@ -638,6 +644,9 @@ namespace game::State {
         while (!playerKilledQueue.empty()) {
             const auto& event = playerKilledQueue.front();
 
+            // update score board state to show remaining player count
+            m_scoreBoardState->updateRemainingPlayers(event.victimTempId);
+
             if (event.victimTempId == sharedData->playerTempId) {
                 moe::Logger::info("Player was killed by player id: {}", event.killerTempId);
                 displaySystemPrompt(
@@ -697,6 +706,9 @@ namespace game::State {
             sharedData->isBombPlanted = true;// mark bomb as planted
             sharedData->bombPlantedSite = event.bombSite == 0 ? BombSite::A : BombSite::B;
 
+            // update score board state to show bomb planted status
+            m_scoreBoardState->updateBombStatus(true);
+
             bombPlantedQueue.pop_front();
         }
 
@@ -714,6 +726,8 @@ namespace game::State {
 
             sharedData->isBombPlanted = false;// mark bomb as defused
             sharedData->bombPlantedSite = BombSite::Neither;
+
+            m_scoreBoardState->updateBombStatus(false);
 
             bombDefusedQueue.pop_front();
         }
@@ -777,6 +791,12 @@ namespace game::State {
                                     event.winningTeam == moe::net::PlayerTeam::TEAM_CT
                                             ? "CT"
                                             : "T"));
+
+        // update score board scores
+        m_scoreBoardState->updateScore(
+                event.winningTeam == moe::net::PlayerTeam::TEAM_CT
+                        ? GamePlayerTeam::CT
+                        : GamePlayerTeam::T);
 
         roundEndQueue.pop_front();
 
