@@ -91,13 +91,34 @@ namespace game::State {
         m_remainingTerrorists = playerCount / 2;
         m_remainingCounterTerrorists = playerCount - m_remainingTerrorists;
 
-        m_isBombPlanted = false;
+        // reset countdown timer
+        m_countDownTimeSeconds = 0.0f;
+        m_countDownTextWidget->setText(U"00:00");
 
         // invalidate bomb status icon
+        m_isBombPlanted = false;
         m_bombStatusIconWidget->setSpriteSize(moe::LayoutSize{0.0f, 0.0f});
 
         m_remainingPlayersTextWidget->setText(
                 Util::formatU32(U"{} vs {}", m_remainingCounterTerrorists, m_remainingTerrorists));
+
+        m_rootWidget->layout();
+    }
+
+    void ScoreBoardState::setCountDownTime(uint32_t msLeft) {
+        m_countDownTimeSeconds = static_cast<float>(msLeft) / 1000.0f;
+        m_countDownDeltaAccum = 0.0f;
+
+        uint32_t totalSeconds = static_cast<uint32_t>(m_countDownTimeSeconds);
+        uint32_t minutes = totalSeconds / 60;
+        uint32_t seconds = totalSeconds % 60;
+
+        m_countDownTextWidget->setText(Util::formatU32(U"{:02}:{:02}", minutes, seconds));
+
+        moe::Logger::debug("ScoreBoardState::setCountDownTime: countdown time set to {} ms ({}:{:02})",
+                           msLeft,
+                           minutes,
+                           seconds);
 
         m_rootWidget->layout();
     }
@@ -128,6 +149,11 @@ namespace game::State {
                         resetRound();
                     }
 
+                    static int countdownSecs = 0;
+                    ImGui::SliderInt("Countdown", &countdownSecs, 1, 600);
+                    if (ImGui::Button("Set Countdown")) {
+                        setCountDownTime(countdownSecs * 1000);
+                    }
 
                     ImGui::End();
                 });
@@ -163,6 +189,17 @@ namespace game::State {
             m_topContainer->setJustify(moe::BoxJustify::Start);
             m_topContainer->setBackgroundColor(moe::Color::fromNormalized(0, 0, 0, 64));
             m_topContainer->setPadding({10.0f, 10.0f, 10.0f, 10.0f});
+
+            {
+                m_countDownTextWidget = moe::makeRef<moe::VkTextWidget>(
+                        U"00:00",
+                        m_fontId,
+                        24.f,
+                        moe::Colors::White);
+                m_countDownTextWidget->setMargin({0.f, 0.f, 0.f, 5.f});
+
+                m_topContainer->addChild(m_countDownTextWidget);
+            }
 
             {
                 // by default, hide the icon by setting its size to zero
@@ -226,9 +263,7 @@ namespace game::State {
         m_rootWidget->layout();
     }
 
-    void ScoreBoardState::onUpdate(GameManager& ctx, float deltaTime) {
-        auto& renderer = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
-
+    void ScoreBoardState::updateBombIconTransparency(float deltaTime) {
         // time for animation update
         m_timeAccum += deltaTime;
         if (m_timeAccum > BOMB_ICON_TRANSITION_ANIMATION_DURATION.get()) {
@@ -247,8 +282,43 @@ namespace game::State {
                         1.0f,
                         alpha,
                 });
+    }
+
+    void ScoreBoardState::updateCountDownTextWidget(float deltaTime) {
+        m_countDownTimeSeconds -= deltaTime;
+        if (m_countDownTimeSeconds < 0.0f) {
+            // clamp to zero
+            m_countDownTimeSeconds = 0.0f;
+        }
+
+
+        m_countDownDeltaAccum += deltaTime;
+        if (m_countDownDeltaAccum < 1.0f) {
+            // only update every second
+            return;
+        }
+
+        m_countDownDeltaAccum = 0.0f;
+
+        uint32_t totalSeconds = static_cast<uint32_t>(std::round(m_countDownTimeSeconds));
+        uint32_t minutes = totalSeconds / 60;
+        uint32_t seconds = totalSeconds % 60;
+        m_countDownTextWidget->setText(Util::formatU32(U"{:02}:{:02}", minutes, seconds));
+
+        // layout update
+        m_rootWidget->layout();
+    }
+
+    void ScoreBoardState::onUpdate(GameManager& ctx, float deltaTime) {
+        auto& renderer = ctx.renderer().getBus<moe::VulkanRenderObjectBus>();
+
+        // update countdown timer
+        updateCountDownTextWidget(deltaTime);
+        // animate bomb icon transparency
+        updateBombIconTransparency(deltaTime);
 
         m_topContainer->render(renderer);
+        m_countDownTextWidget->render(renderer);
         m_bombStatusIconWidget->render(renderer);
         m_counterTerroristsScoreWidget->render(renderer);
         m_terroristsScoreWidget->render(renderer);

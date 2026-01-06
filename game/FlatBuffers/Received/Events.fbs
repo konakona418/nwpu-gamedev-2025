@@ -89,7 +89,7 @@ table PurchaseEvent {
 }
 
 table CountDownEvent {
-    ms_left: uint16;
+    ms_left: uint32;
 }
 
 union EventData {

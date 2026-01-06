@@ -44,6 +44,8 @@ namespace game::State {
         // call this before a new round starts to reset the scores and player counts
         void resetRound();
 
+        void setCountDownTime(uint32_t msLeft);
+
     private:
         using FontLoaderT = moe::Secure<game::AnyCacheLoader<game::FontLoader<
                 moe::Preload<moe::Launch<game::AnyCacheLoader<moe::BinaryLoader>>>>>>;
@@ -70,6 +72,10 @@ namespace game::State {
         moe::Ref<moe::RootWidget> m_rootWidget{nullptr};
         moe::Ref<moe::VkBoxWidget> m_topContainer{nullptr};
 
+        float m_countDownTimeSeconds{0.0f};
+        float m_countDownDeltaAccum{0.0f};
+        moe::Ref<moe::VkTextWidget> m_countDownTextWidget{nullptr};
+
         Tween<QuadraticProvider, QuadraticProvider> m_bombIconTransparencyTween{0.5f, 0.5f};
         float m_timeAccum{0.0f};
         moe::Ref<moe::VkImageWidget> m_bombStatusIconWidget{nullptr};
@@ -82,5 +88,8 @@ namespace game::State {
         moe::Ref<moe::VkTextWidget> m_remainingPlayersTextWidget{nullptr};
 
         void registerDebugCommands(GameManager& ctx);
+
+        void updateBombIconTransparency(float deltaTime);
+        void updateCountDownTextWidget(float deltaTime);
     };
 }// namespace game::State

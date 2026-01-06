@@ -76,6 +76,7 @@ namespace game::State {
         bool tryWaitForRoundStart(GameManager& ctx);
         void handlePlayerDeaths(GameManager& ctx);
         void handleBombEvents(GameManager& ctx);
+        void handleCountDownEvents(GameManager& ctx);
         bool tryWaitForRoundEnd(GameManager& ctx);
         void handleGunshotEvents(GameManager& ctx, float deltaTime);
 

@@ -315,6 +315,7 @@ namespace game::State {
                     // handle in-round events
                     handlePlayerDeaths(ctx);
                     handleBombEvents(ctx);
+                    handleCountDownEvents(ctx);
                     handleGunshotEvents(ctx, deltaTime);
 
                     if (!tryWaitForRoundEnd(ctx)) {
@@ -730,6 +731,16 @@ namespace game::State {
             m_scoreBoardState->updateBombStatus(false);
 
             bombDefusedQueue.pop_front();
+        }
+    }
+
+    void GamePlayState::handleCountDownEvents(GameManager& ctx) {
+        auto& countDownQueue = m_networkDispatcher->getQueues().queueCountDownEvent;
+        while (!countDownQueue.empty()) {
+            const auto& event = countDownQueue.front();
+            moe::Logger::info("Countdown event: {} seconds remaining", event.msLeft / 1000);
+            m_scoreBoardState->setCountDownTime(event.msLeft);
+            countDownQueue.pop_front();
         }
     }
 
