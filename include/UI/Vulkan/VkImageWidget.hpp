@@ -37,6 +37,14 @@ public:
         return m_tintColor;
     }
 
+    void setTextureSize(LayoutSize textureSize) {
+        m_textureSize = textureSize;
+    }
+
+    LayoutSize getTextureSize() const {
+        return m_textureSize;
+    }
+
 private:
     ImageId m_imageId{NULL_IMAGE_ID};
     Color m_tintColor{Colors::White};

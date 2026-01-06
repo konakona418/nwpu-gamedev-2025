@@ -22,6 +22,14 @@ public:
 
     void layout(const LayoutRect& rectAssigned) override;
 
+    void setSpriteSize(const LayoutSize& spriteSize) {
+        m_spriteSize = spriteSize;
+    }
+
+    LayoutSize getSpriteSize() const {
+        return m_spriteSize;
+    }
+
 protected:
     LayoutSize m_spriteSize;
     LayoutRect m_spriteRenderRect;
