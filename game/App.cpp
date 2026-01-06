@@ -30,20 +30,23 @@ namespace game {
 
     static ParamS IMGUI_FONT_PATH("graphics.imgui_font_path", "assets/fonts/NotoSansSC-Regular.ttf", ParamScope::System);
 
-    static ParamS PROJECT_NAME("project.name", "NWPU GameDev 2025", ParamScope::System);
+    static ParamS PROJECT_NAME("project.name", "Operation Theta Force", ParamScope::System);
 
     void App::init() {
         moe::Logger::setThreadName("Graphics");
 
         moe::Logger::info(
                 "Initializing Application...\n"
-                "Project Code {} \n"
+                "Project Code: {} \n"
                 "   Made with love by group Genshiken - NWPU Software Engineering / Game Development 2025\n"
                 "   Powered by Moe Graphics Engine, Zimeng Li, 2025, with Vulkan Graphics Backend;\n"
                 "   Jolt physics engine, Jolt Physics;\n"
-                "   Audio with OpenAL Soft, OpenAL Community;\n"
-                "   ENet networking library, ENet Project.\n"
-                "   Ciallo~~",
+                "   OpenAL Soft, OpenAL Community;\n"
+                "   ENet networking library, ENet Project\n"
+                "   and more open source projects.\n"
+                "   Ciallo~~\n"
+                "Copyright 2025 Genshiken;\n"
+                "with collected efforts from Yuyang Feng, Jiarui Li, Zimeng Li, Yifei Teng and Huanshi Wu.\n",
                 PROJECT_NAME.get().c_str());
 
         moe::MainScheduler::getInstance().init();
