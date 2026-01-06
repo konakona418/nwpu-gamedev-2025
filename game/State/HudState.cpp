@@ -2,6 +2,7 @@
 
 #include "GameManager.hpp"
 #include "Localization.hpp"
+#include "Param.hpp"
 #include "Registry.hpp"
 
 #include "State/GamePlayData.hpp"
@@ -11,6 +12,10 @@
 namespace game::State {
     static I18N HUD_HEALTH_TEXT("hud.health_text", U"Health: {}");
     static I18N HUD_WEAPON_TEXT("hud.weapon_text", U"Weapon: {}");
+
+    static ParamF4 HUD_TERRORIST_TINT_COLOR("hud.tint.terrorist", ParamFloat4{0.88f, 0.70f, 0.30f, 0.80f});
+    static ParamF4 HUD_COUNTERTERRORIST_TINT_COLOR("hud.tint.counterterrorist", ParamFloat4{0.40f, 0.60f, 0.90f, 0.80f});
+    static ParamF HUD_TINT_COLOR_MULTIPLIER("hud.tint.multiplier", 0.5f);
 
     static moe::StringView weaponItemToString(State::WeaponItems item) {
 #define X(name, enumVal, _1, _2) \
@@ -77,6 +82,22 @@ namespace game::State {
                         updateWeaponImages(State::WeaponItems::M4A1, State::WeaponItems::None);
                     }
 
+                    ImGui::Separator();
+                    if (ImGui::Button("Set Team to Terrorist")) {
+                        updatePlayerTeam(GamePlayerTeam::T);
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Set Team to Counter-Terrorist")) {
+                        updatePlayerTeam(GamePlayerTeam::CT);
+                    }
+
+                    ImGui::Text(
+                            "Current Tint Color: (%f, %f, %f, %f)",
+                            m_currentTintColor.r,
+                            m_currentTintColor.g,
+                            m_currentTintColor.b,
+                            m_currentTintColor.a);
+
                     ImGui::End();
                 });
     }
@@ -113,6 +134,65 @@ namespace game::State {
                 "HudState::updateWeaponImages: primary weapon = {}, secondary weapon = {}",
                 weaponItemToString(primary),
                 weaponItemToString(secondary));
+    }
+
+    void HudState::updatePlayerTeam(GamePlayerTeam team) {
+        if (m_playerTeam == team) {
+            return;
+        }
+
+        m_playerTeam = team;
+
+        moe::Color tintColor = moe::Colors::White;
+        auto terroristTint = HUD_TERRORIST_TINT_COLOR.get();
+        auto counterTerroristTint = HUD_COUNTERTERRORIST_TINT_COLOR.get();
+
+        if (team == GamePlayerTeam::T) {
+            tintColor = {
+                    terroristTint.x,
+                    terroristTint.y,
+                    terroristTint.z,
+                    terroristTint.w,
+            };
+        } else if (team == GamePlayerTeam::CT) {
+            tintColor = {
+                    counterTerroristTint.x,
+                    counterTerroristTint.y,
+                    counterTerroristTint.z,
+                    counterTerroristTint.w,
+            };
+        }
+
+        m_currentTintColor = tintColor;
+
+        moe::Logger::debug("HudState::updatePlayerTeam: player team = {}",
+                           team == GamePlayerTeam::T
+                                   ? "Terrorist"
+                           : team == GamePlayerTeam::CT
+                                   ? "Counter-Terrorist"
+                                   : "Unknown");
+    }
+
+    void HudState::applyTintColorToUIWidgets() {
+        auto tintColor = m_currentTintColor;
+        float multiplier = HUD_TINT_COLOR_MULTIPLIER.get();
+
+        auto multipliedTint = moe::Color{
+                tintColor.r * multiplier,
+                tintColor.g * multiplier,
+                tintColor.b * multiplier,
+                tintColor.a,
+        };
+
+        auto slot = m_currentSlot;
+
+        m_healthTextWidget->setColor(tintColor);
+        m_healthProgressBarWidget->setFillColor(tintColor);
+
+        m_primaryWeaponImageWidget->setTintColor(slot == WeaponSlot::Primary ? tintColor : multipliedTint);
+        m_secondaryWeaponImageWidget->setTintColor(slot == WeaponSlot::Secondary ? tintColor : multipliedTint);
+
+        m_weaponTextWidget->setColor(tintColor);
     }
 
     void HudState::loadWeaponImages(GameManager& ctx) {
@@ -242,11 +322,12 @@ namespace game::State {
 
 
         auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
-        if (!sharedData || m_debugPreventAutoImageUpdate) {
-            return;
+        if (sharedData && !m_debugPreventAutoImageUpdate) {
+            updateWeaponImages(sharedData->playerPrimaryWeapon, sharedData->playerSecondaryWeapon);
+            updatePlayerTeam(sharedData->playerTeam);
         }
 
-        updateWeaponImages(sharedData->playerPrimaryWeapon, sharedData->playerSecondaryWeapon);
+        applyTintColorToUIWidgets();
     }
 
     void HudState::updateHealth(float health) {
@@ -261,6 +342,8 @@ namespace game::State {
     }
 
     void HudState::updateWeapon(WeaponSlot weaponSlot) {
+        m_currentSlot = weaponSlot;
+
         auto sharedData = Registry::getInstance().get<GamePlaySharedData>();
         if (!sharedData) {
             moe::Logger::error("HudState::updateWeapon: GamePlaySharedData not found");

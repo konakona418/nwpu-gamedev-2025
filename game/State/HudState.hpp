@@ -3,6 +3,7 @@
 #include "GameState.hpp"
 
 #include "State/GameCommon.hpp"
+#include "State/GamePlayData.hpp"
 
 #include "UI/BoxWidget.hpp"
 #include "UI/RootWidget.hpp"
@@ -58,8 +59,8 @@ namespace game::State {
         WeaponItems m_currentWeaponItem{WeaponItems::None};
 
         FontLoaderT m_fontLoader{
-                FontLoaderParam{24.0f, Util::glyphRangeChinese()},
-                moe::BinaryFilePath(moe::asset("assets/fonts/NotoSansSC-Regular.ttf"))};
+                FontLoaderParam{24.0f},
+                moe::BinaryFilePath(moe::asset("assets/fonts/orbitron/Orbitron-Medium.ttf"))};
         moe::FontId m_fontId{moe::NULL_FONT_ID};
 
 #define X(name, fileName)                                                               \
@@ -89,10 +90,18 @@ namespace game::State {
 
         void registerDebugCommands(GameManager& ctx);
 
+        WeaponSlot m_currentSlot{WeaponSlot::Primary};
+
         WeaponItems m_primaryWeapon{WeaponItems::None};
         WeaponItems m_secondaryWeapon{WeaponItems::None};
         bool m_debugPreventAutoImageUpdate{false};
         void updateWeaponImages(WeaponItems primary, WeaponItems secondary);
+
+        GamePlayerTeam m_playerTeam{GamePlayerTeam::None};
+        void updatePlayerTeam(GamePlayerTeam team);
+
+        moe::Color m_currentTintColor{moe::Colors::White};
+        void applyTintColorToUIWidgets();
 
         moe::ImageId getImageIdForWeaponItem(WeaponItems item);
     };
