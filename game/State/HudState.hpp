@@ -6,7 +6,9 @@
 
 #include "UI/RootWidget.hpp"
 #include "UI/Vulkan/VkBoxWidget.hpp"
+#include "UI/Vulkan/VkProgressBarWidget.hpp"
 #include "UI/Vulkan/VkTextWidget.hpp"
+
 
 #include "AnyCache.hpp"
 #include "FontLoader.hpp"
@@ -45,8 +47,16 @@ namespace game::State {
         moe::FontId m_fontId{moe::NULL_FONT_ID};
 
         moe::Ref<moe::RootWidget> m_rootWidget{nullptr};
-        moe::Ref<moe::VkBoxWidget> m_containerWidget{nullptr};
+
+        moe::Ref<moe::BoxWidget> m_bottomContainer{nullptr};
+
+        moe::Ref<moe::BoxWidget> m_containerHealthSet{nullptr};
         moe::Ref<moe::VkTextWidget> m_healthTextWidget{nullptr};
+        moe::Ref<moe::VkProgressBarWidget> m_healthProgressBarWidget{nullptr};
+
+        moe::Ref<moe::BoxWidget> m_containerWeaponSet{nullptr};
         moe::Ref<moe::VkTextWidget> m_weaponTextWidget{nullptr};
+
+        void registerDebugCommands(GameManager& ctx);
     };
 }// namespace game::State
