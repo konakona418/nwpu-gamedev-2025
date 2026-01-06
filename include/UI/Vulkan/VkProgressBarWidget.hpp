@@ -22,6 +22,22 @@ public:
 
     void render(VulkanRenderObjectBus& renderer) override;
 
+    void setBackgroundColor(Color color) {
+        backgroundColor = color;
+    }
+
+    void setFillColor(Color color) {
+        fillColor = color;
+    }
+
+    Color getBackgroundColor() const {
+        return backgroundColor;
+    }
+
+    Color getFillColor() const {
+        return fillColor;
+    }
+
 private:
     Color backgroundColor{Color(0.2f, 0.2f, 0.2f, 1.0f)};
     Color fillColor{Colors::Green};
