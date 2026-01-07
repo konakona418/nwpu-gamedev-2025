@@ -43,6 +43,8 @@ namespace game {
 
         moe::UnorderedMap<uint16_t, GamePlayer> playersByTempId;
 
+        moe::UnorderedSet<uint16_t> deathsInCurrentRound;//this is a hack
+
         uint32_t playerFireSequence{0};
         uint32_t playerMoveSequence{0};
     };

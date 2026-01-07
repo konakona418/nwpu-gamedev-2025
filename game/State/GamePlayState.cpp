@@ -337,10 +337,14 @@ namespace game::State {
                     m_scoreBoardState->resetRound();
 
                     auto gamePlaySharedData = Registry::getInstance().get<GamePlaySharedData>();
-                    if (gamePlaySharedData) {
-                        gamePlaySharedData->isBombPlanted = false;// reset bomb planted state
-                        gamePlaySharedData->bombPlantedSite = BombSite::Neither;
+                    if (!gamePlaySharedData) {
+                        moe::Logger::error("GamePlayState FSM: GamePlaySharedData not found when entering RoundInProgress");
+                        return;
                     }
+
+                    gamePlaySharedData->isBombPlanted = false;// reset bomb planted state
+                    gamePlaySharedData->bombPlantedSite = BombSite::Neither;
+                    gamePlaySharedData->deathsInCurrentRound.clear();// reset deaths record
                 });
 
         m_fsm.state(
@@ -645,51 +649,60 @@ namespace game::State {
         while (!playerKilledQueue.empty()) {
             const auto& event = playerKilledQueue.front();
 
-            // update score board state to show remaining player count
-            m_scoreBoardState->updateRemainingPlayers(event.victimTempId);
+            // ! hack
+            // only process first death event for each player in the current round
+            // in case of multiple kills due to some server logic issues
+            if (sharedData->deathsInCurrentRound.find(event.victimTempId) == sharedData->deathsInCurrentRound.end()) {
+                sharedData->deathsInCurrentRound.insert(event.victimTempId);
 
-            // increment kills and deaths
-            if (auto victimIt = sharedData->playersByTempId.find(event.victimTempId);
-                victimIt != sharedData->playersByTempId.end()) {
-                victimIt->second.deaths += 1;
-            } else {
-                moe::Logger::warn("GamePlayState::handlePlayerDeaths: victim player id {} not found in playersByTempId map", event.victimTempId);
-            }
+                // update score board state to show remaining player count
+                m_scoreBoardState->updateRemainingPlayers(event.victimTempId);
 
-            if (auto killerIt = sharedData->playersByTempId.find(event.killerTempId);
-                killerIt != sharedData->playersByTempId.end()) {
-                killerIt->second.kills += 1;
-            } else {
-                moe::Logger::warn("GamePlayState::handlePlayerDeaths: killer player id {} not found in playersByTempId map", event.killerTempId);
-            }
-
-            if (event.victimTempId == sharedData->playerTempId) {
-                moe::Logger::info("Player was killed by player id: {}", event.killerTempId);
-                displaySystemPrompt(
-                        ctx,
-                        Util::formatU32(
-                                PLAYER_KILLED_PROMPT.get(),
-                                utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
-                                utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
-
-                moe::Logger::info("Invalidating LocalPlayerState due to player death");
-
-                if (m_localPlayerState) {
-                    m_localPlayerState->setValid(false);// mark as invalid
+                // increment kills and deaths
+                if (auto victimIt = sharedData->playersByTempId.find(event.victimTempId);
+                    victimIt != sharedData->playersByTempId.end()) {
+                    victimIt->second.deaths += 1;
                 } else {
-                    // somehow after player is dead, his rivals still kill him again
-                    // this is about server logic, but we just log a warning here
-                    moe::Logger::warn("LocalPlayerState not found when handling player death");
+                    moe::Logger::warn("GamePlayState::handlePlayerDeaths: victim player id {} not found in playersByTempId map", event.victimTempId);
+                }
+
+                if (auto killerIt = sharedData->playersByTempId.find(event.killerTempId);
+                    killerIt != sharedData->playersByTempId.end()) {
+                    killerIt->second.kills += 1;
+                } else {
+                    moe::Logger::warn("GamePlayState::handlePlayerDeaths: killer player id {} not found in playersByTempId map", event.killerTempId);
+                }
+
+                if (event.victimTempId == sharedData->playerTempId) {
+                    moe::Logger::info("Player was killed by player id: {}", event.killerTempId);
+                    displaySystemPrompt(
+                            ctx,
+                            Util::formatU32(
+                                    PLAYER_KILLED_PROMPT.get(),
+                                    utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
+                                    utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
+
+                    moe::Logger::info("Invalidating LocalPlayerState due to player death");
+
+                    if (m_localPlayerState) {
+                        m_localPlayerState->setValid(false);// mark as invalid
+                    } else {
+                        // somehow after player is dead, his rivals still kill him again
+                        // this is about server logic, but we just log a warning here
+                        moe::Logger::warn("LocalPlayerState not found when handling player death");
+                    }
+                } else {
+                    moe::Logger::info("Player id: {} killed player id: {}", event.killerTempId, event.victimTempId);
+                    displaySystemPrompt(
+                            ctx,
+                            Util::formatU32(
+                                    PLAYER_KILLED_OTHER_PROMPT.get(),
+                                    utf8::utf32to8(sharedData->playersByTempId[event.victimTempId].name),
+                                    utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
+                                    utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
                 }
             } else {
-                moe::Logger::info("Player id: {} killed player id: {}", event.killerTempId, event.victimTempId);
-                displaySystemPrompt(
-                        ctx,
-                        Util::formatU32(
-                                PLAYER_KILLED_OTHER_PROMPT.get(),
-                                utf8::utf32to8(sharedData->playersByTempId[event.victimTempId].name),
-                                utf8::utf32to8(sharedData->playersByTempId[event.killerTempId].name),
-                                utf8::utf32to8(weaponNameFromNetEnum(event.weapon))));
+                moe::Logger::warn("GamePlayState::handlePlayerDeaths: duplicate death event for player id {} in current round, ignoring", event.victimTempId);
             }
 
             playerKilledQueue.pop_front();
