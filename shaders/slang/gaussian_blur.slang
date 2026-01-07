@@ -35,7 +35,7 @@ float4 applyPrefilter(float4 color) {
     if (pcs.extractLuminance == 0) return color;
 
     float luma = dot(color.rgb, float3(0.2126, 0.7152, 0.0722));
-    float threshold = 0.8;
+    float threshold = 0.5;
 
     float knee = 0.1;
 
