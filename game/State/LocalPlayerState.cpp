@@ -204,6 +204,7 @@ namespace game::State {
         input.addKeyEventMapping("player_switch_to_secondary_weapon", GLFW_KEY_2);
 
         input.addKeyMapping("player_plant_defuse_bomb", GLFW_KEY_E);
+        input.addKeyMapping("toggle_score_details", GLFW_KEY_TAB);
 
         m_inputProxy.setMouseState(false);// disable mouse cursor
 
@@ -263,6 +264,17 @@ namespace game::State {
                     }
 
                     ImGui::Checkbox("Show Bombsite Radius", &state->m_debugShowBombsiteRadius);
+
+                    ImGui::Separator();
+                    if (ImGui::Button("Toggle Score Details")) {
+                        if (state->m_scoreDetailState) {
+                            ctx.queueFree(state->m_scoreDetailState);
+                            state->m_scoreDetailState.reset();
+                        } else {
+                            state->m_scoreDetailState = moe::Ref(new ScoreDetailState());
+                            state->addChildState(state->m_scoreDetailState);
+                        }
+                    }
 
                     ImGui::End();
                 });
@@ -756,6 +768,30 @@ namespace game::State {
         audioInterface.setListenerOrientation(camFront, camUp);
     }
 
+    void LocalPlayerState::handleScoreDetailToggleInput(GameManager& ctx) {
+        if (!m_inputProxy.isValid()) {
+            return;
+        }
+
+        if (m_inputProxy.isKeyPressed("toggle_score_details")) {
+            if (m_scoreDetailState) {
+                // already shown
+                return;
+            }
+            m_scoreDetailState = moe::Ref(new ScoreDetailState());
+            this->addChildState(m_scoreDetailState);
+        } else {
+            // key not pressed
+            if (!m_scoreDetailState) {
+                // already hidden
+                return;
+            }
+
+            ctx.queueFree(m_scoreDetailState);
+            m_scoreDetailState.reset();
+        }
+    }
+
     void LocalPlayerState::onUpdate(GameManager& ctx, float deltaTime) {
         // render debug bombsite radius
         renderDebugBombsiteRadius(ctx);
@@ -789,7 +825,8 @@ namespace game::State {
                 }
             }
 
-            handleHudUpdate(ctx);// update HUD info
+            handleHudUpdate(ctx);             // update HUD info
+            handleScoreDetailToggleInput(ctx);// handle score detail toggle input
         }
 
         // update audio listener position

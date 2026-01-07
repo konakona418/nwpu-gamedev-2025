@@ -648,6 +648,21 @@ namespace game::State {
             // update score board state to show remaining player count
             m_scoreBoardState->updateRemainingPlayers(event.victimTempId);
 
+            // increment kills and deaths
+            if (auto victimIt = sharedData->playersByTempId.find(event.victimTempId);
+                victimIt != sharedData->playersByTempId.end()) {
+                victimIt->second.deaths += 1;
+            } else {
+                moe::Logger::warn("GamePlayState::handlePlayerDeaths: victim player id {} not found in playersByTempId map", event.victimTempId);
+            }
+
+            if (auto killerIt = sharedData->playersByTempId.find(event.killerTempId);
+                killerIt != sharedData->playersByTempId.end()) {
+                killerIt->second.kills += 1;
+            } else {
+                moe::Logger::warn("GamePlayState::handlePlayerDeaths: killer player id {} not found in playersByTempId map", event.killerTempId);
+            }
+
             if (event.victimTempId == sharedData->playerTempId) {
                 moe::Logger::info("Player was killed by player id: {}", event.killerTempId);
                 displaySystemPrompt(

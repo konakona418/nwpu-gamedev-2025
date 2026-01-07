@@ -21,6 +21,8 @@ namespace game {
         uint16_t tempId{INVALID_PLAYER_TEMP_ID};
         moe::U32String name;
         GamePlayerTeam team{GamePlayerTeam::None};
+        uint16_t kills{0};
+        uint16_t deaths{0};
     };
 
     struct GamePlaySharedData

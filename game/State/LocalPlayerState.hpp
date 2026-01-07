@@ -8,6 +8,7 @@
 #include "State/BombPlantState.hpp"
 #include "State/GameCommon.hpp"
 #include "State/HudState.hpp"
+#include "State/ScoreDetailState.hpp"
 
 #include "Core/AFlag.hpp"
 #include "Core/DBuffer.hpp"
@@ -82,6 +83,8 @@ namespace game::State {
         bool m_debugShowBombsiteRadius{false};
         float m_bombPlantingOrDefuseProgressSecs{0.0f};
 
+        moe::Ref<ScoreDetailState> m_scoreDetailState{nullptr};
+
         ModelLoader m_glockModelLoader{
                 ModelLoaderParam{moe::asset("assets/models/G17.glb")},
         };
@@ -147,6 +150,7 @@ namespace game::State {
         void renderDebugBombsiteRadius(GameManager& ctx);
         void handlePlayerPlantDefuseInput(GameManager& ctx, float deltaTime);
         void handlePlayerAudioListenerPositionUpdate(GameManager& ctx);
+        void handleScoreDetailToggleInput(GameManager& ctx);
 
         BombSite testInWhichBombsite(const glm::vec3& position) const;
 
