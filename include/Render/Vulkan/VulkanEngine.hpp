@@ -166,6 +166,7 @@ namespace moe {
             Pipeline::SpritePipeline spritePipeline;
             Pipeline::DeferredLightingPipeline deferredLightingPipeline;
             Pipeline::FXAAPipeline fxaaPipeline;
+            Pipeline::GaussianBlurPipeline gaussianBlurPipeline;
             Pipeline::BlendTwoPipeline blendTwoPipeline;
             Pipeline::GammaCorrectionPipeline gammaCorrectionPipeline;
 

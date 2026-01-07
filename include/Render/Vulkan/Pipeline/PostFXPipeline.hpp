@@ -77,6 +77,7 @@ namespace moe {
                     VkCommandBuffer cmdBuffer,
                     ImageId inputImageDownId,
                     ImageId inputImageUpId,
+                    ImageId inputImageBloomId,
                     float alpha);
 
             void destroy();
@@ -84,8 +85,41 @@ namespace moe {
         private:
             struct PushConstants {
                 ImageId inputImageUpId;
+                ImageId inputImageBloomId;
                 ImageId inputImageDownId;
                 float alpha;
+            };
+
+            VulkanEngine* m_engine{nullptr};
+            bool m_initialized{false};
+
+            VkPipelineLayout m_pipelineLayout;
+            VkPipeline m_pipeline;
+        };
+
+        struct GaussianBlurPipeline {
+        public:
+            GaussianBlurPipeline() = default;
+            ~GaussianBlurPipeline() = default;
+
+            void init(VulkanEngine& engine);
+
+            void draw(
+                    VkCommandBuffer cmdBuffer,
+                    ImageId inputImageId,
+                    glm::vec2 direction,
+                    float radius,
+                    bool extractLuminance);
+
+            void destroy();
+
+        private:
+            struct PushConstants {
+                ImageId inputImageId;
+                glm::vec2 direction;
+                glm::vec2 invResolution;
+                float radius;
+                uint32_t extractLuminance;
             };
 
             VulkanEngine* m_engine{nullptr};

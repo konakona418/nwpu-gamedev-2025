@@ -266,6 +266,7 @@ namespace moe {
                 VkCommandBuffer cmdBuffer,
                 ImageId inputImageDownId,
                 ImageId inputImageUpId,
+                ImageId inputImageBloomId,
                 float alpha) {
             MOE_ASSERT(m_initialized, "BlendTwoPipeline is not initialized");
 
@@ -298,11 +299,121 @@ namespace moe {
 
             auto pushConstants = PushConstants{
                     .inputImageUpId = inputImageUpId,
+                    .inputImageBloomId = inputImageBloomId,
                     .inputImageDownId = inputImageDownId,
                     .alpha = alpha,
             };
 
             vkCmdPushConstants(cmdBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstants), &pushConstants);
+            vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+        }
+
+        void GaussianBlurPipeline::init(VulkanEngine& engine) {
+            MOE_ASSERT(!m_initialized, "GaussianBlurPipeline already initialized");
+            m_initialized = true;
+            m_engine = &engine;
+
+            auto vert =
+                    VkUtils::createShaderModuleFromFile(engine.m_device, "shaders/gaussian_blur.vert.spv");
+            auto frag =
+                    VkUtils::createShaderModuleFromFile(engine.m_device, "shaders/gaussian_blur.frag.spv");
+
+            auto pushRange = VkPushConstantRange{
+                    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .offset = 0,
+                    .size = sizeof(PushConstants),
+            };
+
+            auto pushRanges =
+                    Array<VkPushConstantRange, 1>{pushRange};
+
+            VulkanDescriptorLayoutBuilder layoutBuilder{};
+
+            auto descriptorLayouts = Array<VkDescriptorSetLayout, 1>{
+                    engine.getBindlessSet().getDescriptorSetLayout(),
+            };
+
+            auto pipelineLayoutInfo =
+                    VkInit::pipelineLayoutCreateInfo(descriptorLayouts, pushRanges);
+
+            MOE_VK_CHECK(vkCreatePipelineLayout(engine.m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
+
+            auto builder = VulkanPipelineBuilder(m_pipelineLayout);
+            builder.addShader(vert, frag);
+            builder.setInputTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+            builder.setPolygonMode(VK_POLYGON_MODE_FILL);
+            builder.setCullMode(VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+            builder.disableBlending();
+            builder.disableDepthTesting();
+            builder.setColorAttachmentFormat(engine.m_drawImageFormat);
+            builder.disableMultisampling();
+
+            m_pipeline = builder.build(engine.m_device);
+
+            vkDestroyShaderModule(engine.m_device, vert, nullptr);
+            vkDestroyShaderModule(engine.m_device, frag, nullptr);
+        }
+
+        void GaussianBlurPipeline::destroy() {
+            MOE_ASSERT(m_initialized, "GaussianBlurPipeline not initialized");
+
+            vkDestroyPipeline(m_engine->m_device, m_pipeline, nullptr);
+            vkDestroyPipelineLayout(m_engine->m_device, m_pipelineLayout, nullptr);
+
+            m_initialized = false;
+            m_engine = nullptr;
+        }
+
+        void GaussianBlurPipeline::draw(
+                VkCommandBuffer cmdBuffer,
+                ImageId inputImageId,
+                glm::vec2 direction,
+                float radius,
+                bool extractLuminance) {
+            MOE_ASSERT(m_initialized, "GaussianBlurPipeline is not initialized");
+
+            auto extent = m_engine->m_drawExtent;
+            vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+            auto bindlessDescriptorSet = m_engine->getBindlessSet().getDescriptorSet();
+            vkCmdBindDescriptorSets(
+                    cmdBuffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    m_pipelineLayout,
+                    0, 1, &bindlessDescriptorSet,
+                    0, nullptr);
+
+            const auto viewport = VkViewport{
+                    .x = 0,
+                    .y = 0,
+                    .width = (float) extent.width,
+                    .height = (float) extent.height,
+                    .minDepth = 0.f,
+                    .maxDepth = 1.f,
+            };
+            vkCmdSetViewport(cmdBuffer, 0, 1, &viewport);
+
+            const auto scissor = VkRect2D{
+                    .offset = {},
+                    .extent = extent,
+            };
+            vkCmdSetScissor(cmdBuffer, 0, 1, &scissor);
+
+            auto dir = glm::normalize(direction);
+            auto invWidth = 1.0f / static_cast<float>(extent.width);
+            auto invHeight = 1.0f / static_cast<float>(extent.height);
+
+            auto invResolution = glm::vec2(invWidth, invHeight);
+
+            auto pushConstants = PushConstants{
+                    .inputImageId = inputImageId,
+                    .direction = dir,
+                    .invResolution = invResolution,
+                    .radius = radius,
+                    .extractLuminance = extractLuminance ? 1u : 0u,
+            };
+            vkCmdPushConstants(cmdBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PushConstants), &pushConstants);
+
             vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
         }
     }// namespace Pipeline

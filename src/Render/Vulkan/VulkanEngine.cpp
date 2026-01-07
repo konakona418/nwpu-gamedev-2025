@@ -1648,6 +1648,7 @@ namespace moe {
         m_pipelines.blendTwoPipeline.init(*this);
         m_pipelines.spritePipeline.init(*this);
         m_pipelines.fxaaPipeline.init(*this);
+        m_pipelines.gaussianBlurPipeline.init(*this);
         m_pipelines.gammaCorrectionPipeline.init(*this);
 
         initAndCompilePostFXGraph();
@@ -1677,6 +1678,7 @@ namespace moe {
             m_pipelines.postFxGraph.destroy();
 
             m_pipelines.gammaCorrectionPipeline.destroy();
+            m_pipelines.gaussianBlurPipeline.destroy();
             m_pipelines.fxaaPipeline.destroy();
             m_pipelines.spritePipeline.destroy();
             m_pipelines.blendTwoPipeline.destroy();
@@ -1694,6 +1696,8 @@ namespace moe {
     }
 
     void VulkanEngine::initAndCompilePostFXGraph() {
+        constexpr float bloomRadius = 1.0f;
+
         auto drawExtent3D = VkExtent3D{
                 m_drawExtent.width,
                 m_drawExtent.height,
@@ -1708,10 +1712,20 @@ namespace moe {
                     m_pipelines.fxaaPipeline.draw(cmdBuffer, inputs[0]);
                 });
         m_pipelines.postFxGraph.addStage(
-                "blend_two", {"fxaa", "#input_2d"}, m_drawImageFormat, drawExtent3D,
+                "ui_bloom_v", {"#input_2d"}, m_drawImageFormat, drawExtent3D,
+                [&](VkCommandBuffer cmdBuffer, Vector<ImageId>& inputs) {
+                    m_pipelines.gaussianBlurPipeline.draw(cmdBuffer, inputs[0], glm::vec2(0.0f, 1.0f), bloomRadius, true);
+                });
+        m_pipelines.postFxGraph.addStage(
+                "ui_bloom_h", {"ui_bloom_v"}, m_drawImageFormat, drawExtent3D,
+                [&](VkCommandBuffer cmdBuffer, Vector<ImageId>& inputs) {
+                    m_pipelines.gaussianBlurPipeline.draw(cmdBuffer, inputs[0], glm::vec2(1.0f, 0.0f), bloomRadius, false);
+                });
+        m_pipelines.postFxGraph.addStage(
+                "blend_two", {"fxaa", "#input_2d", "ui_bloom_h"}, m_drawImageFormat, drawExtent3D,
                 [&](VkCommandBuffer cmdBuffer, Vector<ImageId>& inputs) {
                     // for ui, use full opacity
-                    m_pipelines.blendTwoPipeline.draw(cmdBuffer, inputs[0], inputs[1], 1.0f);
+                    m_pipelines.blendTwoPipeline.draw(cmdBuffer, inputs[0], inputs[1], inputs[2], 1.0f);
                 });
         m_pipelines.postFxGraph.addStage(
                 "gamma_correction", {"blend_two"}, m_swapchainImageFormat,

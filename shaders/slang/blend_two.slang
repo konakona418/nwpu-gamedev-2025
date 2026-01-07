@@ -16,16 +16,17 @@ VertexOutput vertexMain(uint vertexIndex: SV_VulkanVertexID) {
     return output;
 }
 
-struct GammaCorrectPCS {
+struct BlendTwoPCS {
     ImageId inputImageUp;
+    ImageId inputImageBloom;
     ImageId inputImageDown;
     float alpha;
 }
 
 [vk::push_constant]
-GammaCorrectPCS pcs;
+BlendTwoPCS pcs;
 
-[shader("fragment")]
+/*[shader("fragment")]
 float4 fragmentMain(float2 inUV: TEXCOORD0) {
     float4 colorUp = sampleTextureLinear(pcs.inputImageUp, inUV);
     float4 colorDown = sampleTextureLinear(pcs.inputImageDown, inUV);
@@ -34,4 +35,20 @@ float4 fragmentMain(float2 inUV: TEXCOORD0) {
     float3 blendedColor = lerp(colorDown.rgb, colorUp.rgb, t);
 
     return float4(blendedColor, 1.0);
+}*/
+
+[shader("fragment")]
+float4 fragmentMain(float2 inUV: TEXCOORD0) : SV_Target {
+    float4 scene = sampleTextureLinear(pcs.inputImageDown, inUV);
+    float4 uiSharp = sampleTextureLinear(pcs.inputImageUp, inUV);
+    float4 uiGlow = sampleTextureLinear(pcs.inputImageBloom, inUV);
+
+    float3 result = lerp(scene.rgb, uiSharp.rgb, uiSharp.a * pcs.alpha);
+
+    result += uiGlow.rgb * pcs.alpha;
+
+    float exposure = 0.8;
+    result = 1.0 - exp(-result * exposure);
+
+    return float4(result, 1.0);
 }
